@@ -442,6 +442,35 @@ async function runTests() {
     });
     assert(deleteDocRes.status === 200 && deleteDocRes.body.success === true, 'Giáo viên XÓA HOÀN TOÀN hồ sơ đã thu hồi thành công');
 
+    // 3.13 Kiểm tra tương thích máy chủ đám mây Linux Render / Docker (Không bị lỗi thiếu RealPdfSigner.exe)
+    const pdfSignerService = require('./pdfSignerService');
+    const origFsExists = fs.existsSync;
+    fs.existsSync = function(p) {
+      if (typeof p === 'string' && p.includes('RealPdfSigner')) return false;
+      return origFsExists.apply(this, arguments);
+    };
+
+    const cloudDoc = {
+      id: 'CLOUD_TEST_' + Date.now(),
+      title: 'Kế hoạch bài dạy kiểm thử Render Cloud',
+      author: 'Hà Văn Tý',
+      department: 'Tổ Toán - Tin',
+      grade: 'Khối 9',
+      week: 'Tuần 14',
+      signatures: [{
+        step: 1,
+        role: 'Giáo viên',
+        signerName: 'Hà Văn Tý',
+        signType: 'Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)',
+        status: 'VALID'
+      }]
+    };
+    const cloudSignRes = await pdfSignerService.signWithRealVgca(cloudDoc);
+    fs.existsSync = origFsExists; // Khôi phục
+
+    assert(cloudSignRes && cloudSignRes.signedFilePath && fs.existsSync(cloudSignRes.signedFilePath), 'Hệ thống ký số hoạt động trơn tru 100% trên môi trường Render Linux (Tự động niêm phong PAdES X.509 mà không phụ thuộc file .exe)');
+    assert(cloudSignRes.stdout.includes('VGCA') || cloudSignRes.stdout.includes('PAdES'), 'Ghi nhận nhật ký xác thực Ban Cơ yếu Chính phủ (VGCA PAdES) trên đám mây');
+
     // 3.9b Kiểm tra cú pháp toàn bộ JavaScript trong file giao diện index.html (Không bị lỗi cú pháp như Unexpected token)
     const htmlContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
     const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
