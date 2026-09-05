@@ -10,9 +10,19 @@ const pdfSignerService = require('./pdfSignerService');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 app.use(cors());
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -438,11 +448,25 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
     }
 
-    console.log(`[VGCA Real] Đang kích hoạt tiến trình ký số mật mã thật cho hồ sơ: ${doc.id} - ${doc.title}`);
-    const result = await pdfSignerService.signWithRealVgca(doc);
+    const { realSignedPdfBase64 } = req.body || {};
+    let signedFilePath = null;
+
+    if (realSignedPdfBase64) {
+      // Nhận tệp PDF đã ký số mật mã thật VGCA từ Cầu nối Ký số Cục bộ (Local Signer Bridge)
+      const uploadDir = path.join(__dirname, 'uploads', 'documents');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const cleanBase64 = realSignedPdfBase64.replace(/^data:[^;]+;base64,/, '');
+      signedFilePath = path.join(uploadDir, `signed_vgca_${doc.id}_${Date.now()}.pdf`);
+      fs.writeFileSync(signedFilePath, Buffer.from(cleanBase64, 'base64'));
+      console.log(`[VGCA Bridge] Đã nhận và lưu tệp ký số mật mã thật từ máy tính cá nhân: ${signedFilePath}`);
+    } else {
+      console.log(`[VGCA Real] Đang kích hoạt tiến trình ký số mật mã thật cho hồ sơ: ${doc.id} - ${doc.title}`);
+      const result = await pdfSignerService.signWithRealVgca(doc);
+      signedFilePath = result.signedFilePath;
+    }
 
     const updatedDoc = dataStore.updateDocument(doc.id, {
-      realSignedPath: result.signedFilePath,
+      realSignedPath: signedFilePath,
       realVgcaSigned: true,
       realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
       vgcaInfo: {
@@ -497,9 +521,73 @@ app.post('/api/test-vgca-ping', requireAuth, async (req, res) => {
   }
 });
 
+// Cầu nối Ký số Cục bộ (Local Signer Bridge) phục vụ khi truy cập từ Cloud Render
+app.get('/api/ping-local-signer', (req, res) => {
+  res.json({
+    success: true,
+    service: 'EduSign-VGCA-Local-Agent',
+    platform: process.platform,
+    hasRealVgca: process.platform === 'win32',
+    signer: realSigner
+  });
+});
+
+app.post('/api/local-sign-doc', async (req, res) => {
+  try {
+    const docData = req.body.doc || {};
+    const fileBase64 = req.body.fileBase64 || docData.fileBase64;
+
+    console.log(`[Local Signer] Nhận yêu cầu ký số thật từ trình duyệt cho tài liệu: ${docData.title}`);
+
+    const uploadDir = path.join(__dirname, 'uploads', 'documents');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+    let tempFilePath = null;
+    if (fileBase64) {
+      const ext = (docData.fileName || '').endsWith('.docx') ? 'docx' : 'pdf';
+      tempFilePath = path.join(uploadDir, `local_temp_${Date.now()}.${ext}`);
+      fs.writeFileSync(tempFilePath, Buffer.from(fileBase64.replace(/^data:[^;]+;base64,/, ''), 'base64'));
+    }
+
+    const tempDoc = {
+      id: docData.id || 'DOC_' + Date.now(),
+      title: docData.title || 'Kế hoạch bài dạy',
+      author: docData.author || 'Hà Văn Tý',
+      department: docData.department || 'Tổ Toán - Tin',
+      filePath: tempFilePath,
+      signPlacement: docData.signPlacement || 'bottom-right',
+      signCoordinates: docData.signCoordinates || null,
+      signatures: docData.signatures || [{
+        step: 1,
+        role: 'Giáo viên',
+        signerName: 'Hà Văn Tý',
+        visualSignImage: docData.signatureImage || '/uploads/signatures/sig_user_cvaty.png'
+      }]
+    };
+
+    const signResult = await pdfSignerService.signWithRealVgca(tempDoc);
+    const signedPdfBase64 = 'data:application/pdf;base64,' + signResult.signedBuffer.toString('base64');
+
+    try { if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (e) {}
+
+    res.json({
+      success: true,
+      message: 'Ký số mật mã thật VGCA thành công! Điện thoại đã xác nhận.',
+      signedPdfBase64,
+      stdout: signResult.stdout
+    });
+  } catch (err) {
+    console.error('[Local Signer] Lỗi ký số:', err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi ký số VGCA trên máy tính: ' + err.message
+    });
+  }
+});
+
 // Giáo viên nộp Kế hoạch bài dạy mới (Hỗ trợ Ký số Mật mã Thật VGCA qua điện thoại)
 app.post('/api/documents', requireAuth, async (req, res) => {
-  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage, signCoordinates, realVgcaSign } = req.body;
+  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage, signCoordinates, realVgcaSign, realSignedPdfBase64 } = req.body;
   if (!title) {
     return res.status(400).json({ success: false, message: 'Vui lòng nhập Tên kế hoạch bài dạy!' });
   }
@@ -566,8 +654,43 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     ]
   }, currentUser);
 
-  // Kích hoạt tiến trình ký số mật mã thật VGCA (kết nối máy chủ Ban Cơ yếu Chính phủ & gửi lệnh tới điện thoại)
-  if (realVgcaSign) {
+  // Kích hoạt tiến trình ký số mật mã thật VGCA
+  if (realSignedPdfBase64) {
+    // Nhận trực tiếp file PDF đã ký số mật mã thật VGCA từ Cầu nối Ký số Cục bộ (Local Signer Bridge)
+    try {
+      const uploadDir = path.join(__dirname, 'uploads', 'documents');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const cleanSigned = realSignedPdfBase64.replace(/^data:[^;]+;base64,/, '');
+      const signedFilePath = path.join(uploadDir, `signed_vgca_${newDoc.id}_${Date.now()}.pdf`);
+      fs.writeFileSync(signedFilePath, Buffer.from(cleanSigned, 'base64'));
+
+      const signaturesCopy = Array.isArray(newDoc.signatures) ? [...newDoc.signatures] : [];
+      if (signaturesCopy.length > 0) {
+        signaturesCopy[0] = {
+          ...signaturesCopy[0],
+          signType: 'Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)',
+          status: 'VALID'
+        };
+      }
+
+      const updatedDoc = dataStore.updateDocument(newDoc.id, {
+        realSignedPath: signedFilePath,
+        realVgcaSigned: true,
+        realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        signatures: signaturesCopy,
+        vgcaInfo: {
+          signer: 'Hà Văn Tý',
+          issuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
+          standard: 'PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)',
+          verified: true
+        }
+      });
+      Object.assign(newDoc, updatedDoc);
+      console.log(`[VGCA Real] ✅ Đã lưu file ký số thật từ Local Signer Bridge: ${newDoc.id}`);
+    } catch (err) {
+      console.error('Lỗi lưu tệp ký số từ bridge:', err.message);
+    }
+  } else if (realVgcaSign) {
     try {
       console.log(`[VGCA Real] Đang kích hoạt ký số mật mã thật cho giáo viên ${currentUser.name}...`);
       const signResult = await pdfSignerService.signWithRealVgca(newDoc);

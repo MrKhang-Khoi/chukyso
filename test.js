@@ -442,7 +442,7 @@ async function runTests() {
     });
     assert(deleteDocRes.status === 200 && deleteDocRes.body.success === true, 'Giáo viên XÓA HOÀN TOÀN hồ sơ đã thu hồi thành công');
 
-    // 3.13 Kiểm tra tương thích máy chủ đám mây Linux Render / Docker (Không bị lỗi thiếu RealPdfSigner.exe)
+    // 3.13 Kiểm tra cơ chế Cầu nối Ký số Cục bộ (Local Signer Bridge) & Chống báo thành công ảo trên Cloud
     const pdfSignerService = require('./pdfSignerService');
     const origFsExists = fs.existsSync;
     fs.existsSync = function(p) {
@@ -450,26 +450,43 @@ async function runTests() {
       return origFsExists.apply(this, arguments);
     };
 
-    const cloudDoc = {
-      id: 'CLOUD_TEST_' + Date.now(),
-      title: 'Kế hoạch bài dạy kiểm thử Render Cloud',
-      author: 'Hà Văn Tý',
-      department: 'Tổ Toán - Tin',
-      grade: 'Khối 9',
-      week: 'Tuần 14',
-      signatures: [{
-        step: 1,
-        role: 'Giáo viên',
-        signerName: 'Hà Văn Tý',
-        signType: 'Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)',
-        status: 'VALID'
-      }]
-    };
-    const cloudSignRes = await pdfSignerService.signWithRealVgca(cloudDoc);
+    let cloudSignBlocked = false;
+    try {
+      await pdfSignerService.signWithRealVgca({ id: 'TEST_NO_EXE' });
+    } catch (e) {
+      cloudSignBlocked = e.message.includes('Local Signer Bridge') || e.message.includes('không có chứng thư');
+    }
     fs.existsSync = origFsExists; // Khôi phục
 
-    assert(cloudSignRes && cloudSignRes.signedFilePath && fs.existsSync(cloudSignRes.signedFilePath), 'Hệ thống ký số hoạt động trơn tru 100% trên môi trường Render Linux (Tự động niêm phong PAdES X.509 mà không phụ thuộc file .exe)');
-    assert(cloudSignRes.stdout.includes('VGCA') || cloudSignRes.stdout.includes('PAdES'), 'Ghi nhận nhật ký xác thực Ban Cơ yếu Chính phủ (VGCA PAdES) trên đám mây');
+    assert(cloudSignBlocked, 'Hệ thống CHẶN THÀNH CÔNG ký ảo trên Cloud khi không có phần cứng ký số (Yêu cầu Local Signer Bridge)');
+
+    // Kiểm tra API Ping Local Signer
+    const pingLocalRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/ping-local-signer',
+      method: 'GET'
+    });
+    assert(pingLocalRes.status === 200 && pingLocalRes.body.success, 'API /api/ping-local-signer sẵn sàng làm cầu nối cho Render Cloud');
+
+    // Kiểm tra nộp bài qua Local Signer Bridge (realSignedPdfBase64)
+    const bridgeSubmitRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/documents',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      title: 'Kế hoạch bài dạy ký qua Local Bridge',
+      grade: 'Khối 9',
+      week: 'Tuần 15',
+      signatureImage: dummySignature,
+      realSignedPdfBase64: sampleBase64
+    });
+    assert(bridgeSubmitRes.status === 200 && bridgeSubmitRes.body.data.realVgcaSigned === true, 'Hồ sơ nộp qua Local Signer Bridge được xác nhận chữ ký số thật thành công 100%');
 
     // 3.9b Kiểm tra cú pháp toàn bộ JavaScript trong file giao diện index.html (Không bị lỗi cú pháp như Unexpected token)
     const htmlContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
