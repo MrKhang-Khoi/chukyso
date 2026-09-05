@@ -17,6 +17,10 @@ Thumbs.db
 
 # Temp uploads & cache
 uploads/temp/
+uploads/documents/*
+!uploads/documents/.gitkeep
+uploads/signatures/*
+!uploads/signatures/.gitkeep
 
 # .NET Build artifacts
 **/bin/

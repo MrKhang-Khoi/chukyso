@@ -198,6 +198,10 @@ function createDocument(docData, currentUser) {
     createdAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
     status: 'WAITING_LEADER_APPROVAL', // WAITING_LEADER_APPROVAL -> WAITING_PRINCIPAL_APPROVAL -> APPROVED (hoặc REJECTED)
     currentSignerRole: 'Tổ trưởng Chuyên môn',
+    fileName: docData.fileName || 'GiaoAn_Chuan.pdf',
+    fileType: docData.fileType || 'pdf', // 'pdf', 'docx', 'doc'
+    filePath: docData.filePath || null,
+    signPlacement: docData.signPlacement || 'bottom-right',
     fileSize: docData.fileSize || '1.5 MB',
     pages: docData.pages || 10,
     signatures: docData.signatures || [],
@@ -206,7 +210,7 @@ function createDocument(docData, currentUser) {
       {
         time: new Date().toISOString().replace('T', ' ').substring(0, 19),
         actor: currentUser.name,
-        action: `Khởi tạo và nộp kế hoạch bài dạy "${docData.title}"`
+        action: `Khởi tạo và nộp kế hoạch bài dạy "${docData.title}" (File: ${docData.fileName || 'GiaoAn.pdf'})`
       }
     ]
   };

@@ -170,7 +170,33 @@ async function runTests() {
     assert(teacherLoginRes.status === 200 && teacherLoginRes.body.success, 'Giáo viên (hvty) đăng nhập thành công với Token riêng');
     const teacherToken = teacherLoginRes.body.token;
 
-    // 3.5 Giáo viên nộp bài dạy mới
+    // 3.4b Kiểm tra Studio Chữ ký: Lưu và lấy mẫu chữ ký cá nhân
+    const dummySignature = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const saveSigRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/user/signature',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, { signatureImage: dummySignature });
+    assert(saveSigRes.status === 200 && saveSigRes.body.success, 'Giáo viên lưu mẫu chữ ký trong suốt vào hồ sơ thành công');
+
+    const getSigRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/user/signature',
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${teacherToken}` }
+    });
+    assert(getSigRes.status === 200 && getSigRes.body.signatureImage === dummySignature, 'Truy xuất mẫu chữ ký cá nhân chính xác');
+
+    // 3.5 Giáo viên nộp bài dạy mới kèm File thật (Base64) & Vị trí chữ ký
+    const sampleFileBuffer = fs.readFileSync(pdfToTest);
+    const sampleBase64 = `data:application/pdf;base64,${sampleFileBuffer.toString('base64')}`;
+
     const submitDocRes = await httpRequest({
       hostname: '127.0.0.1',
       port: 3000,
@@ -184,12 +210,28 @@ async function runTests() {
       title: 'Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)',
       grade: 'Khối 9',
       week: 'Tuần 12',
-      term: 'Học kỳ I'
+      term: 'Học kỳ I',
+      fileName: 'GiaoAn_Toan9_T12.pdf',
+      fileType: 'application/pdf',
+      fileSize: sampleFileBuffer.length,
+      fileBase64: sampleBase64,
+      signPlacement: 'bottom-left'
     });
 
-    assert(submitDocRes.status === 200 && submitDocRes.body.success, 'Giáo viên nộp kế hoạch bài dạy thành công');
+    assert(submitDocRes.status === 200 && submitDocRes.body.success, 'Giáo viên nộp kế hoạch bài dạy kèm File PDF thật thành công');
     const createdDocId = submitDocRes.body.data.id;
     assert(createdDocId && createdDocId.startsWith('KHBD-'), `Mã hồ sơ tự động khởi tạo: ${createdDocId}`);
+    assert(submitDocRes.body.data.fileName === 'GiaoAn_Toan9_T12.pdf', 'Lưu đúng tên tệp gốc của giáo viên');
+
+    // 3.5b Tải / Xem trước tệp đính kèm từ API
+    const getFileRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: `/api/documents/${createdDocId}/file`,
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${teacherToken}` }
+    });
+    assert(getFileRes.status === 200, 'API /api/documents/:id/file phục vụ file tài liệu xem trước thành công');
 
     // 3.6 Tổ trưởng đăng nhập & Duyệt cấp 2
     const leaderLoginRes = await httpRequest({
@@ -212,7 +254,11 @@ async function runTests() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${leaderToken}`
       }
-    }, { comment: 'Đạt chuẩn phân phối chương trình' });
+    }, { 
+      comment: 'Đạt chuẩn phân phối chương trình',
+      visualSignImage: dummySignature,
+      signPlacement: 'middle-right'
+    });
 
     assert(leaderApproveRes.status === 200 && leaderApproveRes.body.data.status === 'WAITING_PRINCIPAL_APPROVAL', 'Tổ trưởng ký nháy duyệt chuyên môn cấp 2 -> Chuyển Ban Giám hiệu');
 
@@ -226,7 +272,11 @@ async function runTests() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${adminToken}`
       }
-    }, { comment: 'Phê duyệt kế hoạch bài dạy' });
+    }, { 
+      comment: 'Phê duyệt kế hoạch bài dạy',
+      visualSignImage: dummySignature,
+      signPlacement: 'bottom-right'
+    });
 
     assert(principalApproveRes.status === 200 && principalApproveRes.body.data.status === 'APPROVED', 'Ban Giám hiệu ký số & Phê duyệt chính thức cấp 3 -> APPROVED');
 

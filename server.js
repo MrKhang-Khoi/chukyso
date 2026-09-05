@@ -300,6 +300,39 @@ app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
   }
 });
 
+// Quản lý mẫu chữ ký tay của người dùng hiện tại
+app.get('/api/user/signature', requireAuth, (req, res) => {
+  res.json({
+    success: true,
+    signatureImage: req.user.signatureImage || null
+  });
+});
+
+app.post('/api/user/signature', requireAuth, (req, res) => {
+  const { signatureImage } = req.body;
+  if (!signatureImage) {
+    return res.status(400).json({ success: false, message: 'Chưa có dữ liệu ảnh chữ ký!' });
+  }
+
+  // Lưu vào database người dùng
+  const updatedUser = dataStore.updateUser(req.user.id, { signatureImage });
+  
+  // Lưu file ảnh chữ ký vào ổ đĩa
+  try {
+    const base64Data = signatureImage.replace(/^data:image\/\w+;base64,/, '');
+    const sigPath = path.join(__dirname, 'uploads', 'signatures', `sig_${req.user.id}.png`);
+    fs.writeFileSync(sigPath, Buffer.from(base64Data, 'base64'));
+  } catch (err) {
+    console.error('Lỗi lưu file chữ ký vật lý:', err.message);
+  }
+
+  res.json({
+    success: true,
+    message: 'Đã lưu mẫu chữ ký tay trong suốt thành công!',
+    signatureImage: updatedUser.signatureImage
+  });
+});
+
 // ==================== 5. QUẢN LÝ HỒ SƠ KẾ HOẠCH BÀI DẠY (TRÌNH KÝ 3 CẤP) ====================
 
 // Lấy danh sách hồ sơ (Tự động lọc theo Vai trò & Tổ chuyên môn)
@@ -341,21 +374,66 @@ app.get('/api/documents/:id', requireAuth, (req, res) => {
   res.json({ success: true, data: doc });
 });
 
-// Giáo viên nộp Kế hoạch bài dạy mới
+// Tải file gốc / File xem trước của hồ sơ
+app.get('/api/documents/:id/file', (req, res) => {
+  const doc = dataStore.getDocumentById(req.params.id);
+  if (doc && doc.filePath && fs.existsSync(doc.filePath)) {
+    const ext = path.extname(doc.filePath).toLowerCase();
+    if (ext === '.pdf') {
+      res.setHeader('Content-Type', 'application/pdf');
+    } else if (ext === '.docx') {
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    } else {
+      res.setHeader('Content-Type', 'application/octet-stream');
+    }
+    return res.sendFile(doc.filePath);
+  }
+
+  // Fallback nếu chưa tải file vật lý
+  const fallbackPdf = path.join(__dirname, 'GiaoAn_CanKy.pdf');
+  if (fs.existsSync(fallbackPdf)) {
+    res.setHeader('Content-Type', 'application/pdf');
+    return res.sendFile(fallbackPdf);
+  }
+  res.status(404).json({ success: false, message: 'Không tìm thấy file văn bản' });
+});
+
+// Giáo viên nộp Kế hoạch bài dạy mới (Hỗ trợ nộp file Word hoặc PDF thật)
 app.post('/api/documents', requireAuth, (req, res) => {
-  const { title, grade, week, term, pages, fileSize } = req.body;
+  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement } = req.body;
   if (!title) {
     return res.status(400).json({ success: false, message: 'Vui lòng nhập Tên kế hoạch bài dạy!' });
   }
 
   const currentUser = req.user;
+  let savedFilePath = null;
+
+  // Xử lý lưu file thật nếu có đính kèm
+  if (fileBase64) {
+    try {
+      const cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
+      const rawBuffer = Buffer.from(cleanBase64, 'base64');
+      const safeName = (fileName || 'GiaoAn').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+      const ext = path.extname(safeName) || (fileType === 'docx' ? '.docx' : '.pdf');
+      const uniqueFileName = `${Date.now()}_${path.basename(safeName, ext)}${ext}`;
+      savedFilePath = path.join(__dirname, 'uploads', 'documents', uniqueFileName);
+      fs.writeFileSync(savedFilePath, rawBuffer);
+    } catch (err) {
+      console.error('Lỗi lưu file đính kèm:', err.message);
+    }
+  }
+
   const newDoc = dataStore.createDocument({
     title: title.trim(),
     grade: grade || 'Khối 9',
     week: week || 'Tuần 1',
     term: term || 'Học kỳ I',
-    pages: pages || 10,
-    fileSize: fileSize || '1.5 MB',
+    pages: pages || 12,
+    fileSize: fileSize || '1.8 MB',
+    fileName: fileName || 'GiaoAn_Chuan.pdf',
+    fileType: fileType || 'pdf',
+    filePath: savedFilePath,
+    signPlacement: signPlacement || 'bottom-right',
     signatures: [
       {
         step: 1,
@@ -365,12 +443,14 @@ app.post('/api/documents', requireAuth, (req, res) => {
         signedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
         signType: 'Ký duyệt cấp 1',
         status: 'VALID',
-        visualSign: currentUser.signatureImage ? 'Đã đính kèm ảnh chữ ký tay' : 'Chữ ký điện tử cá nhân'
+        placement: signPlacement || 'bottom-left',
+        visualSignImage: currentUser.signatureImage || null,
+        visualSign: currentUser.signatureImage ? 'Đã đính kèm ảnh chữ ký tay trong suốt' : 'Chữ ký điện tử cá nhân'
       }
     ]
   }, currentUser);
 
-  console.log(`[Document] Giáo viên ${currentUser.name} (${currentUser.department}) vừa nộp bài: "${newDoc.title}"`);
+  console.log(`[Document] Giáo viên ${currentUser.name} (${currentUser.department}) vừa nộp bài: "${newDoc.title}" (File: ${newDoc.fileName})`);
   res.json({
     success: true,
     message: 'Nộp kế hoạch bài dạy thành công! Hồ sơ đã được chuyển đến Tổ trưởng chuyên môn duyệt.',
@@ -392,7 +472,7 @@ app.post('/api/documents/:id/approve-leader', requireAuth, (req, res) => {
     return res.status(403).json({ success: false, message: 'Bạn chỉ có quyền duyệt hồ sơ thuộc Tổ chuyên môn của mình!' });
   }
 
-  const { comment } = req.body;
+  const { comment, signPlacement } = req.body;
   const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   const sig = {
@@ -403,6 +483,8 @@ app.post('/api/documents/:id/approve-leader', requireAuth, (req, res) => {
     signedAt: now,
     signType: 'PAdES Incremental Update',
     status: 'VALID',
+    placement: signPlacement || 'middle-right',
+    visualSignImage: currentUser.signatureImage || signatureProfile.leaderSignatureImg || null,
     visualSign: `Ký nháy duyệt chuyên môn: ${comment || 'Đạt yêu cầu phân phối chương trình'}`
   };
 
@@ -440,7 +522,7 @@ app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
   const doc = dataStore.getDocumentById(req.params.id);
   if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
 
-  const { comment } = req.body;
+  const { comment, signPlacement } = req.body;
   const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   const sig = {
@@ -453,6 +535,8 @@ app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
     signedAt: now,
     signType: 'PAdES LTV (VGCA Digital Signature)',
     status: 'VALID',
+    placement: signPlacement || 'bottom-right',
+    visualSignImage: currentUser.signatureImage || signatureProfile.schoolSealImg || null,
     visualSign: `Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ`
   };
 
