@@ -15,5 +15,20 @@ Thumbs.db
 .env
 .env.local
 
-# Temp uploads
+# Temp uploads & cache
 uploads/temp/
+
+# .NET Build artifacts
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
+
+# Google Drive local mirror generated files
+GoogleDrive_KhoTruong/**
+!GoogleDrive_KhoTruong/.gitkeep
+
+# CodeGraph database
+.codegraph/
+*.db

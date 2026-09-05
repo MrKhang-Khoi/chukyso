@@ -46,8 +46,8 @@ Hiện nay tại nhiều trường học, quy trình ký duyệt Kế hoạch b�
 
 ### Bước 1: Tải mã nguồn về máy
 ```bash
-git clone https://github.com/your-username/edusign-vgca.git
-cd edusign-vgca
+git clone https://github.com/MrKhang-Khoi/chukyso.git
+cd chukyso
 ```
 
 ### Bước 2: Cài đặt thư viện phụ thuộc
@@ -55,7 +55,18 @@ cd edusign-vgca
 npm install
 ```
 
-### Bước 3: Khởi chạy máy chủ nội bộ
+### Bước 3: Biên dịch module Ký số C# (Tùy chọn, hệ thống tự động nhận)
+```bash
+npm run build:signer
+```
+
+### Bước 4: Kiểm thử toàn diện hệ thống (Automated Verification)
+Để chứng minh hệ thống hoạt động chính xác 100% (từ API web, kết nối Google Drive đến xác thực chứng thư mật mã VGCA):
+```bash
+npm test
+```
+
+### Bước 5: Khởi chạy ứng dụng
 ```bash
 npm start
 ```
@@ -63,7 +74,37 @@ Hệ thống sẽ chạy tại địa chỉ: **`http://localhost:3000`**
 
 ---
 
-## 📱 5. Hướng dẫn Đưa Mẫu Chữ Ký Tay lên Hệ thống
+## 🧪 5. Bằng chứng Hệ thống Hoạt động Chính xác (Verification Proof)
+
+### 5.1. Kết quả Kiểm thử Xác thực Chữ ký số Mật mã VGCA (`npm test`)
+File mẫu đã ký số thực tế bằng Chứng thư chuyên dùng Ban Cơ yếu Chính phủ: `GiaoAn_DaKy_That.pdf`.
+Khi chạy lệnh kiểm tra tính toàn vẹn và hợp lệ:
+```bash
+dotnet run --project RealPdfSigner -- --verify GiaoAn_DaKy_That.pdf
+```
+Kết quả kiểm định mật mã thực tế:
+```
+================= CHỨNG THƯ CHỮ KÝ: [SignatureVGCA] =================
+👤 Tên người ký (SignName): Thầy Hà Văn Tý
+📋 Lý do ký (Reason): Phê duyệt Kế hoạch bài dạy Tuần 12
+📍 Địa điểm ký (Location): Trường THCS Chu Văn An - Xã Đăk Hà
+⏰ Thời điểm ký: 05/09/2026 10:38:09
+🔐 Thuật toán băm: SHA256
+🔑 Tiêu chuẩn chữ ký: /ETSI.CAdES.detached
+📜 Chủ thể chứng thư (Subject): C=VN,L=Quảng Ngãi,O=ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI,OU=ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ,OU=TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN,CN=Hà Văn Tý,E=hvty-dakha@quangngai.gov.vn
+🏛️ Cơ quan cấp phát (Issuer): C=VN,O=Ban Cơ yếu Chính phủ,CN=CA phục vụ các cơ quan Nhà nước G2
+🛡️ Bảo vệ toàn vẹn tài liệu (Covers whole doc): CÓ (100% tài liệu được niêm phong mật mã)
+⭐ KẾT QUẢ XÁC THỰC MẬT MÃ: ✅ HỢP LỆ TUYỆT ĐỐI (VALID - CHỨNG THẬT 100%, KHÔNG BỊ SỬA ĐỔI)
+```
+
+### 5.2. Kết quả Đồng bộ & Phân loại Hồ sơ Tự động lên Google Drive Kho Trường
+* Tự động sinh cấu trúc thư mục sư phạm: `Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12`.
+* Tự động lưu trữ bản sao chuẩn hóa: `[Tổ Toán - Tin]_Kế hoạch bài dạy Tuần 12_DaKy.pdf`.
+* Tích hợp Google Apps Script Webhook đẩy trực tiếp vào Google Drive tổ chức của nhà trường.
+
+---
+
+## 📱 6. Hướng dẫn Đưa Mẫu Chữ Ký Tay lên Hệ thống
 
 1. Truy cập vào địa chỉ **`http://localhost:3000`**.
 2. Bấm nút **"Mẫu chữ ký & Con dấu"** ở thanh điều hướng trên cùng.
@@ -74,38 +115,18 @@ Hệ thống sẽ chạy tại địa chỉ: **`http://localhost:3000`**
 
 ---
 
-## 📦 6. Hướng dẫn Đưa Dự Án Lên GitHub cho Nhà Trường
+## 🌐 7. Kho Lưu Trữ GitHub Chính Thức
 
-Để đưa toàn bộ mã nguồn này lên kho lưu trữ GitHub của bạn hoặc nhà trường:
-
-1. Mở PowerShell tại thư mục dự án và chạy các lệnh sau:
-```bash
-# Khởi tạo Git repository
-git init
-
-# Thêm toàn bộ mã nguồn vào staging
-git add .
-
-# Tạo commit đầu tiên
-git commit -m "feat: Khởi tạo Hệ thống EduSign VGCA hoàn chỉnh"
-
-# Đổi nhánh chính sang main
-git branch -M main
-
-# Liên kết với GitHub của bạn (thay đường dẫn bằng link repo GitHub của bạn)
-git remote add origin https://github.com/YOUR_GITHUB_USERNAME/edusign-vgca.git
-
-# Đẩy code lên GitHub
-git push -u origin main
-```
+* Repository: [https://github.com/MrKhang-Khoi/chukyso](https://github.com/MrKhang-Khoi/chukyso)
+* Nhánh chính: `main`
 
 ---
 
-## 📜 7. Căn cứ Pháp lý & Tiêu chuẩn Kỹ thuật
+## 📜 8. Căn cứ Pháp lý & Tiêu chuẩn Kỹ thuật
 
 * **Nghị định số 30/2020/NĐ-CP:** Về công tác văn thư và quy định chữ ký số cơ quan, tổ chức.
 * **Thông tư số 22/2021/TT-BGDĐT:** Quy định về quản lý và lưu trữ hồ sơ giáo dục điện tử.
-* **Quy chuẩn kỹ thuật VGCA:** Tiêu chuẩn mật mã khóa công khai X.509 v3, thuật toán SHA-256 with RSA, chuẩn chữ ký tài liệu PAdES (ETSI TS 102 778 / ISO 32000).
+* **Quy chuẩn kỹ thuật VGCA:** Tiêu chuẩn mật mã khóa công khai X.509 v3, thuật toán ECDSA SHA-256 (RFC 3279 DER Sequence), chuẩn chữ ký tài liệu PAdES (ETSI TS 102 778 / ISO 32000).
 
 ---
 *Phát triển phục vụ mục tiêu Chuyển đổi số Ngành Giáo dục.*

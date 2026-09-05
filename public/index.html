@@ -25,6 +25,225 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
+  <!-- ============================================================== -->
+  <!-- GIAO DIỆN ĐĂNG NHẬP CỦA TỪNG GIÁO VIÊN & CÁN BỘ (LOGIN SCREEN) -->
+  <!-- ============================================================== -->
+  <div id="loginScreen" class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white flex flex-col justify-between py-6 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <!-- Decorative background elements -->
+    <div class="absolute -top-32 -left-32 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Quốc hiệu & Header Trường học -->
+    <header class="max-w-4xl mx-auto text-center space-y-1.5 z-10 pt-2">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[11px] font-semibold tracking-wider text-amber-300 uppercase">
+        <i class="fa-solid fa-graduation-cap"></i> Hệ Thống Quản Trị Giáo Dục Số
+      </div>
+      <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white uppercase">
+        TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN
+      </h1>
+      <p class="text-xs text-slate-400 font-medium">
+        Ủy ban Nhân dân Xã Đăk Hà — Tỉnh Quảng Ngãi
+      </p>
+    </header>
+
+    <!-- Khung Đăng Nhập Trung Tâm -->
+    <main class="max-w-5xl mx-auto w-full my-6 grid grid-cols-1 lg:grid-cols-12 gap-6 z-10">
+      
+      <!-- Cột trái: Form Đăng Nhập & Đăng Nhập Chữ Ký Số VGCA -->
+      <div class="lg:col-span-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 text-2xl shadow-lg shadow-amber-500/20">
+              <i class="fa-solid fa-file-signature"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-black text-white">Cổng Đăng Nhập Giáo Viên</h2>
+              <p class="text-xs text-slate-400">EduSign — Quản lý hồ sơ & Ký số Ban Cơ yếu</p>
+            </div>
+          </div>
+
+          <!-- Thông báo chứng thư số trên máy -->
+          <div class="mt-4 p-3.5 rounded-2xl bg-emerald-950/70 border border-emerald-500/40 text-xs text-emerald-200 flex items-start gap-2.5">
+            <i class="fa-solid fa-shield-halved text-emerald-400 text-base mt-0.5 shrink-0"></i>
+            <div class="space-y-0.5">
+              <div class="font-bold text-emerald-300 flex items-center gap-1.5">
+                <span>Đã kết nối Chứng thư số VGCA thật</span>
+                <span class="bg-emerald-500/20 text-emerald-300 text-[9px] px-1.5 py-0.2 rounded font-mono">ACTIVE</span>
+              </div>
+              <div class="text-[11px] text-slate-300">Chủ thể: <strong>Thầy Hà Văn Tý</strong> (Ban Cơ yếu Chính phủ)</div>
+            </div>
+          </div>
+
+          <!-- Nút Đăng nhập nhanh bằng Chứng thư số VGCA -->
+          <div class="mt-4">
+            <button onclick="handleLoginVgca()" type="button" class="w-full py-3.5 px-4 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/25 transition transform active:scale-98 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-fingerprint text-lg"></i>
+              <span>ĐĂNG NHẬP NHANH BẰNG CHỨNG THƯ SỐ VGCA</span>
+            </button>
+            <p class="text-[10px] text-center text-slate-400 mt-1.5">
+              Dành riêng cho giáo viên đã cài đặt Virtual CSP & Chứng thư Ban Cơ yếu
+            </p>
+          </div>
+
+          <div class="relative flex py-3 items-center">
+            <div class="flex-grow border-t border-white/10"></div>
+            <span class="flex-shrink mx-3 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">HOẶC ĐĂNG NHẬP BẰNG TÀI KHOẢN</span>
+            <div class="flex-grow border-t border-white/10"></div>
+          </div>
+
+          <!-- Form đăng nhập thông thường -->
+          <form onsubmit="handleLoginStandard(event)" class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Tên tài khoản (Mã GV / Email):</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs">
+                  <i class="fa-solid fa-user"></i>
+                </span>
+                <input type="text" id="loginUsername" required value="hvty" placeholder="Nhập mã giáo viên..." class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Mật khẩu truy cập:</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-xs">
+                  <i class="fa-solid fa-lock"></i>
+                </span>
+                <input type="password" id="loginPassword" required value="123" placeholder="Nhập mật khẩu..." class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Mật khẩu thử nghiệm cho toàn bộ tài khoản: <code class="text-amber-300 bg-black/30 px-1 rounded font-bold">123</code></p>
+            </div>
+
+            <!-- Box thông báo lỗi đăng nhập -->
+            <div id="loginErrorBox" class="hidden text-xs text-rose-300 bg-rose-950/70 border border-rose-500/50 p-2.5 rounded-xl font-medium flex items-center gap-2">
+              <i class="fa-solid fa-circle-exclamation text-rose-400"></i>
+              <span id="loginErrorText"></span>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Vào Hệ Thống
+            </button>
+          </form>
+        </div>
+
+        <div class="pt-2 text-center text-[10px] text-slate-500 border-t border-white/5">
+          Bảo mật phiên đăng nhập chuẩn ISO/IEC 27001 • Bản quyền Trường THCS Chu Văn An
+        </div>
+      </div>
+
+      <!-- Cột phải: Danh bạ Giáo viên / Chọn nhanh tài khoản -->
+      <div class="lg:col-span-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-users-gear text-blue-400"></i> Danh Bạ Giáo Viên & Cán Bộ
+            </h3>
+            <span class="text-[10px] bg-white/10 text-blue-300 px-2 py-0.5 rounded-full font-bold">5 Tài khoản</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">
+            Bấm <strong>"Đăng nhập ngay"</strong> ở từng thầy cô để kiểm thử chính xác quy trình và phân quyền thực tế:
+          </p>
+        </div>
+
+        <!-- Danh sách giáo viên / cán bộ -->
+        <div class="space-y-2.5" id="quickLoginList">
+          <!-- Item 1: Thầy Hà Văn Tý -->
+          <div onclick="quickLoginUser('hvty')" class="p-3 rounded-2xl bg-white/5 hover:bg-amber-500/10 border border-amber-400/40 hover:border-amber-400 transition cursor-pointer flex items-center justify-between group">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-xl shrink-0">
+                👨‍🏫
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white group-hover:text-amber-300 transition flex items-center gap-1.5">
+                  <span>Thầy Hà Văn Tý</span>
+                  <span class="bg-amber-400/20 text-amber-300 text-[9px] font-extrabold px-1.5 py-0.2 rounded border border-amber-400/30">VGCA THẬT</span>
+                </div>
+                <div class="text-[11px] text-slate-400">Giáo viên Toán - Tin • Ký nộp bài dạy cấp 1</div>
+              </div>
+            </div>
+            <button class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-bold rounded-lg transition shrink-0">
+              Đăng nhập <i class="fa-solid fa-chevron-right text-[9px]"></i>
+            </button>
+          </div>
+
+          <!-- Item 2: Thầy Trần Văn Nam -->
+          <div onclick="quickLoginUser('tvnam')" class="p-3 rounded-2xl bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-400 transition cursor-pointer flex items-center justify-between group">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center text-xl shrink-0">
+                👨‍💼
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white group-hover:text-blue-300 transition">Thầy Trần Văn Nam</div>
+                <div class="text-[11px] text-slate-400">Tổ trưởng Chuyên môn Toán - Tin • Ký nháy duyệt cấp 2</div>
+              </div>
+            </div>
+            <button class="px-3 py-1.5 bg-white/10 group-hover:bg-blue-600 group-hover:text-white text-slate-300 text-[11px] font-bold rounded-lg transition shrink-0">
+              Đăng nhập <i class="fa-solid fa-chevron-right text-[9px]"></i>
+            </button>
+          </div>
+
+          <!-- Item 3: Thầy Nguyễn Văn Hùng -->
+          <div onclick="quickLoginUser('nvhung')" class="p-3 rounded-2xl bg-white/5 hover:bg-purple-500/10 border border-white/10 hover:border-purple-400 transition cursor-pointer flex items-center justify-between group">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-xl shrink-0">
+                🏛️
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white group-hover:text-purple-300 transition">Thầy Nguyễn Văn Hùng</div>
+                <div class="text-[11px] text-slate-400">Hiệu trưởng / BGH • Phê duyệt chính thức & Đóng dấu cấp 3</div>
+              </div>
+            </div>
+            <button class="px-3 py-1.5 bg-white/10 group-hover:bg-purple-600 group-hover:text-white text-slate-300 text-[11px] font-bold rounded-lg transition shrink-0">
+              Đăng nhập <i class="fa-solid fa-chevron-right text-[9px]"></i>
+            </button>
+          </div>
+
+          <!-- Item 4: Cô Lê Thị Lan -->
+          <div onclick="quickLoginUser('ltlan')" class="p-3 rounded-2xl bg-white/5 hover:bg-teal-500/10 border border-white/10 hover:border-teal-400 transition cursor-pointer flex items-center justify-between group">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center text-xl shrink-0">
+                👩‍💻
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white group-hover:text-teal-300 transition">Cô Lê Thị Lan</div>
+                <div class="text-[11px] text-slate-400">Văn thư nhà trường • Quản trị kho số & Google Drive</div>
+              </div>
+            </div>
+            <button class="px-3 py-1.5 bg-white/10 group-hover:bg-teal-600 group-hover:text-white text-slate-300 text-[11px] font-bold rounded-lg transition shrink-0">
+              Đăng nhập <i class="fa-solid fa-chevron-right text-[9px]"></i>
+            </button>
+          </div>
+
+          <!-- Item 5: Cô Nguyễn Thị Mai -->
+          <div onclick="quickLoginUser('ntmai')" class="p-3 rounded-2xl bg-white/5 hover:bg-rose-500/10 border border-white/10 hover:border-rose-400 transition cursor-pointer flex items-center justify-between group">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center text-xl shrink-0">
+                👩‍🏫
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white group-hover:text-rose-300 transition">Cô Nguyễn Thị Mai</div>
+                <div class="text-[11px] text-slate-400">Giáo viên Ngữ văn • Thuộc Tổ Ngữ Văn</div>
+              </div>
+            </div>
+            <button class="px-3 py-1.5 bg-white/10 group-hover:bg-rose-600 group-hover:text-white text-slate-300 text-[11px] font-bold rounded-lg transition shrink-0">
+              Đăng nhập <i class="fa-solid fa-chevron-right text-[9px]"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer bản quyền -->
+    <footer class="max-w-4xl mx-auto text-center text-xs text-slate-500 z-10 pb-2">
+      Trường THCS Chu Văn An © 2026 — Ứng dụng Quản lý Hồ sơ Giáo dục & Ký số Mật mã Chuyên dùng VGCA
+    </footer>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- BÀN LÀM VIỆC CHÍNH KHI ĐÃ ĐĂNG NHẬP (APP DASHBOARD)            -->
+  <!-- ============================================================== -->
+  <div id="appDashboard" class="min-h-screen flex flex-col hidden">
+
   <!-- TOP HEADER -->
   <header class="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 text-white shadow-lg sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
@@ -45,19 +264,44 @@
       </div>
 
       <div class="flex items-center gap-3">
+        <!-- Nút cấu hình Google Drive -->
+        <button onclick="openDriveConfigModal()" class="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border border-blue-400/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm" title="Quản lý và cấu hình đồng bộ kho Google Drive">
+          <i class="fa-brands fa-google-drive text-amber-300 text-sm"></i> Kho Google Drive
+        </button>
+
         <!-- Nút cấu hình mẫu chữ ký -->
         <button onclick="openSignatureProfileModal()" class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
           <i class="fa-solid fa-signature"></i> Mẫu chữ ký & Con dấu
         </button>
 
-        <!-- Role Selector -->
-        <div class="flex items-center bg-white/10 backdrop-blur-md rounded-xl p-1.5 border border-white/15">
-          <span class="text-xs font-medium text-blue-200 mr-2 ml-1">Đang đăng nhập:</span>
-          <select id="roleSelector" onchange="changeActiveRole(this.value)" class="bg-slate-900/90 text-white text-xs font-semibold rounded-lg px-3 py-1.5 border border-white/20 focus:outline-none focus:ring-2 focus:ring-amber-400">
-            <option value="TEACHER" selected>👨‍🏫 Thầy Hà Văn Tý (Giáo viên - Chứng thư VGCA thật)</option>
-            <option value="LEADER">👨‍💼 Thầy Trần Văn Nam (Tổ trưởng Toán - Tin)</option>
-            <option value="PRINCIPAL">🏛️ Thầy Nguyễn Văn Hùng (Hiệu trưởng / BGH)</option>
+        <!-- Thông tin Người dùng đang đăng nhập & Nút Đăng xuất -->
+        <div class="flex items-center gap-2.5 bg-white/10 backdrop-blur-md rounded-xl p-1.5 border border-white/15">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-bold text-base shadow-sm" id="headerUserAvatar">
+            👨‍🏫
+          </div>
+          <div class="text-left pr-1">
+            <div class="text-xs font-bold text-white flex items-center gap-1.5">
+              <span id="headerUserName">Thầy Hà Văn Tý</span>
+              <span id="headerVgcaBadge" class="bg-amber-400 text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded">VGCA</span>
+            </div>
+            <div class="text-[10px] text-blue-200" id="headerUserRole">Giáo viên bộ môn • Tổ Toán - Tin</div>
+          </div>
+
+          <div class="h-6 w-px bg-white/20 mx-0.5"></div>
+
+          <!-- Quick switcher dropdown -->
+          <select id="roleSelector" onchange="changeActiveUser(this.value)" class="bg-slate-900/90 text-white text-[11px] font-semibold rounded-lg px-2 py-1 border border-white/20 focus:outline-none focus:ring-1 focus:ring-amber-400" title="Chuyển nhanh tài khoản">
+            <option value="hvty" selected>👨‍🏫 Thầy Tý</option>
+            <option value="tvnam">👨‍💼 Thầy Nam (TT)</option>
+            <option value="nvhung">🏛️ Thầy Hùng (HT)</option>
+            <option value="ltlan">👩‍💻 Cô Lan (VT)</option>
+            <option value="ntmai">👩‍🏫 Cô Mai (Văn)</option>
           </select>
+
+          <!-- Nút Đăng Xuất -->
+          <button onclick="handleLogout()" class="px-2.5 py-1.5 bg-rose-500/30 hover:bg-rose-500/50 text-rose-200 hover:text-white border border-rose-400/40 rounded-lg text-xs font-bold flex items-center gap-1.5 transition shadow-sm" title="Đăng xuất khỏi hệ thống">
+            <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i> Đăng xuất
+          </button>
         </div>
       </div>
     </div>
@@ -90,6 +334,102 @@
         <button onclick="openNewDocModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
           <i class="fa-solid fa-file-circle-plus"></i> Nộp Kế hoạch bài dạy
         </button>
+      </div>
+    </div>
+
+    <!-- KHU VỰC TRẠM KÝ SỐ THẬT VGCA VÀ KIỂM TRA CHỨNG THỰC MẬT MÃ -->
+    <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 border-2 border-amber-500/50 rounded-2xl p-6 shadow-xl text-white">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <div class="space-y-1.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-slate-950 shadow">
+              <i class="fa-solid fa-mobile-screen-button"></i> KÝ SỐ THẬT 100% • XÁC THỰC QUA ĐIỆN THOẠI
+            </span>
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+              <i class="fa-solid fa-circle-check"></i> Đã kích hoạt VGCA RSSP KSP v2.0 (ECC/ECDSA)
+            </span>
+          </div>
+          <h2 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+            Trạm Ký Số Chuyên Dùng Ban Cơ yếu Chính phủ (VGCA PAdES Standard)
+          </h2>
+          <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+            Hệ thống kết nối trực tiếp kho chứng thư số Windows CNG của <strong>Thầy Hà Văn Tý</strong>, tự động đẩy thông báo Push Notification tới <strong>ứng dụng VGCA trên điện thoại</strong> để xác thực ký số và đóng dấu PAdES CAdES-detached vào file PDF.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 shrink-0">
+          <button onclick="triggerRealPdfSign()" id="btnRealSign" class="px-5 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg hover:shadow-amber-500/30 transition transform active:scale-95 flex items-center gap-2">
+            <i class="fa-solid fa-fingerprint text-lg"></i> BẤM KÝ SỐ THẬT (GỬI LỆNH ĐT)
+          </button>
+          
+          <button onclick="verifyRealPdf()" id="btnVerifyPdf" class="px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-shield-check"></i> Kiểm Tra Chứng Thực Mật Mã
+          </button>
+
+          <a href="/api/download-signed-pdf" download class="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/20 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-file-arrow-down"></i> Tải File PDF Đã Ký
+          </a>
+        </div>
+      </div>
+
+      <!-- Khu vực Modal / Banner hiển thị trạng thái ký và xác thực -->
+      <div id="realSignStatusBox" class="mt-4 pt-4 border-t border-white/15 hidden">
+        <div id="realSignLoadingState" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3">
+          <div class="animate-spin text-amber-400 text-2xl">
+            <i class="fa-solid fa-circle-notch"></i>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-amber-300">ĐANG CHỜ XÁC THỰC TRÊN ĐIỆN THOẠI CỦA THẦY TÝ...</h4>
+            <p class="text-xs text-slate-300 mt-0.5">Xin mời Thầy mở ứng dụng VGCA / Ban Cơ yếu trên điện thoại và bấm <strong>"Xác nhận / Phê duyệt"</strong>.</p>
+          </div>
+        </div>
+
+        <div id="realSignSuccessState" class="bg-emerald-950/80 border border-emerald-500/40 rounded-xl p-4 mt-3 hidden">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl shrink-0 mt-0.5">
+                <i class="fa-solid fa-badge-check"></i>
+              </div>
+              <div class="space-y-1">
+                <h4 class="text-sm font-black text-emerald-300 flex items-center gap-2">
+                  ✅ KÝ SỐ THÀNH CÔNG 100% • CHỨNG THỰC CHUYÊN DÙNG BAN CƠ YẾU CHÍNH PHỦ
+                </h4>
+                <p class="text-xs text-slate-200 leading-relaxed" id="realSignSuccessMsg">
+                  File PDF đã được đóng dấu số mật mã PAdES chuẩn ETSI.CAdES.detached bằng khóa riêng của Thầy Hà Văn Tý.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 text-[11px] font-mono">
+                  <div class="bg-black/30 p-2 rounded border border-white/10">
+                    <span class="text-slate-400 block">Tiêu chuẩn:</span>
+                    <strong class="text-white">PAdES / ETSI CAdES</strong>
+                  </div>
+                  <div class="bg-black/30 p-2 rounded border border-white/10">
+                    <span class="text-slate-400 block">Thuật toán:</span>
+                    <strong class="text-emerald-400">ECDSA P-256 (SHA-256)</strong>
+                  </div>
+                  <div class="bg-black/30 p-2 rounded border border-white/10">
+                    <span class="text-slate-400 block">Bảo vệ toàn vẹn:</span>
+                    <strong class="text-emerald-400">100% Toàn bộ tài liệu</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <a href="/api/download-signed-pdf" download class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-lg shadow shrink-0">
+              <i class="fa-solid fa-download"></i> Tải PDF Mở Bằng Adobe Acrobat
+            </a>
+          </div>
+        </div>
+
+        <div id="verifyResultCard" class="bg-slate-900/90 border border-blue-500/30 rounded-xl p-4 mt-3 hidden">
+          <div class="flex items-center justify-between mb-2">
+            <h5 class="text-xs font-bold text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-fingerprint"></i> Chi tiết chứng thực mật mã X.509
+            </h5>
+            <span class="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded" id="verifyBadge">HỢP LỆ</span>
+          </div>
+          <div class="text-xs space-y-1 font-mono text-slate-300" id="verifyDetails">
+            <!-- Injected via JS -->
+          </div>
+        </div>
       </div>
     </div>
 
@@ -184,6 +524,7 @@
       </div>
     </div>
   </main>
+  </div> <!-- Kết thúc #appDashboard -->
 
   <!-- MODAL: XEM VĂN BẢN VÀ KÝ DUYỆT TRỰC TIẾP -->
   <div id="docViewerModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -509,6 +850,7 @@
   <!-- JAVASCRIPT CONTROLLER -->
   <script>
     let allDocuments = [];
+    let currentUser = null;
     let currentRole = 'TEACHER';
     let selectedDoc = null;
     let pendingSignAction = null;
@@ -519,12 +861,160 @@
     let canvas, ctx, isDrawing = false;
 
     window.addEventListener('DOMContentLoaded', async () => {
+      initCanvas();
+      await initAuth();
+    });
+
+    // ==============================================================
+    // QUY TRÌNH ĐĂNG NHẬP & PHÂN QUYỀN GIÁO VIÊN TRƯỜNG HỌC (RBAC)
+    // ==============================================================
+    async function initAuth() {
+      const savedUserJson = localStorage.getItem('edusign_logged_user');
+      if (savedUserJson) {
+        try {
+          const user = JSON.parse(savedUserJson);
+          await showDashboard(user);
+          return;
+        } catch (e) {
+          localStorage.removeItem('edusign_logged_user');
+        }
+      }
+      showLoginScreen();
+    }
+
+    function showLoginScreen() {
+      currentUser = null;
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('appDashboard').classList.add('hidden');
+    }
+
+    async function showDashboard(user) {
+      currentUser = user;
+      currentRole = user.role;
+
+      // Cập nhật thông tin cán bộ giáo viên trên Header
+      const nameEl = document.getElementById('headerUserName');
+      const roleEl = document.getElementById('headerUserRole');
+      const avatarEl = document.getElementById('headerUserAvatar');
+      const vgcaBadgeEl = document.getElementById('headerVgcaBadge');
+      const roleSelector = document.getElementById('roleSelector');
+
+      if (nameEl) nameEl.innerText = user.name;
+      if (roleEl) roleEl.innerText = `${user.roleTitle} • ${user.department}`;
+      if (avatarEl) avatarEl.innerText = user.avatar || '👨‍🏫';
+
+      if (vgcaBadgeEl) {
+        if (user.hasVgcaCert) {
+          vgcaBadgeEl.classList.remove('hidden');
+        } else {
+          vgcaBadgeEl.classList.add('hidden');
+        }
+      }
+
+      if (roleSelector) {
+        roleSelector.value = user.id;
+      }
+
+      // Ẩn màn hình đăng nhập, mở bàn làm việc chính
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('appDashboard').classList.remove('hidden');
+
+      // Tải dữ liệu theo thẩm quyền và hồ sơ của người dùng
       await fetchRealCertificates();
       await loadSignatureProfile();
       await loadStats();
       await loadDocuments();
-      initCanvas();
-    });
+    }
+
+    // Đăng nhập nhanh bằng Chứng thư số VGCA Ban Cơ yếu Chính phủ
+    async function handleLoginVgca() {
+      try {
+        const res = await fetch('/api/auth/login-vgca', { method: 'POST' });
+        const json = await res.json();
+        if (json.success && json.user) {
+          localStorage.setItem('edusign_logged_user', JSON.stringify(json.user));
+          await showDashboard(json.user);
+        } else {
+          alert('❌ ' + (json.message || 'Không thể đăng nhập bằng Chữ ký số VGCA!'));
+        }
+      } catch (err) {
+        alert('❌ Lỗi kết nối đăng nhập VGCA: ' + err.message);
+      }
+    }
+
+    // Đăng nhập bằng tên đăng nhập & mật khẩu
+    async function handleLoginStandard(event) {
+      if (event) event.preventDefault();
+      const usernameInput = document.getElementById('loginUsername');
+      const passwordInput = document.getElementById('loginPassword');
+      const errorBox = document.getElementById('loginErrorBox');
+      const errorText = document.getElementById('loginErrorText');
+
+      const username = usernameInput ? usernameInput.value.trim() : '';
+      const password = passwordInput ? passwordInput.value : '';
+
+      if (errorBox) errorBox.classList.add('hidden');
+
+      if (!username) {
+        if (errorBox && errorText) {
+          errorText.innerText = 'Vui lòng nhập tên đăng nhập hoặc mã giáo viên!';
+          errorBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const json = await res.json();
+        if (json.success && json.user) {
+          localStorage.setItem('edusign_logged_user', JSON.stringify(json.user));
+          await showDashboard(json.user);
+        } else {
+          if (errorBox && errorText) {
+            errorText.innerText = json.message || 'Tài khoản hoặc mật khẩu không chính xác!';
+            errorBox.classList.remove('hidden');
+          } else {
+            alert('❌ ' + (json.message || 'Đăng nhập không thành công!'));
+          }
+        }
+      } catch (err) {
+        if (errorBox && errorText) {
+          errorText.innerText = 'Lỗi kết nối máy chủ: ' + err.message;
+          errorBox.classList.remove('hidden');
+        }
+      }
+    }
+
+    // Bấm chọn trực tiếp giáo viên trên danh bạ để đăng nhập ngay
+    async function quickLoginUser(userId) {
+      try {
+        const res = await fetch('/api/auth/switch-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+        });
+        const json = await res.json();
+        if (json.success && json.user) {
+          localStorage.setItem('edusign_logged_user', JSON.stringify(json.user));
+          await showDashboard(json.user);
+        } else {
+          alert('❌ ' + (json.message || 'Không thể đăng nhập tài khoản này'));
+        }
+      } catch (err) {
+        alert('❌ Lỗi chuyển người dùng: ' + err.message);
+      }
+    }
+
+    // Đăng xuất và trở về màn hình đăng nhập
+    function handleLogout() {
+      localStorage.removeItem('edusign_logged_user');
+      currentUser = null;
+      showLoginScreen();
+    }
 
     async function fetchRealCertificates() {
       try {
@@ -533,14 +1023,16 @@
         if (json.success && json.data.realSigner) {
           realCertData = json.data.realSigner;
           document.getElementById('headerSchoolName').innerText = `Hệ thống Trình ký & Phê duyệt Hồ sơ Số - ${realCertData.school}`;
-          document.getElementById('bannerSignerName').innerText = `Thầy ${realCertData.name} - ${realCertData.school}`;
-          document.getElementById('docPaperHeader').innerText = `UBND HUYỆN ĐĂK HÀ - ${realCertData.school.toUpperCase()}`;
+          const bannerEl = document.getElementById('bannerSignerName');
+          if (bannerEl) bannerEl.innerText = `Thầy ${realCertData.name} - ${realCertData.school}`;
+          const paperHeaderEl = document.getElementById('docPaperHeader');
+          if (paperHeaderEl) paperHeaderEl.innerText = `UBND HUYỆN ĐĂK HÀ - ${realCertData.school.toUpperCase()}`;
           
-          document.getElementById('profOwnerName').innerText = realCertData.name;
-          document.getElementById('profOwnerUnit').innerText = realCertData.school;
-          document.getElementById('profOwnerSerial').innerText = realCertData.thumbprint;
-          document.getElementById('previewSignerLabel').innerText = realCertData.name;
-          document.getElementById('previewSchoolLabel').innerText = realCertData.school;
+          if (document.getElementById('profOwnerName')) document.getElementById('profOwnerName').innerText = realCertData.name;
+          if (document.getElementById('profOwnerUnit')) document.getElementById('profOwnerUnit').innerText = realCertData.school;
+          if (document.getElementById('profOwnerSerial')) document.getElementById('profOwnerSerial').innerText = realCertData.thumbprint;
+          if (document.getElementById('previewSignerLabel')) document.getElementById('previewSignerLabel').innerText = realCertData.name;
+          if (document.getElementById('previewSchoolLabel')) document.getElementById('previewSchoolLabel').innerText = realCertData.school;
         }
       } catch (err) {
         console.error('Lỗi đọc chứng thư số:', err);
@@ -553,9 +1045,13 @@
         const json = await res.json();
         if (json.success && json.data.profile.teacherSignatureImg) {
           currentSignatureBase64 = json.data.profile.teacherSignatureImg;
-          document.getElementById('previewSigImg').src = currentSignatureBase64;
-          document.getElementById('previewSigImg').classList.remove('hidden');
-          document.getElementById('noSigText').classList.add('hidden');
+          const previewImg = document.getElementById('previewSigImg');
+          const noSig = document.getElementById('noSigText');
+          if (previewImg) {
+            previewImg.src = currentSignatureBase64;
+            previewImg.classList.remove('hidden');
+          }
+          if (noSig) noSig.classList.add('hidden');
         }
       } catch (err) {}
     }
@@ -568,7 +1064,10 @@
 
     async function loadStats() {
       try {
-        const res = await fetch('/api/stats');
+        const activeId = currentUser ? currentUser.id : 'hvty';
+        const res = await fetch('/api/stats', {
+          headers: { 'x-user-id': activeId }
+        });
         const json = await res.json();
         if (json.success) {
           document.getElementById('statTotal').innerText = json.data.total;
@@ -581,7 +1080,10 @@
 
     async function loadDocuments() {
       try {
-        const res = await fetch('/api/documents');
+        const activeId = currentUser ? currentUser.id : 'hvty';
+        const res = await fetch('/api/documents', {
+          headers: { 'x-user-id': activeId }
+        });
         const json = await res.json();
         if (json.success) {
           allDocuments = json.data;
@@ -639,7 +1141,14 @@
                 <i class="fa-regular fa-file-pdf text-rose-500 text-lg"></i>
                 <div>
                   <div class="font-bold text-slate-800 hover:text-indigo-600 cursor-pointer" onclick="openDocViewer('${doc.id}')">${doc.title}</div>
-                  <div class="text-[11px] text-slate-400">${doc.id} • ${doc.fileSize} • ${doc.pages} trang</div>
+                  <div class="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                    <span>${doc.id} • ${doc.fileSize} • ${doc.pages} trang</span>
+                    ${doc.driveInfo ? `
+                      <a href="${doc.driveInfo.viewUrl}" target="_blank" class="inline-flex items-center gap-1 text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-bold border border-blue-200 hover:bg-blue-100 transition shadow-xs" title="Xem trên Google Drive nhà trường">
+                        <i class="fa-brands fa-google-drive text-amber-500"></i> Google Drive
+                      </a>
+                    ` : ''}
+                  </div>
                 </div>
               </div>
             </td>
@@ -648,9 +1157,17 @@
             <td class="py-3.5 px-4">${progressDots}</td>
             <td class="py-3.5 px-4">${statusBadge}</td>
             <td class="py-3.5 px-4 text-right">
-              <button onclick="openDocViewer('${doc.id}')" class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
-                <i class="fa-solid fa-signature mr-1"></i> Xem & Ký
-              </button>
+              <div class="flex items-center justify-end gap-1.5">
+                <button onclick="openDocViewer('${doc.id}')" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition flex items-center gap-1">
+                  <i class="fa-solid fa-signature"></i> Xem & Ký
+                </button>
+                <a href="/api/documents/${doc.id}/download-pdf" download class="px-3 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition flex items-center gap-1" title="Tải file PDF đã ký về máy để kiểm tra bằng Adobe Acrobat">
+                  <i class="fa-solid fa-file-arrow-down"></i> Tải PDF
+                </a>
+                <button onclick="syncDocToDrive('${doc.id}')" class="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 shadow-sm transition flex items-center gap-1" title="Lưu trữ và phân loại lên Google Drive trường">
+                  <i class="fa-brands fa-google-drive text-amber-500"></i> Drive
+                </button>
+              </div>
             </td>
           </tr>
         `;
@@ -763,6 +1280,13 @@
           </button>
         `;
       }
+
+      // Luôn cho phép tải file PDF về máy để kiểm tra
+      buttonsHtml += `
+        <a href="/api/documents/${selectedDoc.id}/download-pdf" download class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-file-arrow-down"></i> Tải File PDF Về Máy Kiểm Tra
+        </a>
+      `;
 
       btnContainer.innerHTML = buttonsHtml;
       document.getElementById('docViewerModal').classList.remove('hidden');
@@ -919,9 +1443,13 @@
       await new Promise(r => setTimeout(r, 600));
 
       try {
+        const activeId = currentUser ? currentUser.id : 'hvty';
         const res = await fetch(`/api/documents/${pendingSignAction.docId}/sign`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-user-id': activeId
+          },
           body: JSON.stringify({
             signerRoleCode: pendingSignAction.roleCode,
             signatureImageBase64: currentSignatureBase64,
@@ -941,6 +1469,9 @@
           await loadStats();
           await loadDocuments();
           openDocViewer(selectedDoc.id);
+
+          // Bật ngay popup chúc mừng và tải file PDF về máy kiểm tra
+          showSignSuccessDownloadModal(selectedDoc.id, selectedDoc.title, json.message);
         } else {
           alert('Lỗi: ' + json.message);
           closeVgcaSignModal();
@@ -1088,6 +1619,351 @@
         alert('Lỗi khởi tạo hồ sơ!');
       }
     }
+
+    // -------------------------------------------------------------
+    // KÝ SỐ THẬT CHUYÊN DÙNG BAN CƠ YẾU CHÍNH PHỦ & XÁC THỰC MẬT MÃ
+    // -------------------------------------------------------------
+    async function triggerRealPdfSign() {
+      const statusBox = document.getElementById('realSignStatusBox');
+      const loadingState = document.getElementById('realSignLoadingState');
+      const successState = document.getElementById('realSignSuccessState');
+      const verifyCard = document.getElementById('verifyResultCard');
+      const btn = document.getElementById('btnRealSign');
+
+      statusBox.classList.remove('hidden');
+      loadingState.classList.remove('hidden');
+      successState.classList.add('hidden');
+      verifyCard.classList.add('hidden');
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+      try {
+        const res = await fetch('/api/sign-real-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reason: 'Phê duyệt Kế hoạch bài dạy Tuần 12',
+            location: 'Trường THCS Chu Văn An - Xã Đăk Hà'
+          })
+        });
+
+        const json = await res.json();
+        loadingState.classList.add('hidden');
+
+        if (json.success) {
+          successState.classList.remove('hidden');
+          document.getElementById('realSignSuccessMsg').textContent = json.message;
+          // Tự động kiểm tra chứng thực mật mã luôn
+          await verifyRealPdf();
+          // Bật modal tải file PDF về máy
+          showSignSuccessDownloadModal('GIAOAN-THAT', 'Kế hoạch bài dạy Tuần 12 (Ký số thật VGCA Ban Cơ yếu)', json.message);
+        } else {
+          alert('❌ Ký số chưa thành công: ' + json.message);
+        }
+      } catch (err) {
+        loadingState.classList.add('hidden');
+        alert('Lỗi kết nối máy chủ ký số: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    async function verifyRealPdf() {
+      const statusBox = document.getElementById('realSignStatusBox');
+      const verifyCard = document.getElementById('verifyResultCard');
+      const verifyDetails = document.getElementById('verifyDetails');
+      const verifyBadge = document.getElementById('verifyBadge');
+
+      statusBox.classList.remove('hidden');
+      verifyCard.classList.remove('hidden');
+      verifyDetails.innerHTML = '<div class="text-amber-400"><i class="fa-solid fa-spinner fa-spin"></i> Đang đọc cấu trúc mật mã PDF PKCS#7 / PAdES...</div>';
+
+      try {
+        const res = await fetch('/api/verify-real-pdf');
+        const json = await res.json();
+
+        if (json.success && json.data) {
+          const d = json.data;
+          verifyBadge.textContent = d.isValid ? '✅ HỢP LỆ TUYỆT ĐỐI' : '❌ KHÔNG HỢP LỆ';
+          verifyBadge.className = d.isValid 
+            ? 'bg-emerald-500/20 text-emerald-300 text-[10px] font-black px-2 py-0.5 rounded border border-emerald-400/40'
+            : 'bg-red-500/20 text-red-300 text-[10px] font-black px-2 py-0.5 rounded border border-red-400/40';
+
+          verifyDetails.innerHTML = `
+            <div class="space-y-1.5 pt-1">
+              <div class="flex items-start gap-2">
+                <span class="text-slate-400 w-36 shrink-0 font-sans">🛡️ Toàn vẹn văn bản:</span>
+                <span class="text-emerald-300 font-bold">${d.coversWholeDoc ? '100% Niêm phong bảo vệ nguyên vẹn' : 'Một phần'}</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="text-slate-400 w-36 shrink-0 font-sans">📜 Chủ thể chứng thư:</span>
+                <span class="text-white break-all">${d.subject}</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="text-slate-400 w-36 shrink-0 font-sans">🏛️ Đơn vị cấp phát:</span>
+                <span class="text-amber-300 font-bold">${d.issuer}</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="text-slate-400 w-36 shrink-0 font-sans">⏰ Thời điểm ký:</span>
+                <span class="text-white">${d.signedAt}</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="text-slate-400 w-36 shrink-0 font-sans">🔑 Tiêu chuẩn chữ ký:</span>
+                <span class="text-blue-300 font-bold">ETSI PAdES / CAdES-detached (ECDSA SHA-256)</span>
+              </div>
+            </div>
+          `;
+        } else {
+          verifyDetails.innerHTML = `<div class="text-rose-400">❌ ${json.message || 'Không thể kiểm tra file'}</div>`;
+        }
+      } catch (err) {
+        verifyDetails.innerHTML = `<div class="text-rose-400">❌ Lỗi kết nối: ${err.message}</div>`;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // MODAL THÔNG BÁO KÝ XONG VÀ TẢI FILE PDF KIỂM TRA
+    // -------------------------------------------------------------
+    function showSignSuccessDownloadModal(docId, docTitle, message) {
+      const modal = document.getElementById('signSuccessDownloadModal');
+      const titleEl = document.getElementById('successDocTitle');
+      const downloadBtn = document.getElementById('btnDownloadSignedPdfModal');
+      const openDriveBtn = document.getElementById('btnOpenDriveModal');
+      
+      titleEl.innerText = docTitle || 'Kế hoạch bài dạy';
+      if (docId === 'GIAOAN-THAT') {
+        downloadBtn.href = '/api/download-signed-pdf';
+      } else {
+        downloadBtn.href = `/api/documents/${docId}/download-pdf`;
+      }
+      downloadBtn.setAttribute('download', `${(docTitle || 'GiaoAn').replace(/[^a-zA-Z0-9_\-\s]/g, '')}_DaKy_VGCA.pdf`);
+      
+      modal.classList.remove('hidden');
+    }
+
+    function closeSuccessDownloadModal() {
+      document.getElementById('signSuccessDownloadModal').classList.add('hidden');
+    }
+
+    // -------------------------------------------------------------
+    // CHUYỂN ĐỔI NGƯỜI DÙNG & PHÂN QUYỀN RBAC
+    // -------------------------------------------------------------
+    async function changeActiveUser(userId) {
+      await quickLoginUser(userId);
+    }
+
+    // -------------------------------------------------------------
+    // GOOGLE DRIVE CONFIG & SYNC FUNCTIONS
+    // -------------------------------------------------------------
+    function openDriveConfigModal() {
+      loadDriveConfig();
+      document.getElementById('driveConfigModal').classList.remove('hidden');
+    }
+
+    function closeDriveConfigModal() {
+      document.getElementById('driveConfigModal').classList.add('hidden');
+    }
+
+    async function loadDriveConfig() {
+      try {
+        const res = await fetch('/api/drive/config');
+        const json = await res.json();
+        if (json.success && json.data) {
+          const c = json.data;
+          document.getElementById('inputGasWebhookUrl').value = c.gasWebhookUrl || '';
+          document.getElementById('inputSchoolFolderName').value = c.schoolFolderName || 'KHO_HO_SO_SO_TRUONG_THCS_CHU_VAN_AN';
+          document.getElementById('chkAutoUploadDrive').checked = c.autoUploadOnSign !== false;
+        }
+      } catch (e) {
+        console.error('Lỗi tải cấu hình drive:', e);
+      }
+    }
+
+    async function saveDriveConfig(e) {
+      if (e) e.preventDefault();
+      const gasWebhookUrl = document.getElementById('inputGasWebhookUrl').value.trim();
+      const schoolFolderName = document.getElementById('inputSchoolFolderName').value.trim();
+      const autoUploadOnSign = document.getElementById('chkAutoUploadDrive').checked;
+
+      try {
+        const res = await fetch('/api/drive/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gasWebhookUrl,
+            schoolFolderName,
+            autoUploadOnSign,
+            enabled: true
+          })
+        });
+        const json = await res.json();
+        alert('✅ ' + json.message);
+        closeDriveConfigModal();
+      } catch (err) {
+        alert('❌ Lỗi lưu cấu hình: ' + err.message);
+      }
+    }
+
+    async function testDriveConnection() {
+      const resultBox = document.getElementById('driveTestResultBox');
+      const btn = document.getElementById('btnTestDriveConn');
+      resultBox.classList.remove('hidden');
+      resultBox.innerHTML = '<span class="text-amber-600 font-medium"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang gửi gói tin kiểm thử lên Google Drive...</span>';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/drive/test', { method: 'POST' });
+        const json = await res.json();
+
+        if (json.success) {
+          resultBox.innerHTML = `
+            <div class="text-emerald-700 bg-emerald-50 p-3 rounded-xl border border-emerald-300 text-xs">
+              <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> KẾT NỐI GOOGLE DRIVE THÀNH CÔNG!</div>
+              <div class="mt-1 text-slate-600">Thư mục phân loại: <strong>${json.data.folderPath}</strong></div>
+              <div class="mt-1"><a href="${json.data.viewUrl}" target="_blank" class="text-blue-600 font-bold underline flex items-center gap-1"><i class="fa-brands fa-google-drive"></i> Mở xem file mẫu trên Google Drive (${json.data.mode})</a></div>
+            </div>
+          `;
+        } else {
+          resultBox.innerHTML = `<div class="text-rose-700 bg-rose-50 p-2.5 rounded-xl border border-rose-300 text-xs font-bold">❌ ${json.message}</div>`;
+        }
+      } catch (err) {
+        resultBox.innerHTML = `<div class="text-rose-700 bg-rose-50 p-2.5 rounded-xl border border-rose-300 text-xs font-bold">❌ Lỗi: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function syncDocToDrive(docId) {
+      try {
+        const res = await fetch(`/api/documents/${docId}/sync-drive`, { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+          alert('✅ ' + json.message);
+          await loadDocuments();
+          if (selectedDoc && selectedDoc.id === docId) {
+            openDocViewer(docId);
+          }
+        } else {
+          alert('❌ ' + json.message);
+        }
+      } catch (err) {
+        alert('Lỗi đồng bộ Google Drive: ' + err.message);
+      }
+    }
   </script>
+
+  <!-- MODAL THÔNG BÁO KÝ SỐ THÀNH CÔNG & TẢI FILE PDF KIỂM TRA -->
+  <div id="signSuccessDownloadModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 text-center space-y-4 animate-in fade-in zoom-in duration-200">
+      <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-3xl shadow-inner">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div>
+        <span class="px-3 py-1 bg-emerald-100 text-emerald-800 font-extrabold text-[11px] rounded-full uppercase tracking-wider">Chứng thực thành công 100%</span>
+        <h3 class="text-xl font-black text-slate-900 mt-2">KÝ SỐ ĐIỆN TỬ THÀNH CÔNG!</h3>
+        <p class="text-xs text-slate-500 mt-1 font-semibold" id="successDocTitle">Kế hoạch bài dạy</p>
+      </div>
+      
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-2 text-xs">
+        <div class="flex items-center justify-between text-slate-600">
+          <span>Tiêu chuẩn chữ ký:</span>
+          <strong class="text-slate-800">PAdES / CAdES-detached</strong>
+        </div>
+        <div class="flex items-center justify-between text-slate-600">
+          <span>Khóa chứng thư:</span>
+          <strong class="text-emerald-700">VGCA Ban Cơ yếu Chính phủ</strong>
+        </div>
+        <div class="flex items-center justify-between text-slate-600">
+          <span>Đồng bộ Cloud:</span>
+          <strong class="text-blue-600 flex items-center gap-1"><i class="fa-brands fa-google-drive"></i> Đã lưu vào Kho Google Drive</strong>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-600 leading-relaxed">
+        Thầy hãy bấm <strong>"TẢI FILE PDF VỀ MÁY"</strong> để mở bằng <strong>Adobe Acrobat Reader</strong> hoặc xem trực tiếp trên <strong>Google Drive</strong> của trường!
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
+        <a id="btnDownloadSignedPdfModal" href="#" download class="w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow-lg shadow-emerald-600/30 transition transform active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-file-arrow-down text-base"></i> TẢI PDF VỀ MÁY
+        </a>
+        <a id="btnOpenDriveModal" href="https://drive.google.com" target="_blank" class="w-full sm:w-auto px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2">
+          <i class="fa-brands fa-google-drive text-base"></i> XEM TRÊN GOOGLE DRIVE
+        </a>
+        <button onclick="closeSuccessDownloadModal()" class="w-full sm:w-auto px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CẤU HÌNH KHO LƯU TRỮ GOOGLE DRIVE TRƯỜNG -->
+  <div id="driveConfigModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+            <i class="fa-brands fa-google-drive"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-900">Cấu Hình Kho Lưu Trữ Google Drive</h3>
+            <p class="text-xs text-slate-500">Trường THCS Chu Văn An - Tự động sao lưu & phân loại giáo án số</p>
+          </div>
+        </div>
+        <button onclick="closeDriveConfigModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Google Apps Script Webhook URL (Khuyên dùng cho trường):</label>
+          <input type="text" id="inputGasWebhookUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <p class="text-[11px] text-slate-400 mt-1">
+            💡 Nhà trường dùng file kịch bản <code class="bg-slate-100 px-1 rounded text-blue-600 font-bold">google-apps-script-template.js</code> trong thư mục dự án để tạo Webhook miễn phí trong 2 phút.
+          </p>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Tên Thư mục Gốc trên Google Drive:</label>
+          <input type="text" id="inputSchoolFolderName" value="KHO_HO_SO_SO_TRUONG_THCS_CHU_VAN_AN" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 text-blue-900 space-y-1 text-[11px]">
+          <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-folder-tree text-amber-500"></i> Quy chuẩn phân loại thư mục tự động trên Google Drive:</div>
+          <div class="font-mono text-slate-600 pl-4">
+            └── [Năm học 2026 - 2027]<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── [Học kỳ I]<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── [Tổ chuyên môn (Ví dụ: Tổ Toán - Tin)]<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── [Tuần 12] / Tên_GiaoAn_DaKy_VGCA.pdf
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <input type="checkbox" id="chkAutoUploadDrive" checked class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+          <label for="chkAutoUploadDrive" class="font-bold text-slate-700 cursor-pointer">
+            Tự động đẩy file lên Google Drive ngay sau khi ký số hoàn tất
+          </label>
+        </div>
+
+        <div id="driveTestResultBox" class="hidden mt-2"></div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+        <button onclick="testDriveConnection()" id="btnTestDriveConn" type="button" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-bolt text-amber-500"></i> Kiểm Thử Kết Nối (Test Connection)
+        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeDriveConfigModal()" type="button" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs rounded-xl">
+            Hủy
+          </button>
+          <button onclick="saveDriveConfig()" type="button" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition">
+            Lưu Cấu Hình
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

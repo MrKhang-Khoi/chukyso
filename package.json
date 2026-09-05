@@ -4,7 +4,9 @@
   "description": "Hệ thống Quản lý và Trình ký Hồ sơ Giáo dục Điện tử tích hợp Chữ ký số VGCA",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:signer": "dotnet build RealPdfSigner/RealPdfSigner.csproj",
+    "test": "node test.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
