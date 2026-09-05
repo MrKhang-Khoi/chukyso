@@ -1,0 +1,15 @@
+[
+  {
+    "id": "admin",
+    "username": "admin",
+    "password": "admin@123",
+    "name": "Ban Giám hiệu - Quản trị viên",
+    "role": "ADMIN",
+    "roleTitle": "Quản trị viên nhà trường",
+    "department": "Ban Giám hiệu",
+    "email": "bgh-dakha@quangngai.gov.vn",
+    "school": "TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN",
+    "phone": "0255.385.0001",
+    "createdAt": "2026-09-05T12:00:00.000Z"
+  }
+]
