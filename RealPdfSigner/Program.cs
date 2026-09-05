@@ -195,12 +195,13 @@ namespace RealPdfSigner
                     PdfSigner signer = new PdfSigner(reader, outputStream, stampingProperties);
 
                     // Thiết lập thông tin chữ ký số qua SignerProperties trong iText 9
+                    // KHÔNG gọi SetPageRect để tránh iText tự sinh các dòng chữ (Digitally signed by, Reason, Location...)
+                    // che mất chữ ký và nội dung văn bản, giữ văn bản luôn trang nhã và đẹp mắt theo chuẩn Hình 2.
+                    // Toàn bộ chứng thư số X.509 v3 và thông tin ký vẫn được bảo vệ nguyên vẹn 100% trong từ điển PDF.
                     SignerProperties signerProperties = new SignerProperties()
                         .SetFieldName("SignatureVGCA_" + DateTime.Now.Ticks)
                         .SetReason(reason)
-                        .SetLocation(location)
-                        .SetPageNumber(targetPage)
-                        .SetPageRect(new Rectangle(rectX, rectY, rectW, rectH));
+                        .SetLocation(location);
 
                     signer.SetSignerProperties(signerProperties);
 

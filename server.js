@@ -477,6 +477,24 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
       }
     });
 
+    // Tự động sao lưu và phân loại lên Google Drive trường nếu có cấu hình
+    const driveCfg = googleDriveService.getDriveConfig();
+    if (driveCfg.enabled && driveCfg.autoUploadOnSign && signedFilePath && fs.existsSync(signedFilePath)) {
+      googleDriveService.uploadToGoogleDrive(updatedDoc, signedFilePath)
+        .then(driveRes => {
+          dataStore.updateDocument(updatedDoc.id, {
+            driveInfo: {
+              fileId: driveRes.fileId,
+              viewUrl: driveRes.viewUrl,
+              folderPath: driveRes.folderPath,
+              uploadedAt: driveRes.uploadedAt
+            }
+          });
+          console.log(`[Google Drive] ✅ Tự động sao lưu thành công hồ sơ ${updatedDoc.id} lên Drive: ${driveRes.viewUrl}`);
+        })
+        .catch(e => console.error('[Google Drive] Lỗi tự động sao lưu:', e.message));
+    }
+
     res.json({
       success: true,
       message: 'Ký số mật mã thật VGCA thành công! File PDF đã được niêm phong mật mã X.509.',
@@ -487,6 +505,59 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Lỗi khi thực hiện ký số VGCA: ' + err.message
+    });
+  }
+});
+
+// Lưu trữ và đồng bộ file đã ký số lên Google Drive của trường (Thao tác trực tiếp từ giáo viên)
+app.post('/api/documents/:id/upload-drive', requireAuth, async (req, res) => {
+  try {
+    const doc = dataStore.getDocumentById(req.params.id);
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+    }
+
+    // Xác định file PDF đã ký (ưu tiên file đã ký số thật VGCA nếu có)
+    let pathToUpload = doc.realSignedPath;
+    if (!pathToUpload || !fs.existsSync(pathToUpload)) {
+      const uploadDir = path.join(__dirname, 'uploads', 'documents');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const signedBuf = await pdfSignerService.generateSignedPdf(doc);
+      pathToUpload = path.join(uploadDir, `Signed_${doc.id}_drive_export.pdf`);
+      fs.writeFileSync(pathToUpload, signedBuf);
+    }
+
+    console.log(`[Google Drive] Đang đồng bộ hồ sơ "${doc.title}" lên Kho Google Drive trường...`);
+    const driveRes = await googleDriveService.uploadToGoogleDrive(doc, pathToUpload);
+
+    const driveLogs = Array.isArray(doc.logs) ? [...doc.logs] : [];
+    driveLogs.push({
+      time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      actor: req.user.name,
+      action: `Đã lưu trữ và đồng bộ tài liệu lên Google Drive: "${driveRes.folderPath}"`
+    });
+
+    const updatedDoc = dataStore.updateDocument(doc.id, {
+      driveInfo: {
+        fileId: driveRes.fileId,
+        viewUrl: driveRes.viewUrl,
+        folderPath: driveRes.folderPath,
+        uploadedAt: driveRes.uploadedAt
+      },
+      logs: driveLogs
+    });
+
+    res.json({
+      success: true,
+      message: `Đã lưu thành công lên Google Drive của trường!\nThư mục: ${driveRes.folderPath}`,
+      data: updatedDoc,
+      driveInfo: updatedDoc.driveInfo
+    });
+  } catch (err) {
+    console.error('Lỗi đẩy lên Google Drive:', err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi đồng bộ lên Google Drive: ' + err.message
     });
   }
 });
@@ -726,6 +797,27 @@ app.post('/api/documents', requireAuth, async (req, res) => {
         success: false,
         message: 'Lỗi xác thực chữ ký số VGCA: ' + err.message
       });
+    }
+  }
+
+  // Tự động phân loại và đồng bộ lên Google Drive trường
+  const driveCfg = googleDriveService.getDriveConfig();
+  if (driveCfg.enabled && driveCfg.autoUploadOnSign) {
+    const pathToSync = newDoc.realSignedPath || newDoc.filePath;
+    if (pathToSync && fs.existsSync(pathToSync)) {
+      googleDriveService.uploadToGoogleDrive(newDoc, pathToSync)
+        .then(driveRes => {
+          dataStore.updateDocument(newDoc.id, {
+            driveInfo: {
+              fileId: driveRes.fileId,
+              viewUrl: driveRes.viewUrl,
+              folderPath: driveRes.folderPath,
+              uploadedAt: driveRes.uploadedAt
+            }
+          });
+          console.log(`[Google Drive] ✅ Tự động sao lưu hồ sơ ${newDoc.id} lên Drive: ${driveRes.viewUrl}`);
+        })
+        .catch(e => console.error('[Google Drive] Lỗi tự động sao lưu:', e.message));
     }
   }
 

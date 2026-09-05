@@ -839,17 +839,17 @@
         <!-- Tấm chắn chống kẹt chuột khi kéo thả trên iframe PDF -->
         <div id="viewerDragShield" class="absolute inset-0 z-30 hidden" style="cursor: move;"></div>
 
-        <!-- Khung chữ ký của giáo viên kéo thả trực tiếp (Thuần ảnh chữ ký - Chuẩn Hình 2) -->
+        <!-- Khung chữ ký của giáo viên kéo thả trực tiếp (Trong suốt 100% - Chuẩn Hình 1 để Thầy căn chỉnh không bị che chữ) -->
         <div id="draggableSignatureStamp" class="absolute z-40 hidden cursor-move select-none group" style="left: 74.5%; top: 51.3%; width: 150px;">
-          <div class="relative border-2 border-dashed border-blue-500 hover:border-blue-700 bg-white/80 hover:bg-white/95 rounded-xl p-1.5 shadow-2xl backdrop-blur-sm transition">
-            <!-- Ảnh chữ ký giáo viên hiển thị trực tiếp -->
-            <div class="flex items-center justify-center p-1 bg-transparent">
+          <div class="relative border-2 border-dashed border-blue-500 hover:border-blue-700 bg-transparent hover:bg-blue-500/5 rounded-xl p-0.5 transition shadow-sm">
+            <!-- Ảnh chữ ký giáo viên hiển thị trong suốt -->
+            <div class="flex items-center justify-center p-0.5 bg-transparent">
               <img id="draggableSignatureImg" src="/uploads/signatures/sig_user_cvaty.png" class="max-h-20 w-auto object-contain pointer-events-none select-none drop-shadow-sm transition-all duration-100" alt="Chữ ký giáo viên">
             </div>
-            <!-- Thanh thông tin nhỏ gọn hiển thị tên, tỷ lệ & tọa độ -->
-            <div class="mt-1 pt-1 border-t border-blue-100 flex items-center justify-between text-[9px] text-blue-800 font-semibold bg-blue-50/90 -mx-1 -mb-1 px-2 py-0.5 rounded-b-lg">
-              <span class="truncate max-w-[90px]" id="draggableStampSignerName">Hà Văn Tý</span>
-              <span id="draggableStampCoords" class="font-mono text-slate-600 text-[8px]">X: 75% | Y: 51% | 100%</span>
+            <!-- Ẩn hoàn toàn vùng hiển thị tọa độ theo yêu cầu của Thầy để nhìn rõ văn bản bên dưới và kéo cho khớp -->
+            <div class="hidden">
+              <span id="draggableStampSignerName">Hà Văn Tý</span>
+              <span id="draggableStampCoords">X: 75% | Y: 51% | 100%</span>
             </div>
           </div>
         </div>
@@ -2589,6 +2589,29 @@
         sigsContainer.appendChild(vgcaBadge);
       }
 
+      // Hiển thị thông tin liên kết kho lưu trữ Google Drive của trường
+      if (doc.driveInfo && doc.driveInfo.viewUrl) {
+        const driveBadge = document.createElement('div');
+        driveBadge.className = 'p-3 rounded-xl bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-200 flex items-center justify-between text-xs text-blue-900 font-semibold mb-2 shadow-sm';
+        driveBadge.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <i class="fa-brands fa-google-drive text-emerald-600 text-2xl"></i>
+            <div>
+              <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                <span>ĐÃ LƯU TRỮ TRÊN GOOGLE DRIVE TRƯỜNG</span>
+                <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">ĐÃ ĐỒNG BỘ</span>
+              </div>
+              <div class="text-[11px] text-slate-600 font-normal">Thư mục: <strong class="text-blue-800">${doc.driveInfo.folderPath || 'Kho Hồ sơ THCS Chu Văn An'}</strong></div>
+            </div>
+          </div>
+          <a href="${doc.driveInfo.viewUrl}" target="_blank" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+            <span>Mở Trên Google Drive</span>
+          </a>
+        `;
+        sigsContainer.appendChild(driveBadge);
+      }
+
       (doc.signatures || []).forEach(sig => {
         const div = document.createElement('div');
         div.className = 'p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between';
@@ -2662,6 +2685,11 @@
           <i class="fa-solid fa-file-arrow-down text-sm"></i>
           <span>Lưu Văn Bản Đã Ký Về Máy (.PDF)</span>
         </a>
+        <button onclick="handleUploadDocToGoogleDrive('${doc.id}')" id="btnUploadDrive_${doc.id}" 
+                class="px-4 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition flex items-center gap-2">
+          <i class="fa-brands fa-google-drive text-amber-300 text-base"></i>
+          <span>${doc.driveInfo ? 'Cập Nhật Lên Google Drive' : 'Lưu Lên Google Drive'}</span>
+        </button>
         <button onclick="printCurrentDocWithSignatures()" class="px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
           <i class="fa-solid fa-print"></i>
           <span>In / Xuất PDF</span>
@@ -2696,6 +2724,43 @@
       }
 
       openModal('modalDocDetails');
+    }
+
+    // Lưu trữ và đồng bộ file đã ký số lên Google Drive trường
+    async function handleUploadDocToGoogleDrive(docId) {
+      const btn = document.getElementById(`btnUploadDrive_${docId}`);
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang lưu lên Drive...</span>';
+      }
+
+      try {
+        const res = await fetch(`/api/documents/${docId}/upload-drive`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Lỗi khi lưu lên Google Drive');
+
+        alert(`🎉 ĐÃ LƯU THÀNH CÔNG LÊN GOOGLE DRIVE TRƯỜNG!\n\n` +
+              `📁 Cây thư mục: ${data.driveInfo.folderPath}\n` +
+              `⏰ Thời điểm: ${data.driveInfo.uploadedAt}\n\n` +
+              `Thầy có thể bấm nút "Mở Trên Google Drive" vừa xuất hiện trong bảng chi tiết để xem trực tiếp.`);
+
+        await loadDocuments();
+        openDocDetails(docId);
+      } catch (err) {
+        alert('⚠️ Không thể lưu lên Google Drive: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
     }
 
     // Kích hoạt tiến trình ký số mật mã thật X.509 qua RealPdfSigner (Ban Cơ yếu Chính phủ)

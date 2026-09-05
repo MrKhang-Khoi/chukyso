@@ -347,6 +347,20 @@ async function runTests() {
     const signedPdfDoc = await PDFDocument.load(downloadSignedRes.body);
     assert(signedPdfDoc.getPageCount() === origPdfDoc.getPageCount(), `Xóa trang cuối thành công: Số trang PDF sau ký (${signedPdfDoc.getPageCount()}) bằng số trang gốc (${origPdfDoc.getPageCount()}), không sinh trang chứng thư giả định`);
 
+    // 3.7d Kiểm tra tính năng Lưu trữ và đồng bộ Google Drive của giáo viên
+    const driveUploadRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: `/api/documents/${createdDocId}/upload-drive`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    });
+    assert(driveUploadRes.status === 200 && driveUploadRes.body.success === true, 'Giáo viên lưu hồ sơ đã ký lên Google Drive thành công');
+    assert(driveUploadRes.body.driveInfo && driveUploadRes.body.driveInfo.viewUrl.includes('drive.google.com'), 'Hệ thống sinh liên kết Google Drive trường chuẩn xác');
+
     // 3.8 Kiểm tra API Xác thực chữ ký số
     const verifyHttpRes = await httpRequest({
       hostname: '127.0.0.1',
