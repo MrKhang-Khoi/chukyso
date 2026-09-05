@@ -11,5 +11,19 @@
     "school": "TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN",
     "phone": "0255.385.0001",
     "createdAt": "2026-09-05T12:00:00.000Z"
+  },
+  {
+    "id": "user_cvaty",
+    "username": "cva.ty",
+    "password": "123",
+    "name": "Hà Văn Tý",
+    "role": "TEACHER",
+    "roleTitle": "Giáo viên Tổ Toán - Tin",
+    "department": "Tổ Toán - Tin",
+    "email": "cva.ty@thcschuvanan.edu.vn",
+    "school": "TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN",
+    "phone": "",
+    "signatureImage": null,
+    "createdAt": "2026-09-05T12:00:00.000Z"
   }
 ]

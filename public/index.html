@@ -657,8 +657,7 @@
 
         renderUserInterface();
         showDashboard();
-        loadDocuments();
-
+        switchMainTab('docs');
       } catch (err) {
         errorText.innerText = err.message;
         errorBox.classList.remove('hidden');
@@ -678,7 +677,7 @@
         currentUser = data.user;
         renderUserInterface();
         showDashboard();
-        loadDocuments();
+        switchMainTab('docs');
       } catch {
         handleLogout();
       }
@@ -688,6 +687,11 @@
       authToken = null;
       currentUser = null;
       localStorage.removeItem('edusign_token');
+      // Dọn sạch nội dung các bảng khi đăng xuất
+      document.getElementById('docsTableBody').innerHTML = '';
+      const usersTbody = document.getElementById('usersTableBody');
+      if (usersTbody) usersTbody.innerHTML = '';
+      switchMainTab('docs');
       showLoginScreen();
     }
 
@@ -711,11 +715,20 @@
         roleBadge.className = 'ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700';
       }
 
-      // Ẩn/Hiện Tabs theo vai trò
+      // Ẩn/Hiện Tabs trên Navbar theo vai trò
       const isAdmin = currentUser.role === 'ADMIN';
       document.getElementById('navTabUsers').classList.toggle('hidden', !isAdmin);
       document.getElementById('navTabStats').classList.toggle('hidden', !isAdmin);
       document.getElementById('navTabDrive').classList.toggle('hidden', !isAdmin);
+
+      // BẢO VỆ PHÂN QUYỀN NỘI DUNG: Nếu không phải Admin thì đóng chặt tất cả nội dung tab Admin
+      if (!isAdmin) {
+        document.getElementById('tabContentUsers').classList.add('hidden');
+        document.getElementById('tabContentStats').classList.add('hidden');
+        document.getElementById('tabContentDrive').classList.add('hidden');
+        const usersTbody = document.getElementById('usersTableBody');
+        if (usersTbody) usersTbody.innerHTML = '';
+      }
 
       if (currentUser.role === 'HEAD_DEPT') {
         document.getElementById('navTabDocsTitle').innerText = `Duyệt Kế hoạch bài dạy (${currentUser.department})`;
@@ -734,6 +747,11 @@
 
     // ==================== CHUYỂN ĐỔI TAB GIAO DIỆN ====================
     function switchMainTab(tab) {
+      // Bảo vệ: Nếu không phải Admin mà cố chuyển sang tab Admin thì ép về tab docs
+      if (['users', 'stats', 'drive'].includes(tab) && (!currentUser || currentUser.role !== 'ADMIN')) {
+        tab = 'docs';
+      }
+
       const tabs = ['docs', 'users', 'stats', 'drive', 'sign'];
       tabs.forEach(t => {
         const btn = document.getElementById(`navTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
@@ -752,9 +770,9 @@
       });
 
       if (tab === 'docs') loadDocuments();
-      if (tab === 'users') loadAdminUsers();
-      if (tab === 'stats') loadStats();
-      if (tab === 'drive') loadDriveConfig();
+      if (tab === 'users' && currentUser && currentUser.role === 'ADMIN') loadAdminUsers();
+      if (tab === 'stats' && currentUser && currentUser.role === 'ADMIN') loadStats();
+      if (tab === 'drive' && currentUser && currentUser.role === 'ADMIN') loadDriveConfig();
     }
 
     // ==================== QUẢN LÝ HỒ SƠ GIÁO ÁN (DOCUMENTS) ====================
