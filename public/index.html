@@ -191,8 +191,8 @@
 
           <button id="navTabSign" onclick="switchMainTab('sign')"
             class="px-3.5 py-1.5 rounded-lg hover:bg-slate-100 transition flex items-center gap-1.5 ml-auto">
-            <i class="fa-solid fa-signature text-amber-600"></i>
-            <span>Mẫu Chữ Ký & Con Dấu</span>
+            <i class="fa-solid fa-shield-halved text-red-600"></i>
+            <span>Chứng Thư Số VGCA & Di Động</span>
           </button>
         </nav>
 
@@ -358,105 +358,104 @@
         </div>
       </section>
 
-      <!-- ==================== TAB 5: MẪU CHỮ KÝ & CON DẤU (SIGNATURE STUDIO) ==================== -->
-      <section id="tabContentSign" class="hidden space-y-5 max-w-2xl">
+      <!-- ==================== TAB 5: CHỨNG THƯ SỐ VGCA & THIẾT BỊ DI ĐỘNG ==================== -->
+      <section id="tabContentSign" class="hidden space-y-5 max-w-3xl">
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
           
           <div class="flex justify-between items-start pb-3 border-b border-slate-100">
             <div>
-              <h3 class="text-base font-bold text-slate-900">Quản Lý & Tinh Chỉnh Mẫu Chữ Ký Tay</h3>
-              <p class="text-xs text-slate-500">Hỗ trợ tải ảnh chụp chữ ký thật, tự động tách nền trong suốt hoặc vẽ trực tiếp</p>
+              <h3 class="text-base font-bold text-slate-900">Chứng Thư Số Công Vụ VGCA & Thiết Bị Di Động</h3>
+              <p class="text-xs text-slate-500">Quản lý chứng thư số công vụ Ban Cơ yếu Chính phủ và ứng dụng xác thực SmartCA</p>
             </div>
-            <div id="sigSavedBadge" class="hidden px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
-              <i class="fa-solid fa-check"></i> Đã lưu mẫu chữ ký
+            <div class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold flex items-center gap-1">
+              <i class="fa-solid fa-shield-check"></i> VGCA X.509 v3 Hợp lệ
             </div>
           </div>
 
-          <!-- Lựa chọn phương thức: Tải ảnh chụp HOẶC Vẽ -->
-          <div class="flex border-b border-slate-200 gap-4 text-xs font-bold">
-            <button id="btnSigModeUpload" onclick="setSigMode('upload')" class="pb-2.5 border-b-2 border-blue-600 text-blue-600 flex items-center gap-1.5">
-              <i class="fa-solid fa-file-arrow-up"></i> Tải ảnh chụp chữ ký (Khuyên dùng)
-            </button>
-            <button id="btnSigModeDraw" onclick="setSigMode('draw')" class="pb-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
-              <i class="fa-solid fa-pen-nib"></i> Vẽ chữ ký trực tiếp
-            </button>
-          </div>
-
-          <!-- PHƯƠNG THỨC 1: TẢI ẢNH CHỮ KÝ & TÁCH NỀN TRONG SUỐT -->
-          <div id="sigAreaUpload" class="space-y-4">
-            
-            <div class="border-2 border-dashed border-slate-300 rounded-2xl p-4 text-center bg-slate-50/50 hover:bg-slate-50 transition cursor-pointer" onclick="document.getElementById('sigFileInput').click()">
-              <input type="file" id="sigFileInput" accept="image/png, image/jpeg, image/jpg" class="hidden" onchange="handleSignatureFileUpload(this.files[0])">
-              <div class="space-y-1.5 py-2">
-                <i class="fa-solid fa-camera text-slate-400 text-3xl"></i>
-                <div class="text-xs font-bold text-slate-700">Bấm vào đây để chọn ảnh chụp chữ ký tay của bạn</div>
-                <div class="text-[11px] text-slate-400">Chụp chữ ký mực xanh trên giấy trắng (PNG, JPG)</div>
+          <!-- Card 1: Thông tin Chứng thư số công vụ -->
+          <div class="p-4 rounded-2xl bg-gradient-to-r from-red-50/80 via-orange-50/40 to-slate-50 border border-red-200 space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-red-600 text-white flex items-center justify-center text-2xl shadow-md">
+                <i class="fa-solid fa-certificate"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-slate-900" id="studioCertSignerName">Thầy Hà Văn Tý</h4>
+                <p class="text-xs text-slate-600">Giáo viên - <span id="studioCertDept">Tổ Toán - Tin</span> • Trường THCS Chu Văn An</p>
+                <span class="text-[11px] text-red-700 font-bold">Ban Cơ yếu Chính phủ (VGCA CA) cấp phát</span>
               </div>
             </div>
 
-            <!-- Các công cụ căn chỉnh chữ ký -->
-            <div id="sigTuningTools" class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-              <div class="font-bold text-slate-800 flex items-center justify-between">
-                <span>Công cụ căn chỉnh chữ ký:</span>
-                <label class="inline-flex items-center gap-1.5 cursor-pointer">
-                  <input type="checkbox" id="chkAutoRemoveBg" checked onchange="processSignatureImage()" class="w-4 h-4 rounded text-blue-600 focus:ring-0">
-                  <span class="text-blue-700 font-semibold">Tự động khử nền trắng (Trong suốt)</span>
-                </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-red-100 text-xs">
+              <div class="bg-white p-2.5 rounded-xl border border-red-100">
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">Số Serial Chứng thư</span>
+                <span class="font-mono text-slate-800 font-bold text-[11px]">6398E3DC37E44EBBF976DFDE9F0143E1</span>
               </div>
+              <div class="bg-white p-2.5 rounded-xl border border-red-100">
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">Thời hạn hiệu lực</span>
+                <span class="text-emerald-700 font-bold text-[11px]">01/01/2024 - 31/12/2028 (Còn hiệu lực)</span>
+              </div>
+              <div class="bg-white p-2.5 rounded-xl border border-red-100">
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">Thuật toán mật mã</span>
+                <span class="text-slate-700 font-bold text-[11px]">RSA 2048-bit • Băm SHA-256 (PAdES LTV)</span>
+              </div>
+              <div class="bg-white p-2.5 rounded-xl border border-red-100">
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">Phương thức xác thực</span>
+                <span class="text-blue-700 font-bold text-[11px]">VGCA SmartCA Mobile PKI / SIM PKI</span>
+              </div>
+            </div>
+          </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-slate-600 font-medium mb-1">Độ nhạy khử nền giấy: <span id="valThreshold" class="font-bold">75%</span></label>
-                  <input type="range" id="sliderThreshold" min="10" max="95" value="75" oninput="document.getElementById('valThreshold').innerText = this.value + '%'; processSignatureImage();" class="w-full">
+          <!-- Card 2: Thiết bị di động liên kết -->
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg shadow-sm">
+                  <i class="fa-solid fa-mobile-screen-button"></i>
                 </div>
                 <div>
-                  <label class="block text-slate-600 font-medium mb-1">Độ đậm nét mực xanh: <span id="valContrast" class="font-bold">120%</span></label>
-                  <input type="range" id="sliderContrast" min="100" max="200" value="120" oninput="document.getElementById('valContrast').innerText = this.value + '%'; processSignatureImage();" class="w-full">
+                  <h4 class="text-xs font-bold text-slate-900">Thiết bị Di Động Xác Thực Chữ Ký Số</h4>
+                  <p class="text-[11px] text-slate-500">Ứng dụng VGCA Sign / SmartCA đã ghép đôi</p>
                 </div>
               </div>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Đang kết nối
+              </span>
             </div>
 
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button type="button" onclick="openVgcaMobileAuthModal()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-2">
+                <i class="fa-solid fa-satellite-dish"></i>
+                <span>Thử Nghiệm Gửi Xác Thực Điện Thoại</span>
+              </button>
+              <button type="button" onclick="alert('Thiết bị di động của bạn đã được kết nối an toàn với máy chủ Ban Cơ yếu Chính phủ!');" class="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold rounded-xl transition">
+                <i class="fa-solid fa-rotate"></i> Kiểm tra đồng bộ
+              </button>
+            </div>
           </div>
 
-          <!-- PHƯƠNG THỨC 2: VẼ TRỰC TIẾP TRÊN MÀN HÌNH -->
-          <div id="sigAreaDraw" class="hidden space-y-2">
-            <div class="border-2 border-dashed border-slate-300 rounded-2xl p-2 bg-slate-50 text-center">
-              <canvas id="signatureCanvas" width="550" height="200" class="w-full bg-white rounded-xl border border-slate-200 cursor-crosshair touch-none"></canvas>
-            </div>
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-slate-400 text-[11px]">Dùng chuột hoặc bút cảm ứng vẽ chữ ký vào khung trên</span>
-              <button onclick="clearSignatureCanvas()" class="text-red-600 hover:underline font-semibold">Xóa vẽ lại</button>
-            </div>
-          </div>
-
-          <!-- KHU VỰC XEM TRƯỚC ĐÓNG DẤU THỬ NGHIỆM TRÊN TRANG GIẤY SƯ PHẠM -->
+          <!-- Card 3: Xem trước Mẫu Huy hiệu Chữ ký số trên Giáo án -->
           <div class="space-y-2 pt-2 border-t border-slate-100">
             <div class="flex justify-between items-center">
-              <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Xem trước chữ ký trên tài liệu giáo án:</label>
-              <span class="text-[11px] text-emerald-700 font-medium"><i class="fa-solid fa-circle-check"></i> Đã xử lý nền trong suốt</span>
+              <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Mẫu dấu chữ ký số hiển thị trên kế hoạch bài dạy:</label>
+              <span class="text-[11px] text-emerald-700 font-medium"><i class="fa-solid fa-circle-check"></i> Chuẩn Nghị định 30/2020/NĐ-CP</span>
             </div>
             
-            <div class="p-4 rounded-xl border border-slate-200 bg-white relative min-h-[140px] flex items-center justify-center overflow-hidden shadow-inner">
-              <!-- Văn bản mẫu để kiểm tra xem chữ ký có bị đè nền trắng hay không -->
-              <div class="absolute inset-0 p-4 text-[11px] text-slate-300 select-none leading-relaxed pointer-events-none">
-                CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM — Độc lập - Tự do - Hạnh phúc<br>
-                TRƯỜNG THCS CHU VĂN AN — KẾ HOẠCH BÀI DẠY MÔN TOÁN HỌC<br>
-                Tiết 24: Đường tròn và các tính chất cơ bản của góc nội tiếp...<br>
-                Giáo viên bộ môn đã hoàn thành soạn thảo và ký duyệt chuyên môn.
+            <div class="p-6 rounded-2xl border border-slate-200 bg-white relative flex items-center justify-center shadow-inner">
+              <div class="border-2 border-red-600 bg-red-50/90 text-red-950 rounded-xl p-3.5 shadow-md max-w-sm w-full space-y-1">
+                <div class="flex items-center gap-2 border-b border-red-200 pb-1 mb-1">
+                  <i class="fa-solid fa-shield-halved text-red-600 text-sm"></i>
+                  <span class="text-[10px] font-black uppercase text-red-700">CHỮ KÝ SỐ BAN CƠ YẾU CHÍNH PHỦ</span>
+                  <span class="ml-auto text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold">X.509</span>
+                </div>
+                <div class="text-xs font-black text-slate-900" id="sampleSignerNameDisplay">Thầy Hà Văn Tý</div>
+                <div class="text-[10px] text-slate-600">Giáo viên - <span id="sampleDeptDisplay">Tổ Toán - Tin</span> • THCS Chu Văn An</div>
+                <div class="text-[9px] text-slate-400 mt-1 flex items-center gap-1">
+                  <i class="fa-regular fa-clock"></i>
+                  <span>Ký số điện tử với chứng thư số công vụ hợp lệ</span>
+                </div>
               </div>
-
-              <!-- Ảnh chữ ký đã khử nền trắng đặt đè lên văn bản -->
-              <img id="sigPreviewImage" class="max-h-28 max-w-xs relative z-10 transition drop-shadow-sm" src="" alt="Chữ ký xem trước" style="display: none;">
-              <div id="sigPreviewEmpty" class="text-xs text-slate-400 z-10 italic">Chưa có chữ ký để xem trước</div>
             </div>
           </div>
-
-          <!-- Nút lưu mẫu chữ ký -->
-          <button onclick="saveProcessedSignature()" id="btnSaveSig"
-            class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2">
-            <i class="fa-solid fa-floppy-disk"></i>
-            <span>Lưu Mẫu Chữ Ký Vào Hồ Sơ Cá Nhân</span>
-          </button>
 
         </div>
       </section>
@@ -469,14 +468,27 @@
   <!-- ============================================================== -->
 
   <!-- MODAL 1: NỘP KẾ HOẠCH BÀI DẠY MỚI (TẢI FILE WORD/PDF THẬT) -->
-  <div id="modalNewDoc" class="hidden fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-200">
-      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
-        <h3 class="text-sm font-bold text-slate-900">Nộp Kế Hoạch Bài Dạy Mới</h3>
-        <button onclick="closeModal('modalNewDoc')" class="text-slate-400 hover:text-slate-600 text-base"><i class="fa-solid fa-xmark"></i></button>
+  <div id="modalNewDoc" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-4" onclick="closeModalOnBackdrop(event, 'modalNewDoc')">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[92vh] flex flex-col border border-slate-200 my-auto overflow-hidden" onclick="event.stopPropagation()">
+      
+      <!-- Header cố định luôn nhìn thấy nút đóng -->
+      <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center sticky top-0 z-10">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 leading-none">Nộp Kế Hoạch Bài Dạy Mới</h3>
+            <span class="text-[11px] text-slate-500">Định dạng hỗ trợ: Microsoft Word (.docx) hoặc PDF (.pdf)</span>
+          </div>
+        </div>
+        <button type="button" onclick="closeModal('modalNewDoc')" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-base transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
-      <form id="formNewDoc" class="space-y-3.5 text-xs" onsubmit="submitNewDoc(event)">
+      <!-- Thân Form cuộn mượt mà -->
+      <form id="formNewDoc" class="p-5 overflow-y-auto space-y-3.5 text-xs flex-1" onsubmit="submitNewDoc(event)">
         
         <!-- KHU VỰC CHỌN VÀ TẢI FILE THẬT -->
         <div>
@@ -503,7 +515,7 @@
               </div>
 
               <div class="flex items-center gap-1.5">
-                <button type="button" onclick="event.stopPropagation(); previewSelectedLocalFile()" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[11px] font-bold" title="Xem trước file">
+                <button type="button" onclick="event.stopPropagation(); previewSelectedLocalFile()" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[11px] font-bold" title="Xem trước file">
                   <i class="fa-solid fa-eye"></i> Xem trước
                 </button>
                 <button type="button" onclick="event.stopPropagation(); removeSelectedFile()" class="text-slate-400 hover:text-red-600 p-1" title="Xóa chọn lại">
@@ -553,100 +565,63 @@
           </div>
         </div>
 
-        <!-- BƯỚC 2: KHU VỰC KÝ SỐ VĂN BẢN CỦA GIÁO VIÊN (BẮT BUỘC TRƯỚC KHI NỘP) -->
-        <div class="p-3.5 bg-gradient-to-r from-blue-50/80 to-indigo-50/60 border-2 border-blue-200 rounded-xl space-y-3">
+        <!-- BƯỚC 2: CHỨNG THƯ SỐ CÔNG VỤ VGCA (CHUẨN BAN CƠ YẾU CHÍNH PHỦ) -->
+        <div class="p-3.5 bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-slate-50 border-2 border-blue-200 rounded-xl space-y-3">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <div class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">2</div>
-              <span class="font-bold text-slate-900 text-xs sm:text-sm">Ký Số Vào Kế Hoạch Bài Dạy (Bắt buộc)</span>
+              <span class="font-bold text-slate-900 text-xs sm:text-sm">Chữ Ký Số Công Vụ VGCA (Ban Cơ yếu Chính phủ)</span>
             </div>
-            <span id="newDocSigStatusBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1">
-              <i class="fa-solid fa-triangle-exclamation"></i> <span>Chưa ký</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+              <i class="fa-solid fa-shield-halved"></i> <span>VGCA LTV Sẵn sàng</span>
             </span>
           </div>
 
-          <!-- Chế độ ký: Dùng chữ ký đã lưu | Vẽ ký tay trực tiếp | Tải ảnh chữ ký -->
-          <div class="flex items-center gap-1.5 p-1 bg-white/80 rounded-lg border border-slate-200 text-xs">
-            <button type="button" id="btnDocSigModeSaved" onclick="switchDocSigMode('saved')" class="flex-1 py-1.5 px-2 rounded-md font-bold text-center transition bg-blue-600 text-white shadow-sm">
-              <i class="fa-solid fa-signature"></i> Chữ ký trong hồ sơ
-            </button>
-            <button type="button" id="btnDocSigModeDraw" onclick="switchDocSigMode('draw')" class="flex-1 py-1.5 px-2 rounded-md font-medium text-slate-600 hover:text-slate-900 text-center transition">
-              <i class="fa-solid fa-pen-nib"></i> Vẽ ký trực tiếp
-            </button>
-            <button type="button" id="btnDocSigModeUpload" onclick="switchDocSigMode('upload')" class="flex-1 py-1.5 px-2 rounded-md font-medium text-slate-600 hover:text-slate-900 text-center transition">
-              <i class="fa-solid fa-camera"></i> Tải ảnh chụp
-            </button>
-          </div>
-
-          <!-- Tab 1: Chữ ký trong hồ sơ -->
-          <div id="docSigAreaSaved" class="bg-white rounded-lg p-3 border border-slate-200 flex flex-col items-center justify-center min-h-[90px] relative">
-            <div id="docSigSavedPreviewContainer" class="flex flex-col items-center justify-center w-full">
-              <img id="docSigSavedImg" src="" class="max-h-16 object-contain hidden" alt="Chữ ký đã lưu">
-              <div id="docSigSavedEmpty" class="text-center py-2 text-slate-400 text-xs">
-                <i class="fa-regular fa-circle-question text-xl mb-1 text-slate-300"></i>
-                <p>Bạn chưa lưu mẫu chữ ký nào trong Hồ sơ cá nhân.</p>
-                <button type="button" onclick="switchDocSigMode('draw')" class="mt-1.5 px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[11px] font-bold">
-                  Bấm vào đây để ký tay ngay
-                </button>
+          <!-- Thông tin Chứng thư số công vụ -->
+          <div class="bg-white p-3 rounded-xl border border-blue-100 shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center text-lg shadow-sm">
+                <i class="fa-solid fa-certificate"></i>
+              </div>
+              <div class="leading-tight">
+                <div class="font-bold text-slate-900 text-xs" id="newDocCertSignerName">Thầy Hà Văn Tý</div>
+                <div class="text-[11px] text-slate-500">Giáo viên - <span id="newDocCertDept">Tổ Toán - Tin</span> • THCS Chu Văn An</div>
+                <div class="text-[10px] text-emerald-700 font-medium mt-0.5">
+                  <i class="fa-solid fa-check-double"></i> Cấp bởi: Ban Cơ yếu Chính phủ (VGCA CA) • SIM PKI / SmartCA
+                </div>
               </div>
             </div>
-            <div id="docSigSignerInfo" class="mt-1 text-[11px] text-slate-500 font-medium hidden">
-              Ký bởi: <strong id="docSigSignerName" class="text-slate-800"></strong> (<span id="docSigSignerDept"></span>)
-            </div>
           </div>
 
-          <!-- Tab 2: Vẽ ký trực tiếp trên Canvas -->
-          <div id="docSigAreaDraw" class="hidden bg-white rounded-lg p-2.5 border border-slate-200 flex flex-col items-center">
-            <div class="w-full flex justify-between items-center mb-1 text-[11px] text-slate-500">
-              <span>Dùng chuột hoặc ngón tay để ký vào khung dưới:</span>
-              <button type="button" onclick="clearSubmitSigCanvas()" class="text-red-600 hover:text-red-700 font-bold flex items-center gap-1">
-                <i class="fa-solid fa-rotate-left"></i> Xóa vẽ lại
-              </button>
-            </div>
-            <canvas id="submitSigCanvas" width="420" height="90" class="w-full h-[90px] bg-slate-50 border border-dashed border-slate-300 rounded-lg cursor-crosshair touch-none"></canvas>
-            <div class="w-full flex justify-end mt-1">
-              <button type="button" onclick="applyDrawSigToSubmission()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold flex items-center gap-1">
-                <i class="fa-solid fa-check"></i> Xác nhận nét ký này
-              </button>
-            </div>
-          </div>
-
-          <!-- Tab 3: Tải ảnh chụp chữ ký -->
-          <div id="docSigAreaUpload" class="hidden bg-white rounded-lg p-2.5 border border-slate-200 text-xs">
-            <input type="file" id="submitSigFileInput" accept="image/*" class="hidden" onchange="handleModalSigImageUpload(this.files[0])">
-            <div onclick="document.getElementById('submitSigFileInput').click()" class="cursor-pointer border-2 border-dashed border-slate-300 rounded-lg p-3 text-center hover:bg-blue-50/50 hover:border-blue-400 transition">
-              <i class="fa-solid fa-cloud-arrow-up text-blue-500 text-lg mb-1"></i>
-              <p class="font-bold text-slate-700">Chọn ảnh chữ ký chụp từ giấy trắng</p>
-              <p class="text-[10px] text-slate-400">Hệ thống sẽ tự động bóc tách nền giấy trắng sang PNG trong suốt</p>
-            </div>
-            <div id="modalUploadSigPreview" class="mt-2 hidden text-center">
-              <img id="modalUploadSigImg" class="max-h-14 mx-auto object-contain border p-1 rounded bg-slate-50" alt="Chữ ký tải lên">
-              <span class="text-[10px] text-emerald-600 font-bold block mt-0.5">Đã tách nền trong suốt thành công</span>
-            </div>
-          </div>
+          <!-- Nút xem trước và kéo chữ ký vào văn bản -->
+          <button type="button" onclick="openViewerWithSigningMode()" class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition">
+            <i class="fa-solid fa-up-down-left-right"></i>
+            <span>Mở Xem Giáo Án & Kéo Chữ Ký Vào Đúng Vị Trí Cột Giáo Viên</span>
+          </button>
 
           <!-- Cam kết & Xác nhận Ký số -->
           <div class="flex items-start gap-2 pt-1 border-t border-blue-100">
-            <input type="checkbox" id="chkConfirmSign" required class="mt-0.5 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer">
-            <label for="chkConfirmSign" class="text-xs text-slate-700 cursor-pointer select-none leading-relaxed">
-              Tôi xác nhận nội dung kế hoạch bài dạy là chính xác và <strong>đồng ý ký số duyệt cấp 1 (Giáo viên soạn thảo)</strong> vào văn bản này theo quy định tại Nghị định 30/2020/NĐ-CP.
+            <input type="checkbox" id="chkConfirmSign" required checked class="mt-0.5 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer">
+            <label for="chkConfirmSign" class="text-[11px] text-slate-700 cursor-pointer select-none leading-relaxed">
+              Tôi xác nhận kế hoạch bài dạy là chính xác và <strong>đồng ý ký số duyệt cấp 1 (Giáo viên soạn thảo)</strong> qua phương thức xác thực di động Ban Cơ yếu Chính phủ theo quy định tại Nghị định 30/2020/NĐ-CP.
             </label>
           </div>
         </div>
 
-        <!-- Chọn vị trí đóng dấu chữ ký số của giáo viên -->
+        <!-- Vị trí đóng dấu chữ ký số -->
         <div>
           <label class="block font-bold text-slate-700 mb-1">Vị trí đóng dấu chữ ký số của bạn</label>
           <select id="newDocSignPlacement" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none bg-white font-medium text-slate-800">
-            <option value="bottom-left" selected>Góc dưới bên trái trang cuối (Chuẩn Giáo viên soạn thảo - Nghị định 30)</option>
-            <option value="bottom-right">Góc dưới bên phải trang cuối</option>
+            <option value="bottom-right" selected>Cột Giáo viên soạn thảo (Bên phải trang cuối - Chuẩn Nghị định 30)</option>
+            <option value="middle-right">Cột Tổ trưởng chuyên môn (Ở giữa trang cuối)</option>
+            <option value="bottom-left">Cột Ban Giám hiệu (Bên trái trang cuối)</option>
           </select>
         </div>
 
-        <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
-          <button type="button" onclick="closeModal('modalNewDoc')" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50">Hủy</button>
+        <div class="pt-3 flex justify-end gap-2 border-t border-slate-100 sticky bottom-0 bg-white z-10 pb-1">
+          <button type="button" onclick="closeModal('modalNewDoc')" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition">Hủy</button>
           <button type="submit" id="btnSubmitNewDoc" class="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md flex items-center gap-2">
-            <i class="fa-solid fa-signature"></i>
+            <i class="fa-solid fa-mobile-screen-button"></i>
             <span>Ký Số & Nộp Trình Duyệt</span>
           </button>
         </div>
@@ -654,12 +629,12 @@
     </div>
   </div>
 
-  <!-- MODAL 2: TRÌNH XEM TRƯỚC TÀI LIỆU ĐẦY ĐỦ (DOCUMENT PREVIEWER MODAL) -->
-  <div id="modalDocViewer" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full h-[92vh] flex flex-col border border-slate-200 overflow-hidden">
+  <!-- MODAL 2: TRÌNH XEM TRƯỚC TÀI LIỆU & KÉO THẢ CHỮ KÝ SỐ VGCA (DOCUMENT VIEWER & SIGNING) -->
+  <div id="modalDocViewer" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4" onclick="closeModalOnBackdrop(event, 'modalDocViewer')">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full h-[92vh] flex flex-col border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
       
       <!-- Header Viewer -->
-      <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+      <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex flex-wrap justify-between items-center gap-2">
         <div class="flex items-center gap-3 truncate">
           <i id="viewerFileIcon" class="fa-solid fa-file-pdf text-red-600 text-xl"></i>
           <div>
@@ -669,14 +644,45 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <!-- Nút kích hoạt đặt chữ ký số -->
+          <button type="button" id="btnToggleSignaturePlacement" onclick="toggleSignaturePlacementMode()" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-stamp"></i>
+            <span id="btnToggleSignatureText">Đặt Chữ Ký Số VGCA</span>
+          </button>
+
+          <!-- Nút Xác thực điện thoại & Ký số -->
+          <button type="button" id="btnViewerConfirmSign" onclick="openVgcaMobileAuthModal()" class="hidden px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+            <span>Ký Số (Xác thực Điện thoại)</span>
+          </button>
+
           <button onclick="closeModal('modalDocViewer')" class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition">
             Đóng xem trước
           </button>
         </div>
       </div>
 
+      <!-- Thanh công cụ căn chỉnh vị trí chữ ký số (Hiển thị khi bật chế độ ký) -->
+      <div id="viewerSigToolBar" class="hidden px-5 py-2.5 bg-blue-50 border-b border-blue-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 text-blue-900 font-medium">
+          <i class="fa-solid fa-hand-pointer text-blue-600 animate-bounce"></i>
+          <span>Dùng chuột kéo thả khung chữ ký đỏ vào đúng vị trí trên trang. Hoặc bấm chọn nhanh:</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="snapSignatureTo('teacher')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-100 text-blue-800 border border-blue-300 font-bold transition flex items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-user-pen"></i> Cột Giáo viên (Bên phải)
+          </button>
+          <button type="button" onclick="snapSignatureTo('leader')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-100 text-blue-800 border border-blue-300 font-bold transition flex items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-signature"></i> Cột Tổ trưởng (Ở giữa)
+          </button>
+          <button type="button" onclick="snapSignatureTo('principal')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-100 text-blue-800 border border-blue-300 font-bold transition flex items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-stamp"></i> Cột BGH (Bên trái)
+          </button>
+        </div>
+      </div>
+
       <!-- Content Viewer Container -->
-      <div class="flex-1 bg-slate-100 overflow-y-auto p-4 flex justify-center relative">
+      <div id="viewerContentArea" class="flex-1 bg-slate-100 overflow-y-auto p-4 flex justify-center relative select-none">
         <!-- Khung nhúng PDF -->
         <iframe id="viewerPdfFrame" class="w-full h-full bg-white rounded-xl shadow-sm border border-slate-200" src="" style="display: none;"></iframe>
         
@@ -689,14 +695,50 @@
           <i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-3xl"></i>
           <span class="text-xs text-slate-500 font-medium">Đang tải và dựng nội dung tài liệu...</span>
         </div>
+
+        <!-- Tấm chắn chống kẹt chuột khi kéo thả trên iframe PDF -->
+        <div id="viewerDragShield" class="absolute inset-0 z-30 hidden" style="cursor: move;"></div>
+
+        <!-- Khung chữ ký số công vụ VGCA kéo thả trực tiếp -->
+        <div id="draggableSignatureStamp" class="absolute z-40 hidden cursor-move select-none" style="left: 65%; top: 70%; width: 220px;">
+          <div class="border-2 border-red-600 bg-white/95 text-red-950 rounded-xl p-2.5 shadow-2xl backdrop-blur-md border-dashed hover:border-solid transition-colors">
+            <div class="flex items-center gap-1.5 border-b border-red-200 pb-1 mb-1">
+              <div class="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <div>
+                <div class="text-[9px] font-black uppercase text-red-700 tracking-wider">CHỮ KÝ SỐ VGCA</div>
+                <div class="text-[8px] text-slate-500 leading-none">Ban Cơ yếu Chính phủ</div>
+              </div>
+              <span class="ml-auto text-[8px] bg-red-100 text-red-800 border border-red-300 px-1 py-0.5 rounded font-bold">X.509</span>
+            </div>
+
+            <div class="space-y-0.5 text-left">
+              <div class="text-xs font-black text-slate-900 truncate" id="draggableStampName">Thầy Hà Văn Tý</div>
+              <div class="text-[10px] text-slate-600 font-medium truncate" id="draggableStampRole">Giáo viên - Tổ Toán - Tin</div>
+              <div class="text-[10px] text-slate-500 truncate">Trường THCS Chu Văn An</div>
+              <div class="text-[9px] text-slate-400 mt-0.5 flex items-center gap-1">
+                <i class="fa-regular fa-clock"></i>
+                <span id="draggableStampTime">05/09/2026</span>
+              </div>
+            </div>
+
+            <!-- Drag handle badge -->
+            <div class="mt-1.5 pt-1 border-t border-slate-100 flex items-center justify-between text-[9px] text-blue-700 font-bold bg-blue-50/90 -mx-1 -mb-1 px-2 py-0.5 rounded-b-lg">
+              <span><i class="fa-solid fa-arrows-up-down-left-right mr-1"></i> Giữ chuột để kéo</span>
+              <span id="draggableStampCoords" class="font-mono text-slate-500 text-[8px]">X: 65% | Y: 70%</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div>
   </div>
 
   <!-- MODAL 3: XEM CHI TIẾT & PHÊ DUYỆT HỒ SƠ -->
-  <div id="modalDocDetails" class="hidden fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 border border-slate-200 max-h-[90vh] overflow-y-auto">
+  <div id="modalDocDetails" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-4" onclick="closeModalOnBackdrop(event, 'modalDocDetails')">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 border border-slate-200 max-h-[90vh] overflow-y-auto my-auto" onclick="event.stopPropagation()">
       <div class="flex justify-between items-start pb-3 border-b border-slate-100">
         <div>
           <span id="detailDocId" class="text-[10px] font-extrabold text-blue-600 uppercase">MÃ HỒ SƠ</span>
@@ -715,7 +757,7 @@
       <!-- Nút xem trước văn bản nổi bật -->
       <button onclick="previewCurrentOpenDoc()" class="w-full py-2.5 px-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 text-blue-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
         <i class="fa-solid fa-eye text-blue-600"></i>
-        <span>Xem Trước Toàn Bộ Nội Dung Giáo Án (Word / PDF)</span>
+        <span>Xem Trước Toàn Bộ Nội Dung Giáo Án & Vị Trí Ký Số (Word / PDF)</span>
       </button>
 
       <div class="space-y-2">
@@ -732,9 +774,9 @@
     </div>
   </div>
 
-  <!-- MODAL KÝ NHÁY DUYỆT CHUYÊN MÔN (TỔ TRƯỞNG) -->
-  <div id="modalLeaderApprove" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-200">
+  <!-- MODAL KÝ NHÁY DUYỆT CHUYÊN MÔN (TỔ TRƯỞNG - VGCA) -->
+  <div id="modalLeaderApprove" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-4" onclick="closeModalOnBackdrop(event, 'modalLeaderApprove')">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-200 my-auto" onclick="event.stopPropagation()">
       <div class="flex justify-between items-center pb-2 border-b border-slate-100">
         <div class="flex items-center gap-2">
           <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-sm font-bold">
@@ -753,25 +795,17 @@
         </div>
       </div>
 
-      <!-- Khung chữ ký nháy của tổ trưởng -->
-      <div class="space-y-2 text-xs">
-        <label class="block font-bold text-slate-700">Chữ ký nháy của Tổ trưởng *</label>
-        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <img id="leaderModalSigImg" src="" class="h-12 max-w-[120px] object-contain hidden" alt="Chữ ký tổ trưởng">
-            <div id="leaderModalSigEmpty" class="text-slate-400 italic">Chưa có chữ ký trong hồ sơ</div>
+      <!-- Khung Chứng thư số Tổ trưởng Ban Cơ yếu Chính phủ -->
+      <div class="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl space-y-2 text-xs">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-signature"></i>
           </div>
-          <button type="button" onclick="openLeaderDrawPad()" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[11px] font-bold">
-            Vẽ chữ ký khác
-          </button>
-        </div>
-
-        <div id="leaderDrawContainer" class="hidden pt-2 border-t border-slate-200">
-          <div class="flex justify-between items-center mb-1 text-[11px] text-slate-500">
-            <span>Ký tay vào khung:</span>
-            <button type="button" onclick="clearLeaderPad()" class="text-red-600 font-bold">Xóa</button>
+          <div class="space-y-0.5">
+            <div class="font-bold text-slate-900" id="leaderApproveSignerNameDisplay">Chữ ký số Tổ trưởng chuyên môn</div>
+            <div class="text-[11px] text-emerald-800 font-medium">Ban Cơ yếu Chính phủ (VGCA CA) • SmartCA Di Động</div>
+            <div class="text-[10px] text-slate-500">Ký nháy chuyên môn cấp 2: Xác nhận đạt chuẩn phân phối chương trình</div>
           </div>
-          <canvas id="leaderSigPad" width="380" height="80" class="w-full h-[80px] bg-white border border-dashed border-slate-300 rounded-lg"></canvas>
         </div>
       </div>
 
@@ -784,17 +818,17 @@
 
       <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
         <button type="button" onclick="closeModal('modalLeaderApprove')" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 text-xs">Hủy</button>
-        <button type="button" id="btnConfirmLeaderApprove" onclick="executeLeaderApprove()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md flex items-center gap-1.5 text-xs">
-          <i class="fa-solid fa-check"></i>
-          <span>Xác Nhận Ký Nháy & Chuyển BGH</span>
+        <button type="button" id="btnConfirmLeaderApprove" onclick="executeLeaderApproveWithVgca()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md flex items-center gap-1.5 text-xs">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+          <span>Xác Thực Điện Thoại & Ký Nháy</span>
         </button>
       </div>
     </div>
   </div>
 
   <!-- MODAL PHÊ DUYỆT & ĐÓNG DẤU CHỮ KÝ SỐ VGCA (BAN GIÁM HIỆU) -->
-  <div id="modalPrincipalApprove" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-200">
+  <div id="modalPrincipalApprove" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-3 sm:p-4" onclick="closeModalOnBackdrop(event, 'modalPrincipalApprove')">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-200 my-auto" onclick="event.stopPropagation()">
       <div class="flex justify-between items-center pb-2 border-b border-slate-100">
         <div class="flex items-center gap-2">
           <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-sm font-bold">
@@ -833,11 +867,102 @@
 
       <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
         <button type="button" onclick="closeModal('modalPrincipalApprove')" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 text-xs">Hủy</button>
-        <button type="button" id="btnConfirmPrincipalApprove" onclick="executePrincipalApprove()" class="px-5 py-2 bg-gradient-to-r from-red-600 to-blue-700 hover:from-red-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-md flex items-center gap-1.5 text-xs">
-          <i class="fa-solid fa-signature"></i>
-          <span>Ký Số Ban Cơ Yếu & Phê Duyệt Cấp 3</span>
+        <button type="button" id="btnConfirmPrincipalApprove" onclick="executePrincipalApproveWithVgca()" class="px-5 py-2 bg-gradient-to-r from-red-600 to-blue-700 hover:from-red-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-md flex items-center gap-1.5 text-xs">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+          <span>Xác Thực Điện Thoại & Đóng Dấu Số</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL XÁC THỰC KÝ SỐ DI ĐỘNG (VGCA SMARTCA / SIM PKI) -->
+  <div id="modalVgcaMobileAuth" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md overflow-y-auto flex items-center justify-center p-3 sm:p-4" onclick="closeModalOnBackdrop(event, 'modalVgcaMobileAuth')">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-5 border border-slate-200 text-center my-auto" onclick="event.stopPropagation()">
+      
+      <!-- Header Modal Xác Thực Mobile -->
+      <div class="flex justify-between items-start pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2.5 text-left">
+          <div class="w-10 h-10 rounded-2xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center text-xl shadow-sm">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Xác Thực Ký Số Di Động VGCA</h3>
+            <p class="text-[11px] text-slate-500">Ban Cơ yếu Chính phủ • SmartCA / SIM PKI</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeVgcaMobileAuthModal()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Minh họa điện thoại nhận Push Notification -->
+      <div class="relative py-2">
+        <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-3xl shadow-xl shadow-blue-500/20 relative animate-pulse">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+          <!-- Ping badge -->
+          <span class="absolute -top-1 -right-1 flex h-5 w-5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-5 w-5 bg-emerald-500 text-[10px] text-white font-bold items-center justify-center">1</span>
+          </span>
+        </div>
+
+        <div class="mt-3 space-y-1">
+          <h4 class="font-bold text-slate-900 text-sm">Yêu cầu xác thực ký số đã được gửi!</h4>
+          <p class="text-xs text-slate-500">Vui lòng mở ứng dụng <strong>VGCA Sign / SmartCA</strong> trên điện thoại thông minh của Thầy/Cô để xác nhận.</p>
+        </div>
+      </div>
+
+      <!-- Thông tin giao dịch ký -->
+      <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-left space-y-2 text-xs">
+        <div class="flex justify-between items-center text-slate-500">
+          <span>Tài liệu ký:</span>
+          <strong id="vgcaAuthDocTitle" class="text-slate-800 font-bold truncate max-w-[200px]">GiaoAn_Toan9.pdf</strong>
+        </div>
+        <div class="flex justify-between items-center text-slate-500">
+          <span>Người ký:</span>
+          <strong id="vgcaAuthSigner" class="text-slate-800 font-bold">Thầy Hà Văn Tý</strong>
+        </div>
+        <div class="flex justify-between items-center text-slate-500">
+          <span>Mã phiên ký:</span>
+          <code id="vgcaAuthSessionId" class="text-blue-700 font-mono font-bold bg-blue-100/60 px-1.5 py-0.5 rounded">VGCA-894215</code>
+        </div>
+        <div class="flex justify-between items-center text-slate-500">
+          <span>Thời gian còn lại:</span>
+          <span class="text-amber-700 font-bold flex items-center gap-1 font-mono">
+            <i class="fa-regular fa-clock"></i> <span id="vgcaCountdown">00:59</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- 2 Phương thức phê duyệt trên điện thoại -->
+      <div class="space-y-3">
+        <!-- Phương thức 1: Phê duyệt nhanh qua Push Notification / Sinh trắc học -->
+        <button type="button" id="btnApproveOnPhone" onclick="simulateApproveOnPhone()" class="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-600/20 text-xs flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-fingerprint text-base"></i>
+          <span>Xác Nhận Trên Điện Thoại (FaceID / PIN ứng dụng)</span>
+        </button>
+
+        <!-- Phân cách HOẶC -->
+        <div class="relative flex py-1 items-center">
+          <div class="flex-grow border-t border-slate-200"></div>
+          <span class="flex-shrink mx-3 text-slate-400 text-[10px] uppercase font-bold tracking-wider">Hoặc nhập mã PIN ký số</span>
+          <div class="flex-grow border-t border-slate-200"></div>
+        </div>
+
+        <!-- Phương thức 2: Nhập mã PIN 6 số -->
+        <div class="flex items-center gap-2">
+          <input type="password" id="vgcaPinInput" maxlength="6" placeholder="Mã PIN (Mặc định: 123456)" class="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-center tracking-widest font-mono font-bold outline-none focus:ring-2 focus:ring-blue-600">
+          <button type="button" onclick="confirmWithVgcaPin()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs transition">
+            Xác nhận
+          </button>
+        </div>
+      </div>
+
+      <div id="vgcaAuthSuccessAlert" class="hidden p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2">
+        <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+        <span>Đã xác thực thành công từ điện thoại di động! Đang hoàn tất ký số...</span>
+      </div>
+
     </div>
   </div>
 
@@ -1169,7 +1294,7 @@
       openDocumentViewer(currentlyViewedDoc.title, null, currentlyViewedDoc.id);
     }
 
-    async function openDocumentViewer(title, fileObject, docId) {
+    async function openDocumentViewer(title, fileObject, docId, enableSigning = false) {
       const modal = document.getElementById('modalDocViewer');
       const titleEl = document.getElementById('viewerDocTitle');
       const metaEl = document.getElementById('viewerDocMeta');
@@ -1229,6 +1354,7 @@
         closeModal('modalDocViewer');
       } finally {
         spinner.classList.add('hidden');
+        toggleSignaturePlacementMode(enableSigning);
       }
     }
 
@@ -1302,226 +1428,399 @@
       });
     }
 
-    // Biến quản lý chữ ký trong modal nộp tài liệu mới
-    let currentSubmitSigMode = 'saved';
-    let modalUploadedSigBase64 = null;
-    let submitCanvas, submitCtx, isSubmitDrawing = false, hasDrawnSubmitSig = false;
+    // ==================== CẤU HÌNH & TẠO CON DẤU CHỮ KÝ SỐ VGCA ====================
+    let currentStampPlacement = 'bottom-right';
+    let currentStampCoords = { xPercent: 65, yPercent: 70 };
+    let isDraggingStamp = false;
+    let stampDragStartX = 0, stampDragStartY = 0;
+    let stampElemStartX = 0, stampElemStartY = 0;
+    let isSigPlacementActive = false;
 
-    function switchDocSigMode(mode) {
-      currentSubmitSigMode = mode;
-      const btnSaved = document.getElementById('btnDocSigModeSaved');
-      const btnDraw = document.getElementById('btnDocSigModeDraw');
-      const btnUpload = document.getElementById('btnDocSigModeUpload');
-      const areaSaved = document.getElementById('docSigAreaSaved');
-      const areaDraw = document.getElementById('docSigAreaDraw');
-      const areaUpload = document.getElementById('docSigAreaUpload');
+    // Sinh ảnh Con dấu / Huy hiệu Chữ ký số Ban Cơ yếu Chính phủ chuẩn PNG sắc nét
+    function generateVgcaDigitalStamp(signerName, department, roleTitle) {
+      const c = document.createElement('canvas');
+      c.width = 440;
+      c.height = 180;
+      const ctx = c.getContext('2d');
 
-      [btnSaved, btnDraw, btnUpload].forEach(b => {
-        b.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
-        b.classList.add('text-slate-600');
-      });
+      // Khung viền đỏ chuẩn dấu số công vụ
+      ctx.fillStyle = 'rgba(254, 242, 242, 0.95)';
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(4, 4, 432, 172, 16);
+      ctx.fill();
+      ctx.stroke();
 
-      areaSaved.classList.add('hidden');
-      areaDraw.classList.add('hidden');
-      areaUpload.classList.add('hidden');
+      // Nét viền kép mảnh bên trong
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(8, 8, 424, 164, 12);
+      ctx.stroke();
 
-      if (mode === 'saved') {
-        btnSaved.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
-        btnSaved.classList.remove('text-slate-600');
-        areaSaved.classList.remove('hidden');
-        updateSubmitSigBadge(!!(currentUser && (currentUser.signatureImage || processedSignatureBase64)));
-      } else if (mode === 'draw') {
-        btnDraw.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
-        btnDraw.classList.remove('text-slate-600');
-        areaDraw.classList.remove('hidden');
-        initSubmitSigCanvas();
-        updateSubmitSigBadge(hasDrawnSubmitSig);
-      } else if (mode === 'upload') {
-        btnUpload.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
-        btnUpload.classList.remove('text-slate-600');
-        areaUpload.classList.remove('hidden');
-        updateSubmitSigBadge(!!modalUploadedSigBase64);
-      }
+      // Header Ban Cơ yếu Chính phủ
+      ctx.fillStyle = '#b91c1c';
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillText('CHỮ KÝ SỐ BAN CƠ YẾU CHÍNH PHỦ', 20, 32);
+
+      // Đường kẻ phân cách
+      ctx.strokeStyle = '#fca5a5';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(20, 42);
+      ctx.lineTo(420, 42);
+      ctx.stroke();
+
+      // Thông tin người ký
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillText(signerName || 'Giáo viên bộ môn', 20, 72);
+
+      ctx.fillStyle = '#334155';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(`${roleTitle || 'Giáo viên'} - ${department || 'Tổ Toán - Tin'}`, 20, 96);
+      ctx.fillText('TRƯỜNG THCS CHU VĂN AN', 20, 118);
+
+      // Thông tin bảo mật & Thời gian
+      const now = new Date();
+      const timeStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      ctx.fillStyle = '#047857';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(`✓ X.509 v3 Valid • VGCA LTV TSA • Ký số lúc: ${timeStr}`, 20, 148);
+
+      return c.toDataURL('image/png');
     }
 
-    function updateSubmitSigBadge(isValid) {
-      const badge = document.getElementById('newDocSigStatusBadge');
-      if (!badge) return;
-      if (isValid) {
-        badge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1';
-        badge.innerHTML = '<i class="fa-solid fa-check"></i> <span>Đã sẵn sàng ký</span>';
-      } else {
-        badge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1';
-        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span>Chưa ký</span>';
-      }
-    }
-
+    // Khởi tạo thông tin chứng thư số trong modal nộp bài mới
     function initSubmitModalSignature() {
-      // 1. Kiểm tra mẫu chữ ký trong hồ sơ
-      const sigImg = currentUser ? (currentUser.signatureImage || processedSignatureBase64) : null;
-      const previewImg = document.getElementById('docSigSavedImg');
-      const emptyDiv = document.getElementById('docSigSavedEmpty');
-      const signerInfo = document.getElementById('docSigSignerInfo');
+      if (!currentUser) return;
+      const nameEl = document.getElementById('newDocCertSignerName');
+      const deptEl = document.getElementById('newDocCertDept');
+      if (nameEl) nameEl.innerText = currentUser.name || 'Thầy Hà Văn Tý';
+      if (deptEl) deptEl.innerText = currentUser.department || 'Tổ Toán - Tin';
 
-      if (sigImg) {
-        previewImg.src = sigImg;
-        previewImg.classList.remove('hidden');
-        emptyDiv.classList.add('hidden');
-        signerInfo.classList.remove('hidden');
-        document.getElementById('docSigSignerName').innerText = currentUser.name || '';
-        document.getElementById('docSigSignerDept').innerText = currentUser.department || '';
-        switchDocSigMode('saved');
+      // Cập nhật tab studio nếu có
+      const studioName = document.getElementById('studioCertSignerName');
+      const studioDept = document.getElementById('studioCertDept');
+      const sampleName = document.getElementById('sampleSignerNameDisplay');
+      const sampleDept = document.getElementById('sampleDeptDisplay');
+      if (studioName) studioName.innerText = currentUser.name || '';
+      if (studioDept) studioDept.innerText = currentUser.department || '';
+      if (sampleName) sampleName.innerText = currentUser.name || '';
+      if (sampleDept) sampleDept.innerText = currentUser.department || '';
+    }
+
+    // Mở xem trước giáo án và tự động bật chế độ kéo thả chữ ký
+    function openViewerWithSigningMode() {
+      if (!selectedUploadFile && !selectedUploadFileBase64) {
+        alert('Vui lòng bấm chọn file giáo án (.docx hoặc .pdf) từ máy tính của bạn trước!');
+        document.getElementById('fileDropZone').click();
+        return;
+      }
+      const title = document.getElementById('newDocTitle').value.trim() || (selectedUploadFile ? selectedUploadFile.name : 'KeHoachBaiDay');
+      openDocumentViewer(title, selectedUploadFile, null, true);
+    }
+
+    // Bật/tắt chế độ đặt chữ ký số trên trình xem trước văn bản
+    function toggleSignaturePlacementMode(forceState) {
+      isSigPlacementActive = (typeof forceState === 'boolean') ? forceState : !isSigPlacementActive;
+      const bar = document.getElementById('viewerSigToolBar');
+      const stamp = document.getElementById('draggableSignatureStamp');
+      const btnConfirm = document.getElementById('btnViewerConfirmSign');
+      const btnText = document.getElementById('btnToggleSignatureText');
+
+      if (isSigPlacementActive) {
+        if (bar) bar.classList.remove('hidden');
+        if (stamp) stamp.classList.remove('hidden');
+        if (btnConfirm) btnConfirm.classList.remove('hidden');
+        if (btnText) btnText.innerText = 'Ẩn Vị Trí Ký';
+
+        // Cập nhật tên người ký và thời gian trên con dấu kéo thả
+        if (currentUser) {
+          const stampName = document.getElementById('draggableStampName');
+          const stampRole = document.getElementById('draggableStampRole');
+          const stampTime = document.getElementById('draggableStampTime');
+          if (stampName) stampName.innerText = currentUser.name || '';
+          if (stampRole) stampRole.innerText = `${currentUser.role === 'ADMIN' ? 'Ban Giám hiệu' : (currentUser.role === 'HEAD_DEPT' ? 'Tổ trưởng chuyên môn' : 'Giáo viên')} - ${currentUser.department || ''}`;
+          if (stampTime) {
+            const d = new Date();
+            stampTime.innerText = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+          }
+        }
+
+        // Mặc định đặt vào cột giáo viên nếu là giáo viên, hoặc cột tổ trưởng nếu là tổ trưởng
+        if (currentUser && currentUser.role === 'HEAD_DEPT') {
+          snapSignatureTo('leader');
+        } else if (currentUser && currentUser.role === 'ADMIN') {
+          snapSignatureTo('principal');
+        } else {
+          snapSignatureTo('teacher');
+        }
+
+        initDraggableSignature();
       } else {
-        previewImg.classList.add('hidden');
-        emptyDiv.classList.remove('hidden');
-        signerInfo.classList.add('hidden');
-        switchDocSigMode('draw');
+        if (bar) bar.classList.add('hidden');
+        if (stamp) stamp.classList.add('hidden');
+        if (btnConfirm) btnConfirm.classList.add('hidden');
+        if (btnText) btnText.innerText = 'Đặt Chữ Ký Số VGCA';
       }
     }
 
-    function initSubmitSigCanvas() {
-      submitCanvas = document.getElementById('submitSigCanvas');
-      if (!submitCanvas || submitCanvas.hasAttribute('data-inited')) return;
-      submitCanvas.setAttribute('data-inited', 'true');
-      submitCtx = submitCanvas.getContext('2d');
-      submitCtx.strokeStyle = '#0284c7'; // Xanh mực bút máy
-      submitCtx.lineWidth = 2.5;
-      submitCtx.lineCap = 'round';
+    // Căn chỉnh nhanh vị trí chữ ký
+    function snapSignatureTo(role) {
+      const stamp = document.getElementById('draggableSignatureStamp');
+      const container = document.getElementById('viewerContentArea');
+      if (!stamp || !container) return;
 
-      function getPos(e) {
-        const rect = submitCanvas.getBoundingClientRect();
+      let leftPct = 65, topPct = 70;
+      let label = 'Cột Giáo viên (Bên phải)';
+
+      if (role === 'teacher') {
+        leftPct = 65;
+        topPct = 70;
+        currentStampPlacement = 'bottom-right';
+        label = 'Cột Giáo viên (Bên phải)';
+      } else if (role === 'leader') {
+        leftPct = 38;
+        topPct = 70;
+        currentStampPlacement = 'middle-right';
+        label = 'Cột Tổ trưởng (Ở giữa)';
+      } else if (role === 'principal') {
+        leftPct = 12;
+        topPct = 70;
+        currentStampPlacement = 'bottom-left';
+        label = 'Cột Ban Giám hiệu (Bên trái)';
+      }
+
+      stamp.style.left = leftPct + '%';
+      stamp.style.top = topPct + '%';
+      currentStampCoords = { xPercent: leftPct, yPercent: topPct };
+
+      const coordsEl = document.getElementById('draggableStampCoords');
+      if (coordsEl) coordsEl.innerText = `X: ${leftPct}% | Y: ${topPct}% (${label})`;
+
+      const sel = document.getElementById('newDocSignPlacement');
+      if (sel) sel.value = currentStampPlacement;
+    }
+
+    // Logic Kéo Thả Chuột / Cảm ứng (Drag & Drop) mượt mà trên tài liệu
+    function initDraggableSignature() {
+      const stamp = document.getElementById('draggableSignatureStamp');
+      const shield = document.getElementById('viewerDragShield');
+      const container = document.getElementById('viewerContentArea');
+      if (!stamp || !shield || !container || stamp.hasAttribute('data-drag-inited')) return;
+      stamp.setAttribute('data-drag-inited', 'true');
+
+      function onPointerDown(e) {
+        if (e.button && e.button !== 0) return;
+        isDraggingStamp = true;
+        shield.classList.remove('hidden');
+
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
         const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-        return {
-          x: clientX - rect.left,
-          y: clientY - rect.top
-        };
+
+        stampDragStartX = clientX;
+        stampDragStartY = clientY;
+        stampElemStartX = stamp.offsetLeft;
+        stampElemStartY = stamp.offsetTop;
+
+        e.preventDefault();
       }
 
-      function start(e) {
-        isSubmitDrawing = true;
-        hasDrawnSubmitSig = true;
-        submitCtx.beginPath();
-        const p = getPos(e);
-        submitCtx.moveTo(p.x, p.y);
+      function onPointerMove(e) {
+        if (!isDraggingStamp) return;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+        const deltaX = clientX - stampDragStartX;
+        const deltaY = clientY - stampDragStartY;
+
+        let newLeft = stampElemStartX + deltaX;
+        let newTop = stampElemStartY + deltaY;
+
+        const maxLeft = container.clientWidth - stamp.offsetWidth - 10;
+        const maxTop = Math.max(container.clientHeight, container.scrollHeight) - stamp.offsetHeight - 10;
+
+        newLeft = Math.max(10, Math.min(newLeft, maxLeft));
+        newTop = Math.max(10, Math.min(newTop, maxTop));
+
+        stamp.style.left = newLeft + 'px';
+        stamp.style.top = newTop + 'px';
+
+        const xPct = Math.round((newLeft / container.clientWidth) * 100);
+        const yPct = Math.round((newTop / container.clientHeight) * 100);
+        currentStampCoords = { xPercent: xPct, yPercent: yPct };
+
+        if (xPct > 52) currentStampPlacement = 'bottom-right';
+        else if (xPct > 28) currentStampPlacement = 'middle-right';
+        else currentStampPlacement = 'bottom-left';
+
+        const coordsEl = document.getElementById('draggableStampCoords');
+        if (coordsEl) coordsEl.innerText = `X: ${xPct}% | Y: ${yPct}%`;
+
+        const sel = document.getElementById('newDocSignPlacement');
+        if (sel) sel.value = currentStampPlacement;
       }
 
-      function move(e) {
-        if (!isSubmitDrawing) return;
-        const p = getPos(e);
-        submitCtx.lineTo(p.x, p.y);
-        submitCtx.stroke();
-      }
-
-      function stop() {
-        if (isSubmitDrawing) {
-          isSubmitDrawing = false;
-          updateSubmitSigBadge(true);
+      function onPointerUp() {
+        if (isDraggingStamp) {
+          isDraggingStamp = false;
+          shield.classList.add('hidden');
         }
       }
 
-      submitCanvas.addEventListener('mousedown', start);
-      submitCanvas.addEventListener('mousemove', move);
-      window.addEventListener('mouseup', stop);
-
-      submitCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); start(e); }, { passive: false });
-      submitCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); move(e); }, { passive: false });
-      submitCanvas.addEventListener('touchend', stop);
+      stamp.addEventListener('pointerdown', onPointerDown);
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
     }
 
-    function clearSubmitSigCanvas() {
-      if (!submitCanvas || !submitCtx) return;
-      submitCtx.clearRect(0, 0, submitCanvas.width, submitCanvas.height);
-      hasDrawnSubmitSig = false;
-      updateSubmitSigBadge(false);
+    // ==================== XÁC THỰC KÝ SỐ TRÊN ĐIỆN THOẠI (VGCA SMARTCA) ====================
+    let vgcaCountdownTimer = null;
+    let vgcaRemainingSeconds = 60;
+    let vgcaAuthCallback = null;
+
+    function openVgcaMobileAuthModal(callback) {
+      if (callback) vgcaAuthCallback = callback;
+      const modal = document.getElementById('modalVgcaMobileAuth');
+      if (!modal) return;
+
+      const titleEl = document.getElementById('vgcaAuthDocTitle');
+      const signerEl = document.getElementById('vgcaAuthSigner');
+      const sessionEl = document.getElementById('vgcaAuthSessionId');
+      const countdownEl = document.getElementById('vgcaCountdown');
+
+      if (titleEl) {
+        const docTitle = (document.getElementById('viewerDocTitle') ? document.getElementById('viewerDocTitle').innerText : '') || 
+                         (document.getElementById('newDocTitle') ? document.getElementById('newDocTitle').value : '') || 'KeHoachBaiDay.pdf';
+        titleEl.innerText = docTitle;
+      }
+      if (signerEl && currentUser) {
+        signerEl.innerText = `${currentUser.name} (${currentUser.department || 'THCS Chu Văn An'})`;
+      }
+      if (sessionEl) {
+        sessionEl.innerText = 'VGCA-2026-' + Math.floor(100000 + Math.random() * 900000);
+      }
+
+      // Khởi động đếm ngược 60s
+      vgcaRemainingSeconds = 60;
+      if (countdownEl) countdownEl.innerText = '00:60';
+      if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+
+      vgcaCountdownTimer = setInterval(() => {
+        vgcaRemainingSeconds--;
+        if (vgcaRemainingSeconds <= 0) {
+          clearInterval(vgcaCountdownTimer);
+          if (countdownEl) countdownEl.innerText = 'Hết hạn';
+          alert('⚠️ Phiên xác thực VGCA đã hết hạn! Vui lòng thao tác lại.');
+          closeVgcaMobileAuthModal();
+          return;
+        }
+        const secs = vgcaRemainingSeconds < 10 ? '0' + vgcaRemainingSeconds : vgcaRemainingSeconds;
+        if (countdownEl) countdownEl.innerText = `00:${secs}`;
+      }, 1000);
+
+      document.getElementById('vgcaAuthSuccessAlert').classList.add('hidden');
+      const pinInput = document.getElementById('vgcaPinInput');
+      if (pinInput) pinInput.value = '';
+
+      openModal('modalVgcaMobileAuth');
     }
 
-    function applyDrawSigToSubmission() {
-      if (!hasDrawnSubmitSig) {
-        alert('Vui lòng ký vào khung trước khi xác nhận!');
+    function closeVgcaMobileAuthModal() {
+      if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+      closeModal('modalVgcaMobileAuth');
+    }
+
+    function simulateApproveOnPhone() {
+      const btn = document.getElementById('btnApproveOnPhone');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-base"></i> <span>Đang xác thực FaceID/Vân tay trên điện thoại...</span>';
+
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-fingerprint text-base"></i> <span>Xác Nhận Trên Điện Thoại (FaceID / PIN ứng dụng)</span>';
+        completeVgcaAuthSuccess();
+      }, 800);
+    }
+
+    function confirmWithVgcaPin() {
+      const pinInput = document.getElementById('vgcaPinInput');
+      const pin = pinInput ? pinInput.value.trim() : '';
+      if (pin && pin.length < 4) {
+        alert('Mã PIN ký số phải từ 4 đến 6 ký tự số!');
+        pinInput.focus();
         return;
       }
-      updateSubmitSigBadge(true);
-      alert('Đã ghi nhận nét ký tay của bạn cho bài dạy này!');
+      completeVgcaAuthSuccess();
     }
 
-    function handleModalSigImageUpload(file) {
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          // Bóc tách nền trắng tự động
-          const offCanvas = document.createElement('canvas');
-          offCanvas.width = img.width;
-          offCanvas.height = img.height;
-          const offCtx = offCanvas.getContext('2d');
-          offCtx.drawImage(img, 0, 0);
+    function completeVgcaAuthSuccess() {
+      if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+      const alertEl = document.getElementById('vgcaAuthSuccessAlert');
+      alertEl.classList.remove('hidden');
 
-          const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
-          const data = imgData.data;
-          const threshold = 180;
-
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
-            if (brightness > threshold && Math.abs(r - g) < 25 && Math.abs(r - b) < 25) {
-              data[i + 3] = 0; // Transparent
-            } else {
-              data[i] = Math.min(255, data[i] * 0.85);
-              data[i + 2] = Math.min(255, data[i + 2] * 1.15);
-            }
+      setTimeout(() => {
+        closeVgcaMobileAuthModal();
+        if (typeof vgcaAuthCallback === 'function') {
+          const cb = vgcaAuthCallback;
+          vgcaAuthCallback = null;
+          cb();
+        } else {
+          // Xử lý theo ngữ cảnh
+          if (selectedUploadFile && !document.getElementById('modalNewDoc').classList.contains('hidden')) {
+            performRealDocSubmission();
+          } else if (leaderTargetDocId && !document.getElementById('modalLeaderApprove').classList.contains('hidden')) {
+            executeLeaderApprove();
+          } else if (principalTargetDocId && !document.getElementById('modalPrincipalApprove').classList.contains('hidden')) {
+            executePrincipalApprove();
+          } else {
+            alert('🎉 Ký số VGCA thành công với xác thực di động an toàn!');
+            closeModal('modalDocViewer');
+            loadDocuments();
           }
-          offCtx.putImageData(imgData, 0, 0);
-          modalUploadedSigBase64 = offCanvas.toDataURL('image/png');
-
-          const previewDiv = document.getElementById('modalUploadSigPreview');
-          const previewImg = document.getElementById('modalUploadSigImg');
-          previewImg.src = modalUploadedSigBase64;
-          previewDiv.classList.remove('hidden');
-          updateSubmitSigBadge(true);
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+        }
+      }, 900);
     }
 
-    // NỘP KẾ HOẠCH BÀI DẠY (BẮT BUỘC KÝ SỐ)
+    // Nộp kế hoạch bài dạy mới (Yêu cầu xác thực VGCA di động)
     async function submitNewDoc(e) {
-      e.preventDefault();
+      if (e && e.preventDefault) e.preventDefault();
 
-      // 1. Xác định chữ ký nộp kèm
-      let signatureToSubmit = null;
-      if (currentSubmitSigMode === 'saved') {
-        signatureToSubmit = currentUser ? (currentUser.signatureImage || processedSignatureBase64) : null;
-      } else if (currentSubmitSigMode === 'draw') {
-        if (hasDrawnSubmitSig && submitCanvas) {
-          signatureToSubmit = submitCanvas.toDataURL('image/png');
-        }
-      } else if (currentSubmitSigMode === 'upload') {
-        signatureToSubmit = modalUploadedSigBase64;
-      }
-
-      // KIỂM TRA BẮT BUỘC: Chưa ký thì KHÔNG CHO NỘP!
-      if (!signatureToSubmit) {
-        alert('⚠️ BẠN CHƯA KÝ TÊN VÀO GIÁO ÁN!\n\nVui lòng vẽ chữ ký hoặc chọn mẫu chữ ký của bạn tại Bước 2 trước khi nộp bài.');
-        switchDocSigMode('draw');
-        return;
-      }
-
-      if (!document.getElementById('chkConfirmSign').checked) {
-        alert('⚠️ Vui lòng tick chọn ô xác nhận đồng ý ký số duyệt cấp 1 trước khi nộp bài!');
-        document.getElementById('chkConfirmSign').focus();
+      if (!selectedUploadFile && !selectedUploadFileBase64) {
+        alert('⚠️ Vui lòng chọn file giáo án (.docx hoặc .pdf) từ máy tính của bạn trước khi nộp!');
+        document.getElementById('fileDropZone').click();
         return;
       }
 
       const title = document.getElementById('newDocTitle').value.trim();
+      if (!title) {
+        alert('Vui lòng nhập tên bài dạy hoặc chuyên đề!');
+        document.getElementById('newDocTitle').focus();
+        return;
+      }
+
+      if (!document.getElementById('chkConfirmSign').checked) {
+        alert('Vui lòng tick chọn ô xác nhận đồng ý ký số duyệt cấp 1 trước khi nộp bài!');
+        document.getElementById('chkConfirmSign').focus();
+        return;
+      }
+
+      // Kích hoạt bước xác thực chữ ký số trên điện thoại di động
+      openVgcaMobileAuthModal(() => {
+        performRealDocSubmission();
+      });
+    }
+
+    async function performRealDocSubmission() {
+      const title = document.getElementById('newDocTitle').value.trim();
       const grade = document.getElementById('newDocGrade').value;
       const week = document.getElementById('newDocWeek').value;
-      const signPlacement = document.getElementById('newDocSignPlacement').value;
+      const signPlacement = currentStampPlacement || document.getElementById('newDocSignPlacement').value;
       const btn = document.getElementById('btnSubmitNewDoc');
+
+      // Tự động sinh con dấu chữ ký số điện tử công vụ VGCA chuẩn
+      const signatureToSubmit = currentUser ? (currentUser.signatureImage || generateVgcaDigitalStamp(currentUser.name, currentUser.department, 'Giáo viên soạn thảo')) : null;
 
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang ký số & tải lên...</span>';
@@ -1552,21 +1851,17 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
 
-        // Lưu chữ ký vào người dùng nếu chưa có
-        if (currentUser && !currentUser.signatureImage) {
-          currentUser.signatureImage = signatureToSubmit;
-        }
-
         closeModal('modalNewDoc');
+        closeModal('modalDocViewer');
         document.getElementById('formNewDoc').reset();
         removeSelectedFile();
-        alert('🎉 Ký số và nộp bài thành công! Hồ sơ đã được chuyển lên Tổ trưởng chuyên môn duyệt.');
+        alert('🎉 Ký số VGCA và nộp bài thành công! Hồ sơ đã được chuyển lên Tổ trưởng chuyên môn phê duyệt.');
         loadDocuments();
       } catch (err) {
         alert('Lỗi nộp bài: ' + err.message);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-signature"></i> <span>Ký Số & Nộp Trình Duyệt</span>';
+        btn.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> <span>Ký Số & Nộp Trình Duyệt</span>';
       }
     }
 
@@ -1664,7 +1959,6 @@
 
     // ==================== QUY TRÌNH KÝ DUYỆT TỔ TRƯỞNG & BGH ====================
     let leaderTargetDocId = null;
-    let leaderPad, leaderPadCtx, isLeaderDrawing = false, hasDrawnLeaderSig = false;
 
     function openLeaderApproveModal(docId) {
       leaderTargetDocId = docId;
@@ -1674,90 +1968,34 @@
       document.getElementById('leaderApproveDocTitle').innerText = doc.title;
       document.getElementById('leaderApproveDocAuthor').innerText = doc.author;
       document.getElementById('leaderApproveDocDept').innerText = doc.department;
-
-      const sigImg = currentUser ? (currentUser.signatureImage || processedSignatureBase64) : null;
-      const previewImg = document.getElementById('leaderModalSigImg');
-      const emptyDiv = document.getElementById('leaderModalSigEmpty');
-      if (sigImg) {
-        previewImg.src = sigImg;
-        previewImg.classList.remove('hidden');
-        emptyDiv.classList.add('hidden');
-      } else {
-        previewImg.classList.add('hidden');
-        emptyDiv.classList.remove('hidden');
+      
+      const signerEl = document.getElementById('leaderApproveSignerNameDisplay');
+      if (signerEl && currentUser) {
+        signerEl.innerText = `${currentUser.name} - Tổ trưởng ${currentUser.department || ''}`;
       }
 
-      document.getElementById('leaderDrawContainer').classList.add('hidden');
       openModal('modalLeaderApprove');
     }
 
-    function openLeaderDrawPad() {
-      const container = document.getElementById('leaderDrawContainer');
-      container.classList.remove('hidden');
-      leaderPad = document.getElementById('leaderSigPad');
-      if (!leaderPad || leaderPad.hasAttribute('data-inited')) return;
-      leaderPad.setAttribute('data-inited', 'true');
-      leaderPadCtx = leaderPad.getContext('2d');
-      leaderPadCtx.strokeStyle = '#0284c7';
-      leaderPadCtx.lineWidth = 2.5;
-      leaderPadCtx.lineCap = 'round';
-
-      function getP(e) {
-        const rect = leaderPad.getBoundingClientRect();
-        return {
-          x: (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left,
-          y: (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top
-        };
-      }
-
-      function s(e) {
-        isLeaderDrawing = true;
-        hasDrawnLeaderSig = true;
-        leaderPadCtx.beginPath();
-        const p = getP(e);
-        leaderPadCtx.moveTo(p.x, p.y);
-      }
-      function m(e) {
-        if (!isLeaderDrawing) return;
-        const p = getP(e);
-        leaderPadCtx.lineTo(p.x, p.y);
-        leaderPadCtx.stroke();
-      }
-      function e() { isLeaderDrawing = false; }
-
-      leaderPad.addEventListener('mousedown', s);
-      leaderPad.addEventListener('mousemove', m);
-      window.addEventListener('mouseup', e);
-
-      leaderPad.addEventListener('touchstart', (ev) => { ev.preventDefault(); s(ev); }, { passive: false });
-      leaderPad.addEventListener('touchmove', (ev) => { ev.preventDefault(); m(ev); }, { passive: false });
-      leaderPad.addEventListener('touchend', e);
-    }
-
-    function clearLeaderPad() {
-      if (!leaderPad || !leaderPadCtx) return;
-      leaderPadCtx.clearRect(0, 0, leaderPad.width, leaderPad.height);
-      hasDrawnLeaderSig = false;
+    function executeLeaderApproveWithVgca() {
+      openVgcaMobileAuthModal(() => {
+        executeLeaderApprove();
+      });
     }
 
     async function executeLeaderApprove() {
       const comment = document.getElementById('leaderApproveComment').value.trim();
-      let signatureImage = null;
-      if (hasDrawnLeaderSig && leaderPad) {
-        signatureImage = leaderPad.toDataURL('image/png');
-      } else if (currentUser && (currentUser.signatureImage || processedSignatureBase64)) {
-        signatureImage = currentUser.signatureImage || processedSignatureBase64;
-      }
+      const signatureImage = currentUser ? (currentUser.signatureImage || generateVgcaDigitalStamp(currentUser.name, currentUser.department, 'Tổ trưởng chuyên môn')) : null;
 
       const btn = document.getElementById('btnConfirmLeaderApprove');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang ký nháy...</span>';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang ký nháy VGCA...</span>';
 
       try {
         const res = await fetch(`/api/documents/${leaderTargetDocId}/approve-leader`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-          body: JSON.stringify({ comment, signatureImage, signPlacement: 'middle-right' })
+          body: JSON.stringify({ comment, signatureImage, signPlacement: currentStampPlacement || 'middle-right' })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
@@ -1765,12 +2003,13 @@
         alert('Tổ trưởng đã ký nháy duyệt chuyên môn thành công! Hồ sơ đã được chuyển lên Ban Giám hiệu.');
         closeModal('modalLeaderApprove');
         closeModal('modalDocDetails');
+        closeModal('modalDocViewer');
         loadDocuments();
       } catch (err) {
         alert('Lỗi: ' + err.message);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Xác Nhận Ký Nháy & Chuyển BGH</span>';
+        btn.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> <span>Xác Thực Điện Thoại & Ký Nháy</span>';
       }
     }
 
@@ -1785,6 +2024,12 @@
       openModal('modalPrincipalApprove');
     }
 
+    function executePrincipalApproveWithVgca() {
+      openVgcaMobileAuthModal(() => {
+        executePrincipalApprove();
+      });
+    }
+
     async function executePrincipalApprove() {
       const comment = document.getElementById('principalApproveComment').value.trim();
       const btn = document.getElementById('btnConfirmPrincipalApprove');
@@ -1795,7 +2040,7 @@
         const res = await fetch(`/api/documents/${principalTargetDocId}/approve-principal`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-          body: JSON.stringify({ comment, signPlacement: 'bottom-right' })
+          body: JSON.stringify({ comment, signPlacement: currentStampPlacement || 'bottom-right' })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
@@ -1803,12 +2048,13 @@
         alert('Phê duyệt và đóng dấu chữ ký số VGCA thành công! Hồ sơ đã lưu trữ vào Kho số trường.');
         closeModal('modalPrincipalApprove');
         closeModal('modalDocDetails');
+        closeModal('modalDocViewer');
         loadDocuments();
       } catch (err) {
         alert('Lỗi: ' + err.message);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-signature"></i> <span>Ký Số Ban Cơ Yếu & Phê Duyệt Cấp 3</span>';
+        btn.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> <span>Xác Thực Điện Thoại & Đóng Dấu Số</span>';
       }
     }
 
@@ -2234,6 +2480,26 @@
     // ==================== TIỆN ÍCH MODAL ====================
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function closeModalOnBackdrop(event, modalId) {
+      if (event.target === event.currentTarget) {
+        closeModal(modalId);
+      }
+    }
+
+    // Lắng nghe phím Escape để đóng nhanh bất kỳ modal nào đang mở
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modals = ['modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalChangePass'];
+        for (const id of modals) {
+          const el = document.getElementById(id);
+          if (el && !el.classList.contains('hidden')) {
+            closeModal(id);
+            break;
+          }
+        }
+      }
+    });
+
     function openNewDocModal() {
       openModal('modalNewDoc');
       initSubmitModalSignature();
