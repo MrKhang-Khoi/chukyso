@@ -74,6 +74,15 @@ Hệ thống sẽ chạy tại địa chỉ: **`http://localhost:3000`**
 
 ---
 
+## ☁️ Triển khai Đám Mây 24/7 Miễn Phí (Deploy to Render)
+
+Nhấn nút bên dưới để đưa toàn bộ hệ thống lên Cloud Render chạy độc lập 24/7 không cần mở máy tính:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/MrKhang-Khoi/chukyso)
+
+
+---
+
 ## 🧪 5. Bằng chứng Hệ thống Hoạt động Chính xác (Verification Proof)
 
 ### 5.1. Kết quả Kiểm thử Xác thực Chữ ký số Mật mã VGCA (`npm test`)

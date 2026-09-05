@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: edusign-vgca
+    env: node
+    plan: free
+    region: singapore
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20
