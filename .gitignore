@@ -32,3 +32,7 @@ GoogleDrive_KhoTruong/**
 # CodeGraph database
 .codegraph/
 *.db
+
+# Tunnel tools
+cloudflared.exe
+
