@@ -7,6 +7,7 @@ const { spawn } = require('child_process');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const { PDFDocument } = require('pdf-lib');
 const googleDriveService = require('./googleDriveService');
 
 console.log('═══════════════════════════════════════════════════════════════');
@@ -27,17 +28,23 @@ function assert(condition, message) {
   }
 }
 
-async function httpRequest(options, postData = null) {
+async function httpRequest(options, postData = null, isBinary = false) {
   return new Promise((resolve, reject) => {
     const req = http.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
       res.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        if (isBinary) {
+          resolve({ status: res.statusCode, headers: res.headers, body: buffer });
+          return;
+        }
+        const str = buffer.toString('utf8');
         try {
-          const parsed = JSON.parse(data);
+          const parsed = JSON.parse(str);
           resolve({ status: res.statusCode, headers: res.headers, body: parsed });
         } catch {
-          resolve({ status: res.statusCode, headers: res.headers, body: data });
+          resolve({ status: res.statusCode, headers: res.headers, body: str });
         }
       });
     });
@@ -330,10 +337,15 @@ async function runTests() {
       port: 3000,
       path: `/api/documents/${createdDocId}/download-signed`,
       method: 'GET'
-    });
+    }, null, true);
     assert(downloadSignedRes.status === 200, 'API /api/documents/:id/download-signed tải file đã ký thành công');
     assert(downloadSignedRes.headers['content-type'] === 'application/pdf', 'Header Content-Type là application/pdf');
     assert(downloadSignedRes.body && downloadSignedRes.body.length > 2000, 'File PDF đã ký chứa đầy đủ chữ ký số 3 cấp và con dấu nhà trường');
+
+    // 3.7c Kiểm tra KHÔNG CÓ TRANG CHỨNG THƯ THỪA (Xóa trang cuối - ký trực tiếp lên trang văn bản gốc)
+    const origPdfDoc = await PDFDocument.load(sampleFileBuffer);
+    const signedPdfDoc = await PDFDocument.load(downloadSignedRes.body);
+    assert(signedPdfDoc.getPageCount() === origPdfDoc.getPageCount(), `Xóa trang cuối thành công: Số trang PDF sau ký (${signedPdfDoc.getPageCount()}) bằng số trang gốc (${origPdfDoc.getPageCount()}), không sinh trang chứng thư giả định`);
 
     // 3.8 Kiểm tra API Xác thực chữ ký số
     const verifyHttpRes = await httpRequest({
@@ -360,6 +372,75 @@ async function runTests() {
       method: 'GET'
     });
     assert(sealUploadRes.status === 200, 'Tải thành công con dấu đỏ nhà trường từ /uploads/signatures/school_seal.png (Mã 200)');
+
+    // 3.10 Kiểm tra tính năng THU HỒI BÀI NỘP (Recall) khi tổ trưởng chưa ký duyệt
+    const docToRecallRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/documents',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      title: 'Kế hoạch bài dạy kiểm thử tính năng Thu Hồi',
+      grade: 'Khối 8',
+      week: 'Tuần 13',
+      term: 'Học kỳ I',
+      fileName: 'KHBD_Test_ThuHoi.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      fileSize: 1024,
+      fileBase64: 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,UEsDBBQAAAAIAAA=',
+      signature: {
+        signerName: 'Hà Văn Tý',
+        role: 'Giáo viên',
+        signType: 'VGCA_MOBILE',
+        visualSign: 'Đã ký điện tử'
+      }
+    });
+    const recallDocId = docToRecallRes.body.data.id;
+    assert(docToRecallRes.status === 200 && docToRecallRes.body.data.status === 'WAITING_LEADER_APPROVAL', 'Nộp hồ sơ chờ duyệt thành công để kiểm tra thu hồi');
+
+    const recallActionRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: `/api/documents/${recallDocId}/recall`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    });
+    assert(recallActionRes.status === 200 && recallActionRes.body.data.status === 'RECALLED', 'Giáo viên THU HỒI thành công kế hoạch bài dạy khi tổ trưởng chưa ký');
+
+    // 3.11 Kiểm tra tính năng CHỈNH SỬA & LƯU NỘI DUNG TÀI LIỆU WORD TRƯỚC KHI KÝ
+    const editedHtmlContent = '<div class="word-preview-page"><p style="font-family: Times New Roman; font-size: 14pt;"><strong>KẾ HOẠCH BÀI DẠY ĐÃ ĐƯỢC GIÁO VIÊN CHỈNH SỬA TRỰC TIẾP TRÊN WEB</strong></p></div>';
+    const updateContentRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: `/api/documents/${recallDocId}/update-content`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      customContentHtml: editedHtmlContent
+    });
+    assert(updateContentRes.status === 200 && updateContentRes.body.success === true, 'API /update-content lưu thay đổi nội dung Word thành công');
+
+    // 3.12 Kiểm tra tính năng XÓA HỒ SƠ / TỆP ĐÍNH KÈM
+    const deleteDocRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: `/api/documents/${recallDocId}`,
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    });
+    assert(deleteDocRes.status === 200 && deleteDocRes.body.success === true, 'Giáo viên XÓA HOÀN TOÀN hồ sơ đã thu hồi thành công');
 
     // 3.9b Kiểm tra cú pháp toàn bộ JavaScript trong file giao diện index.html (Không bị lỗi cú pháp như Unexpected token)
     const htmlContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');

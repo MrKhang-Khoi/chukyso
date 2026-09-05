@@ -16,7 +16,45 @@ function safeAscii(str) {
 }
 
 /**
- * Đóng dấu chữ ký số 3 cấp vào văn bản PDF thật
+ * Chuyển đổi tệp Microsoft Word (.docx / .doc) sang PDF bằng Word COM Automation
+ */
+function convertDocxToPdf(docxPath, outputPath) {
+  return new Promise((resolve, reject) => {
+    const absDocx = path.resolve(docxPath);
+    const absPdf = path.resolve(outputPath);
+    const script = [
+      `$w = New-Object -ComObject Word.Application`,
+      `$w.Visible = $false`,
+      `try {`,
+      `  $doc = $w.Documents.Open('${absDocx.replace(/'/g, "''")}')`,
+      `  $doc.SaveAs([ref]'${absPdf.replace(/'/g, "''")}', [ref]17)`,
+      `  $doc.Close()`,
+      `  Write-Output "SUCCESS"`,
+      `} catch {`,
+      `  Write-Error $_.Exception.Message`,
+      `} finally {`,
+      `  $w.Quit()`,
+      `}`
+    ].join('\r\n');
+
+    const tempPs1 = path.join(__dirname, `temp_conv_${Date.now()}_${Math.floor(Math.random()*1000)}.ps1`);
+    fs.writeFileSync(tempPs1, script, 'utf8');
+
+    const { execFile } = require('child_process');
+    execFile('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', tempPs1], { timeout: 35000 }, (error, stdout, stderr) => {
+      try { if (fs.existsSync(tempPs1)) fs.unlinkSync(tempPs1); } catch (e) {}
+
+      if (fs.existsSync(absPdf) && fs.statSync(absPdf).size > 100) {
+        resolve(absPdf);
+      } else {
+        reject(new Error('Chuyển đổi Word sang PDF không thành công: ' + (stderr || error?.message || 'File không tồn tại')));
+      }
+    });
+  });
+}
+
+/**
+ * Đóng dấu ảnh chữ ký & chứng nhận điện tử vào tệp PDF
  */
 async function generateSignedPdf(doc) {
   let sourcePdfBuffer = null;
@@ -29,6 +67,20 @@ async function generateSignedPdf(doc) {
         sourcePdfBuffer = fs.readFileSync(doc.filePath);
       } catch (err) {
         console.error('Lỗi đọc file gốc:', err.message);
+      }
+    } else if (ext === '.docx' || ext === '.doc') {
+      try {
+        const convertedPdfPath = doc.filePath.replace(/\.[^.]+$/, '.pdf');
+        if (fs.existsSync(convertedPdfPath) && fs.statSync(convertedPdfPath).size > 100) {
+          sourcePdfBuffer = fs.readFileSync(convertedPdfPath);
+        } else {
+          await convertDocxToPdf(doc.filePath, convertedPdfPath);
+          if (fs.existsSync(convertedPdfPath)) {
+            sourcePdfBuffer = fs.readFileSync(convertedPdfPath);
+          }
+        }
+      } catch (e) {
+        console.error('Lỗi chuyển đổi Word sang PDF khi ký:', e.message);
       }
     }
   }
@@ -104,297 +156,59 @@ async function generateSignedPdf(doc) {
         console.error('Lỗi đóng dấu ảnh chữ ký trực tiếp lên trang văn bản:', e.message);
       }
     }
-  }
 
-  // Thêm một trang phụ lục xác nhận chữ ký số chính thức (Official Digital Signature Certificate Sheet)
-  const certPage = pdfDoc.addPage([595.28, 841.89]);
-  const { width, height } = certPage.getSize();
-
-  // Khung viền chứng nhận hành chính sư phạm
-  certPage.drawRectangle({
-    x: 30,
-    y: 30,
-    width: width - 60,
-    height: height - 60,
-    borderColor: rgb(0.1, 0.2, 0.4),
-    borderWidth: 1.5,
-    color: rgb(0.98, 0.99, 1.0)
-  });
-
-  // Header cơ quan
-  certPage.drawText(safeAscii('SO GIAO DUC VA DAO TAO TINH QUANG NGAI'), {
-    x: 45,
-    y: height - 65,
-    size: 10,
-    font: fontRegular,
-    color: rgb(0.2, 0.2, 0.2)
-  });
-  certPage.drawText(safeAscii('TRUONG THCS CHU VAN AN'), {
-    x: 45,
-    y: height - 80,
-    size: 11,
-    font: fontBold,
-    color: rgb(0.05, 0.2, 0.5)
-  });
-
-  certPage.drawText(safeAscii('CONG HOA XA HOI CHU NGHIA VIET NAM'), {
-    x: width - 265,
-    y: height - 65,
-    size: 10,
-    font: fontBold,
-    color: rgb(0.1, 0.1, 0.1)
-  });
-  certPage.drawText(safeAscii('Doc lap - Tu do - Hanh phuc'), {
-    x: width - 215,
-    y: height - 80,
-    size: 9.5,
-    font: fontOblique,
-    color: rgb(0.2, 0.2, 0.2)
-  });
-
-  // Đường kẻ phân cách
-  certPage.drawLine({
-    start: { x: 45, y: height - 95 },
-    end: { x: width - 45, y: height - 95 },
-    thickness: 1,
-    color: rgb(0.7, 0.7, 0.8)
-  });
-
-  // Tiêu đề phụ lục
-  const docCode = safeAscii(doc.id || 'KHBD-2026');
-  certPage.drawText(safeAscii('PHU LUC XAC NHAN CHU KY SO & PHE DUYET GIAO AN'), {
-    x: 75,
-    y: height - 130,
-    size: 14,
-    font: fontBold,
-    color: rgb(0.1, 0.2, 0.5)
-  });
-  certPage.drawText(safeAscii('(Ban hanh theo quy dinh tai Nghi dinh so 30/2020/ND-CP ve Cong tac van thu dien tu)'), {
-    x: 80,
-    y: height - 148,
-    size: 9,
-    font: fontOblique,
-    color: rgb(0.4, 0.4, 0.4)
-  });
-
-  // Khung thông tin bài dạy
-  const infoY = height - 175;
-  certPage.drawRectangle({
-    x: 45,
-    y: infoY - 80,
-    width: width - 90,
-    height: 85,
-    borderColor: rgb(0.8, 0.85, 0.9),
-    borderWidth: 1,
-    color: rgb(0.95, 0.97, 1.0)
-  });
-
-  const safeTitle = safeAscii(doc.title || 'Ke hoach bai day');
-  const safeDept = safeAscii(doc.department || 'To Toan - Tin');
-  const safeAuthor = safeAscii(doc.author || 'Giao vien');
-
-  certPage.drawText(`MA HO SO: ${docCode}`, { x: 60, y: infoY - 15, size: 9.5, font: fontBold, color: rgb(0.1, 0.3, 0.7) });
-  certPage.drawText(`BAI DAY: ${safeTitle.substring(0, 75)}`, { x: 60, y: infoY - 32, size: 10, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
-  certPage.drawText(`GIAO VIEN SOAN: ${safeAuthor}   |   TO CHUYEN MON: ${safeDept}`, { x: 60, y: infoY - 48, size: 9, font: fontRegular, color: rgb(0.2, 0.2, 0.2) });
-  certPage.drawText(`KHOI LOP: ${safeAscii(doc.grade || 'Khoi 9')}   |   TUAN DAY: ${safeAscii(doc.week || 'Tuan 12')}   |   TRANG THAI: ${safeAscii(doc.status || 'APPROVED')}`, { x: 60, y: infoY - 64, size: 9, font: fontRegular, color: rgb(0.2, 0.2, 0.2) });
-
-  // 3 CỘT CHỮ KÝ THEO CHUẨN NGHỊ ĐỊNH 30/2020/NĐ-CP
-  const colY = height - 300;
-  const colW = (width - 90) / 3;
-
-  // --- CỘT 1: GIÁO VIÊN SOẠN THẢO (CẤP 1) ---
-  const teacherSig = (doc.signatures || []).find(s => s.step === 1) || {
-    signerName: doc.author || 'Giao vien',
-    signedAt: doc.createdAt || '2026-09-05'
-  };
-
-  certPage.drawText(safeAscii('GIAO VIEN SOAN THAO'), { x: 55, y: colY, size: 10, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
-  certPage.drawText(safeAscii('(Ky va ghi ro ho ten)'), { x: 55, y: colY - 14, size: 8.5, font: fontOblique, color: rgb(0.4, 0.4, 0.4) });
-
-  // Vẽ chữ ký giáo viên nếu có ảnh
-  if (teacherSig.visualSignImage && teacherSig.visualSignImage.includes('base64')) {
-    try {
-      const base64Data = teacherSig.visualSignImage.replace(/^data:image\/\w+;base64,/, '');
-      const imgBuffer = Buffer.from(base64Data, 'base64');
-      const pngImg = await pdfDoc.embedPng(imgBuffer);
-      certPage.drawImage(pngImg, {
-        x: 55,
-        y: colY - 80,
-        width: 100,
-        height: 50
-      });
-    } catch (e) {
-      console.error('Lỗi nhúng ảnh chữ ký giáo viên:', e.message);
-    }
-  }
-
-  certPage.drawText(safeAscii(teacherSig.signerName || 'Giao vien'), {
-    x: 55,
-    y: colY - 98,
-    size: 10,
-    font: fontBold,
-    color: rgb(0.1, 0.1, 0.4)
-  });
-  certPage.drawText(`Ngay ky: ${safeAscii(teacherSig.signedAt || '')}`, {
-    x: 55,
-    y: colY - 110,
-    size: 8,
-    font: fontRegular,
-    color: rgb(0.4, 0.4, 0.4)
-  });
-
-  // --- CỘT 2: TỔ TRƯỞNG CHUYÊN MÔN (CẤP 2) ---
-  const leaderSig = (doc.signatures || []).find(s => s.step === 2);
-  const col2X = 45 + colW + 10;
-
-  certPage.drawText(safeAscii('TO TRUONG CHUYEN MON'), { x: col2X, y: colY, size: 10, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
-  certPage.drawText(safeAscii('(Ky nhay duyet chuyen mon)'), { x: col2X, y: colY - 14, size: 8.5, font: fontOblique, color: rgb(0.4, 0.4, 0.4) });
-
-  if (leaderSig) {
-    if (leaderSig.visualSignImage && leaderSig.visualSignImage.includes('base64')) {
+    // 2. Chữ ký Tổ trưởng chuyên môn (Duyệt cấp 2) nếu có
+    const leaderSig = (doc.signatures || []).find(s => s.step === 2);
+    if (leaderSig && leaderSig.visualSignImage && leaderSig.visualSignImage.includes('base64')) {
       try {
-        const base64Data = leaderSig.visualSignImage.replace(/^data:image\/\w+;base64,/, '');
-        const imgBuffer = Buffer.from(base64Data, 'base64');
-        const pngImg = await pdfDoc.embedPng(imgBuffer);
-        certPage.drawImage(pngImg, {
-          x: col2X,
-          y: colY - 80,
-          width: 95,
-          height: 48
+        const base64Clean = leaderSig.visualSignImage.replace(/^data:image\/\w+;base64,/, '');
+        const pngLeaderImg = await pdfDoc.embedPng(Buffer.from(base64Clean, 'base64'));
+        const scale = (doc.signCoordinates && doc.signCoordinates.scale) || 1.0;
+        const sW = Math.round(95 * scale);
+        const sH = Math.round(60 * scale);
+        const leaderX = (pW * 0.46);
+        const leaderY = (doc.signCoordinates && typeof doc.signCoordinates.yPercent === 'number')
+          ? (1 - (doc.signCoordinates.yPercent / 100)) * pH
+          : (pW > pH ? 290 : 504);
+
+        lastDocPage.drawImage(pngLeaderImg, {
+          x: Math.max(10, Math.min(pW - sW - 10, leaderX)),
+          y: Math.max(10, Math.min(pH - sH - 10, leaderY)),
+          width: sW,
+          height: sH
         });
       } catch (e) {
-        console.error('Lỗi nhúng ảnh chữ ký tổ trưởng:', e.message);
+        console.error('Lỗi đóng dấu tổ trưởng:', e.message);
       }
     }
 
-    certPage.drawText(safeAscii(leaderSig.signerName || 'To truong'), {
-      x: col2X,
-      y: colY - 98,
-      size: 10,
-      font: fontBold,
-      color: rgb(0.1, 0.1, 0.4)
-    });
-    certPage.drawText(`Ngay duyet: ${safeAscii(leaderSig.signedAt || '')}`, {
-      x: col2X,
-      y: colY - 110,
-      size: 8,
-      font: fontRegular,
-      color: rgb(0.4, 0.4, 0.4)
-    });
-    certPage.drawText(safeAscii('Danh gia: Dat chuan phan phoi'), {
-      x: col2X,
-      y: colY - 122,
-      size: 7.5,
-      font: fontOblique,
-      color: rgb(0.1, 0.5, 0.2)
-    });
-  } else {
-    certPage.drawText(safeAscii('[ Dang cho To truong duyet ]'), {
-      x: col2X,
-      y: colY - 60,
-      size: 9,
-      font: fontOblique,
-      color: rgb(0.7, 0.4, 0.0)
-    });
-  }
+    // 3. Chữ ký Ban Giám hiệu & Con dấu số nhà trường (Phê duyệt cấp 3) nếu có
+    const principalSig = (doc.signatures || []).find(s => s.step === 3);
+    if (principalSig || doc.status === 'APPROVED') {
+      try {
+        const sealPath = path.join(__dirname, 'uploads', 'signatures', 'school_seal.png');
+        if (fs.existsSync(sealPath)) {
+          const pngSeal = await pdfDoc.embedPng(fs.readFileSync(sealPath));
+          const sealSize = 85;
+          const sealX = (pW * 0.18);
+          const sealY = (doc.signCoordinates && typeof doc.signCoordinates.yPercent === 'number')
+            ? (1 - (doc.signCoordinates.yPercent / 100)) * pH - 15
+            : (pW > pH ? 275 : 489);
 
-  // --- CỘT 3: BAN GIÁM HIỆU / HIỆU TRƯỞNG (CẤP 3) ---
-  const principalSig = (doc.signatures || []).find(s => s.step === 3);
-  const col3X = 45 + colW * 2 + 15;
-
-  certPage.drawText(safeAscii('HIEU TRUONG / BAN GIAM HIEU'), { x: col3X, y: colY, size: 10, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
-  certPage.drawText(safeAscii('(Ky so, dong dau co quan)'), { x: col3X, y: colY - 14, size: 8.5, font: fontOblique, color: rgb(0.4, 0.4, 0.4) });
-
-  // Nhúng con dấu trường nếu có
-  const sealPath = path.join(__dirname, 'uploads', 'signatures', 'school_seal.png');
-  if (fs.existsSync(sealPath)) {
-    try {
-      const sealBuffer = fs.readFileSync(sealPath);
-      const sealPng = await pdfDoc.embedPng(sealBuffer);
-      certPage.drawImage(sealPng, {
-        x: col3X + 15,
-        y: colY - 80,
-        width: 65,
-        height: 65
-      });
-    } catch (e) {
-      console.error('Lỗi nhúng con dấu:', e.message);
+          lastDocPage.drawImage(pngSeal, {
+            x: Math.max(10, Math.min(pW - sealSize - 10, sealX)),
+            y: Math.max(10, Math.min(pH - sealSize - 10, sealY)),
+            width: sealSize,
+            height: sealSize
+          });
+        }
+      } catch (e) {
+        console.error('Lỗi đóng con dấu nhà trường:', e.message);
+      }
     }
   }
 
-  if (principalSig) {
-    certPage.drawText(safeAscii(principalSig.signerName || 'Ban Giam hieu'), {
-      x: col3X,
-      y: colY - 98,
-      size: 10,
-      font: fontBold,
-      color: rgb(0.7, 0.1, 0.1)
-    });
-    certPage.drawText(`Ngay ky so: ${safeAscii(principalSig.signedAt || '')}`, {
-      x: col3X,
-      y: colY - 110,
-      size: 8,
-      font: fontRegular,
-      color: rgb(0.4, 0.4, 0.4)
-    });
-    certPage.drawText(safeAscii('Chung thuc: Ban Co yeu Chinh phu (VGCA)'), {
-      x: col3X,
-      y: colY - 122,
-      size: 7.5,
-      font: fontBold,
-      color: rgb(0.1, 0.3, 0.7)
-    });
-    certPage.drawText(safeAscii('Tieu chuan: PAdES LTV X.509 v3 Valid'), {
-      x: col3X,
-      y: colY - 134,
-      size: 7,
-      font: fontRegular,
-      color: rgb(0.2, 0.5, 0.2)
-    });
-  } else {
-    certPage.drawText(safeAscii('[ Dang cho BGH phe duyet ]'), {
-      x: col3X,
-      y: colY - 60,
-      size: 9,
-      font: fontOblique,
-      color: rgb(0.7, 0.4, 0.0)
-    });
-  }
-
-  // Khung xác thực mật mã điện tử ở chân trang
-  const footerY = 90;
-  certPage.drawRectangle({
-    x: 45,
-    y: footerY - 45,
-    width: width - 90,
-    height: 48,
-    borderColor: rgb(0.75, 0.8, 0.9),
-    borderWidth: 0.8,
-    color: rgb(0.96, 0.98, 1.0)
-  });
-
-  certPage.drawText(safeAscii('XAC THUC TOAN VEN VAN BAN DIEN TU:'), {
-    x: 55,
-    y: footerY - 12,
-    size: 8.5,
-    font: fontBold,
-    color: rgb(0.1, 0.3, 0.6)
-  });
-  certPage.drawText(safeAscii('Van ban da duoc ma hoa bam SHA-256 va ky so phe duyet boi He thong EduSign VGCA.'), {
-    x: 55,
-    y: footerY - 24,
-    size: 7.5,
-    font: fontRegular,
-    color: rgb(0.3, 0.3, 0.3)
-  });
-  certPage.drawText(safeAscii('Moi thay doi noi dung sau khi ky se lam mat hieu luc phap ly cua chu ky so theo Luat Giao dich Dien tu.'), {
-    x: 55,
-    y: footerY - 36,
-    size: 7,
-    font: fontOblique,
-    color: rgb(0.5, 0.2, 0.2)
-  });
-
+  // KHÔNG thêm trang phụ lục thừa - xuất thẳng PDF chuẩn chỉ chứa các trang bài dạy thực tế
   return await pdfDoc.save();
 }
 
@@ -450,5 +264,6 @@ async function signWithRealVgca(doc) {
 
 module.exports = {
   generateSignedPdf,
-  signWithRealVgca
+  signWithRealVgca,
+  convertDocxToPdf
 };

@@ -20,19 +20,62 @@
     .badge-waiting-leader { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
     .badge-waiting-principal { background-color: #fefce8; color: #a16207; border: 1px solid #fef08a; }
     .badge-rejected { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-    /* Giả lập trang giấy sư phạm cho xem trước Word */
+    .badge-recalled { background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    
+    /* Trang giấy chuẩn sư phạm A4 hiển thị & chỉnh sửa văn bản Word */
     .word-preview-page {
       background-color: #ffffff;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      padding: 40px;
-      line-height: 1.6;
-      font-size: 14px;
-      color: #1e293b;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.12);
+      padding: 45px 55px;
+      line-height: 1.45;
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 13.5pt;
+      color: #0f172a;
+      min-height: 950px;
+      width: 100%;
+      max-width: 880px;
+      margin: 0 auto;
+      border: 1px solid #cbd5e1;
+      transition: all 0.2s ease;
     }
-    .word-preview-page table { border-collapse: collapse; width: 100%; margin: 16px 0; }
-    .word-preview-page table, .word-preview-page th, .word-preview-page td { border: 1px solid #cbd5e1; padding: 8px 12px; }
-    .word-preview-page th { background-color: #f8fafc; font-weight: bold; }
-    .word-preview-page h1, .word-preview-page h2, .word-preview-page h3 { font-weight: bold; color: #0f172a; margin-top: 16px; margin-bottom: 8px; }
+    .word-preview-page[contenteditable="true"] {
+      outline: 2.5px dashed #2563eb;
+      outline-offset: 4px;
+      cursor: text;
+    }
+    .word-preview-page table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 14px 0;
+      table-layout: auto;
+    }
+    .word-preview-page table, .word-preview-page th, .word-preview-page td {
+      border: 1px solid #000000;
+      padding: 6px 10px;
+      vertical-align: top;
+      font-size: 13pt;
+      line-height: 1.35;
+    }
+    .word-preview-page th {
+      background-color: #f8fafc;
+      font-weight: bold;
+      text-align: center;
+    }
+    .word-preview-page td:focus, .word-preview-page p:focus {
+      background-color: #eff6ff;
+      outline: none;
+    }
+    .word-preview-page h1, .word-preview-page h2, .word-preview-page h3 {
+      font-weight: bold;
+      color: #000000;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .word-preview-page p {
+      margin-bottom: 6px;
+      text-align: justify;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased">
@@ -651,6 +694,18 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <!-- Nút kích hoạt chỉnh sửa văn bản Word -->
+          <button type="button" id="btnToggleWordEdit" onclick="toggleWordEditMode()" class="hidden px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span id="btnWordEditText">Chỉnh Sửa Văn Bản</span>
+          </button>
+
+          <!-- Nút Lưu nội dung Word đã sửa -->
+          <button type="button" id="btnSaveWordChanges" onclick="saveWordDocumentChanges()" class="hidden px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Lưu Thay Đổi</span>
+          </button>
+
           <!-- Nút kích hoạt đặt chữ ký số -->
           <button type="button" id="btnToggleSignaturePlacement" onclick="toggleSignaturePlacementMode()" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
             <i class="fa-solid fa-stamp"></i>
@@ -666,6 +721,44 @@
           <button onclick="closeModal('modalDocViewer')" class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition">
             Đóng xem trước
           </button>
+        </div>
+      </div>
+
+      <!-- Thanh công cụ soạn thảo / Chỉnh sửa tài liệu Word nâng cao -->
+      <div id="viewerWordEditorBar" class="hidden px-4 py-2 bg-gradient-to-r from-slate-50 to-indigo-50/60 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs shadow-inner select-none">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <!-- Phông chữ -->
+          <select id="editorFontFamily" onchange="applyWordFormat('fontName', this.value)" class="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none shadow-sm cursor-pointer">
+            <option value="Times New Roman">Times New Roman (Chuẩn văn thư)</option>
+            <option value="Arial">Arial</option>
+            <option value="Calibri">Calibri</option>
+          </select>
+          <!-- Cỡ chữ -->
+          <select id="editorFontSize" onchange="applyWordFormat('fontSize', this.value)" class="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none shadow-sm cursor-pointer">
+            <option value="3">12 pt (Chuẩn)</option>
+            <option value="4" selected>14 pt (Tiêu đề phụ)</option>
+            <option value="5">16 pt (Tiêu đề lớn)</option>
+            <option value="6">18 pt</option>
+          </select>
+          <div class="h-4 w-px bg-slate-300 mx-0.5"></div>
+          <!-- Đậm, Nghiêng, Gạch chân -->
+          <button type="button" onclick="applyWordFormat('bold')" title="Chữ đậm (Ctrl+B)" class="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 font-bold text-slate-800 flex items-center justify-center shadow-sm"><b>B</b></button>
+          <button type="button" onclick="applyWordFormat('italic')" title="Chữ nghiêng (Ctrl+I)" class="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 italic font-serif text-slate-800 flex items-center justify-center shadow-sm"><i>I</i></button>
+          <button type="button" onclick="applyWordFormat('underline')" title="Gạch chân (Ctrl+U)" class="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 underline text-slate-800 flex items-center justify-center shadow-sm"><u>U</u></button>
+          <div class="h-4 w-px bg-slate-300 mx-0.5"></div>
+          <!-- Căn lề -->
+          <button type="button" onclick="applyWordFormat('justifyLeft')" title="Căn trái" class="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center shadow-sm"><i class="fa-solid fa-align-left text-xs"></i></button>
+          <button type="button" onclick="applyWordFormat('justifyCenter')" title="Căn giữa" class="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center shadow-sm"><i class="fa-solid fa-align-center text-xs"></i></button>
+          <button type="button" onclick="applyWordFormat('justifyRight')" title="Căn phải" class="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center shadow-sm"><i class="fa-solid fa-align-right text-xs"></i></button>
+          <button type="button" onclick="applyWordFormat('justifyFull')" title="Căn đều 2 bên" class="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center shadow-sm"><i class="fa-solid fa-align-justify text-xs"></i></button>
+          <div class="h-4 w-px bg-slate-300 mx-0.5"></div>
+          <!-- Thao tác Bảng phân phối chương trình -->
+          <button type="button" onclick="insertTableRowUnderCursor()" title="Thêm hàng mới vào bảng" class="px-2 py-1 rounded bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 font-semibold flex items-center gap-1 shadow-sm"><i class="fa-solid fa-plus text-[10px]"></i> Thêm hàng</button>
+          <button type="button" onclick="deleteTableRowUnderCursor()" title="Xóa hàng đang chọn trong bảng" class="px-2 py-1 rounded bg-white hover:bg-red-50 text-red-600 border border-red-300 font-semibold flex items-center gap-1 shadow-sm"><i class="fa-solid fa-trash-can text-[10px]"></i> Xóa hàng</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] text-indigo-700 font-semibold hidden sm:inline flex items-center gap-1"><i class="fa-solid fa-pen-nib text-indigo-500"></i> Bấm chuột vào văn bản để sửa</span>
+          <button type="button" onclick="saveWordDocumentChanges()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-check"></i> Lưu Thay Đổi</button>
         </div>
       </div>
 
@@ -1354,6 +1447,160 @@
       openDocumentViewer(currentlyViewedDoc.title, null, currentlyViewedDoc.id);
     }
 
+    let isWordEditMode = false;
+    let currentViewerDocId = null;
+
+    // Bật / Tắt chế độ chỉnh sửa trực tiếp nội dung Word
+    function toggleWordEditMode() {
+      isWordEditMode = !isWordEditMode;
+      const wordContent = document.getElementById('viewerWordContent');
+      const editBar = document.getElementById('viewerWordEditorBar');
+      const btnText = document.getElementById('btnWordEditText');
+      const btnSave = document.getElementById('btnSaveWordChanges');
+      const btnEdit = document.getElementById('btnToggleWordEdit');
+
+      if (isWordEditMode) {
+        if (wordContent) {
+          wordContent.contentEditable = "true";
+          wordContent.focus();
+        }
+        if (editBar) editBar.classList.remove('hidden');
+        if (btnSave) btnSave.classList.remove('hidden');
+        if (btnText) btnText.innerText = 'Tắt Chế Độ Sửa';
+        if (btnEdit) btnEdit.className = 'px-3 py-1.5 rounded-lg bg-indigo-600 text-white border border-indigo-700 text-xs font-bold transition flex items-center gap-1.5 shadow-md';
+      } else {
+        if (wordContent) wordContent.contentEditable = "false";
+        if (editBar) editBar.classList.add('hidden');
+        if (btnSave) btnSave.classList.add('hidden');
+        if (btnText) btnText.innerText = 'Chỉnh Sửa Văn Bản';
+        if (btnEdit) btnEdit.className = 'px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm';
+      }
+    }
+
+    // Áp dụng định dạng phong cách Word (Đậm, Nghiêng, Căn lề, Phông chữ, Cỡ chữ...)
+    function applyWordFormat(command, value = null) {
+      document.execCommand(command, false, value);
+      const wordContent = document.getElementById('viewerWordContent');
+      if (wordContent) wordContent.focus();
+    }
+
+    // Thêm hàng mới vào bảng đang thao tác
+    function insertTableRowUnderCursor() {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      let cell = range.startContainer;
+      while (cell && cell.nodeName !== 'TD' && cell.nodeName !== 'TH') {
+        cell = cell.parentElement;
+      }
+      if (cell) {
+        const row = cell.parentElement;
+        const newRow = row.cloneNode(true);
+        Array.from(newRow.children).forEach(td => td.innerHTML = '&nbsp;');
+        row.after(newRow);
+      } else {
+        alert('Vui lòng nhấp chuột vào một ô trong bảng để thêm hàng mới!');
+      }
+    }
+
+    // Xóa hàng đang chọn trong bảng
+    function deleteTableRowUnderCursor() {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      let cell = range.startContainer;
+      while (cell && cell.nodeName !== 'TD' && cell.nodeName !== 'TH') {
+        cell = cell.parentElement;
+      }
+      if (cell) {
+        const row = cell.parentElement;
+        if (confirm('Thầy/Cô có chắc chắn muốn xóa dòng này khỏi bảng?')) {
+          row.remove();
+        }
+      } else {
+        alert('Vui lòng nhấp chuột vào dòng bảng cần xóa!');
+      }
+    }
+
+    // Lưu nội dung đã sửa đổi vào hệ thống
+    async function saveWordDocumentChanges() {
+      const wordContent = document.getElementById('viewerWordContent');
+      if (!wordContent) return;
+      const html = wordContent.innerHTML;
+
+      if (currentViewerDocId) {
+        try {
+          const res = await fetch(`/api/documents/${currentViewerDocId}/update-content`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ htmlContent: html })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message);
+
+          alert('🎉 Đã lưu toàn bộ nội dung chỉnh sửa giáo án thành công!');
+          loadDocuments();
+        } catch (e) {
+          alert('Lỗi lưu nội dung: ' + e.message);
+        }
+      } else if (selectedUploadFile) {
+        window.currentCustomDocxHtml = html;
+        alert('🎉 Đã lưu thay đổi vào bản xem trước! Khi Thầy nhấn "Ký Số & Nộp Trình Duyệt", nội dung đã chỉnh sửa này sẽ được nộp lên.');
+      }
+    }
+
+    // Thu hồi kế hoạch bài dạy khi tổ trưởng chưa ký duyệt
+    async function handleRecallDoc(docId) {
+      if (!confirm('Thầy/Cô có chắc chắn muốn THU HỒI kế hoạch bài dạy này không?\n\nSau khi thu hồi, Tổ trưởng sẽ không thể duyệt nữa và Thầy/Cô có thể chỉnh sửa nội dung hoặc nộp lại.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/documents/${docId}/recall`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        alert('🎉 ' + data.message);
+        loadDocuments();
+        closeModal('modalDocDetails');
+      } catch (err) {
+        alert('⚠️ Lỗi thu hồi hồ sơ: ' + err.message);
+      }
+    }
+
+    // Xóa hồ sơ giáo án
+    async function handleDeleteDoc(docId) {
+      if (!confirm('⚠️ CẢNH BÁO: Thầy/Cô có chắc chắn muốn XÓA HOÀN TOÀN hồ sơ này không?\n\nHành động này không thể hoàn tác và sẽ xóa tệp đính kèm khỏi hệ thống.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/documents/${docId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        alert('🗑️ ' + data.message);
+        loadDocuments();
+        closeModal('modalDocDetails');
+      } catch (err) {
+        alert('⚠️ Lỗi xóa hồ sơ: ' + err.message);
+      }
+    }
+
     async function openDocumentViewer(title, fileObject, docId, enableSigning = false) {
       const modal = document.getElementById('modalDocViewer');
       const titleEl = document.getElementById('viewerDocTitle');
@@ -1363,6 +1610,18 @@
       const pdfFrame = document.getElementById('viewerPdfFrame');
       const wordContainer = document.getElementById('viewerWordContainer');
       const wordContent = document.getElementById('viewerWordContent');
+      const btnEdit = document.getElementById('btnToggleWordEdit');
+      const btnSave = document.getElementById('btnSaveWordChanges');
+      const editBar = document.getElementById('viewerWordEditorBar');
+      const btnWordText = document.getElementById('btnWordEditText');
+
+      currentViewerDocId = docId || null;
+      isWordEditMode = false;
+      if (editBar) editBar.classList.add('hidden');
+      if (btnSave) btnSave.classList.add('hidden');
+      if (btnWordText) btnWordText.innerText = 'Chỉnh Sửa Văn Bản';
+      if (btnEdit) btnEdit.className = 'px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm';
+      if (wordContent) wordContent.contentEditable = "false";
 
       titleEl.innerText = title;
       spinner.classList.remove('hidden');
@@ -1375,16 +1634,21 @@
         let arrayBuffer = null;
         let ext = 'pdf';
 
+        const existingDoc = docId ? currentDocList.find(d => d.id === docId) : null;
+
         if (fileObject) {
           ext = fileObject.name.split('.').pop().toLowerCase();
           arrayBuffer = await fileObject.arrayBuffer();
         } else if (docId) {
+          if (existingDoc && (existingDoc.fileName || '').match(/\.(docx|doc)$/i)) {
+            ext = 'docx';
+          }
           const res = await fetch(`/api/documents/${docId}/file`);
           if (!res.ok) throw new Error('Không thể tải file từ máy chủ');
           const contentType = res.headers.get('Content-Type') || '';
           if (contentType.includes('word') || contentType.includes('officedocument')) {
             ext = 'docx';
-          } else {
+          } else if (contentType.includes('pdf')) {
             ext = 'pdf';
           }
           arrayBuffer = await res.arrayBuffer();
@@ -1392,19 +1656,26 @@
 
         metaEl.innerText = `Định dạng: ${ext.toUpperCase()}`;
         if (ext === 'pdf') {
+          if (btnEdit) btnEdit.classList.add('hidden');
           iconEl.className = 'fa-solid fa-file-pdf text-red-600 text-xl';
           const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
           const blobUrl = URL.createObjectURL(blob);
           pdfFrame.src = blobUrl;
           pdfFrame.style.display = 'block';
         } else {
+          // Hiển thị tài liệu Word .docx chuẩn A4 và hỗ trợ chỉnh sửa
+          if (btnEdit) btnEdit.classList.remove('hidden');
           iconEl.className = 'fa-solid fa-file-word text-blue-600 text-xl';
-          // Sử dụng mammoth.js render trực tiếp nội dung Word .docx
-          if (window.mammoth) {
+
+          if (existingDoc && existingDoc.customContentHtml) {
+            wordContent.innerHTML = existingDoc.customContentHtml;
+          } else if (window.currentCustomDocxHtml && fileObject) {
+            wordContent.innerHTML = window.currentCustomDocxHtml;
+          } else if (window.mammoth) {
             const result = await mammoth.convertToHtml({ arrayBuffer });
             wordContent.innerHTML = result.value || '<p class="text-slate-400 italic">File Word không chứa văn bản định dạng.</p>';
           } else {
-            wordContent.innerHTML = '<p class="text-blue-700">Đã tải tài liệu Word. Vui lòng bấm tải về để xem đầy đủ trên Microsoft Word.</p>';
+            wordContent.innerHTML = '<p class="text-blue-700">Đã tải tài liệu Word.</p>';
           }
           wordContainer.style.display = 'block';
         }
@@ -1452,12 +1723,44 @@
           statusBadge = '<span class="badge-waiting-leader px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half"></i> Chờ Tổ trưởng duyệt</span>';
         } else if (d.status === 'WAITING_PRINCIPAL_APPROVAL') {
           statusBadge = '<span class="badge-waiting-principal px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-stamp"></i> Chờ BGH ký số</span>';
+        } else if (d.status === 'RECALLED') {
+          statusBadge = '<span class="badge-recalled px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> Đã thu hồi</span>';
         } else {
-          statusBadge = '<span class="badge-rejected px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> Yêu cầu sửa</span>';
+          statusBadge = '<span class="badge-rejected px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Yêu cầu sửa</span>';
         }
 
         const isDocx = (d.fileName || '').endsWith('.docx') || (d.fileName || '').endsWith('.doc');
         const fileIcon = isDocx ? '<i class="fa-solid fa-file-word text-blue-600"></i>' : '<i class="fa-solid fa-file-pdf text-red-600"></i>';
+
+        const isAuthor = currentUser && (d.authorId === currentUser.id || d.authorUsername === currentUser.username);
+        const isAdmin = currentUser && currentUser.role === 'ADMIN';
+
+        let actionBtns = `
+          <button onclick="openDocDetails('${d.id}')" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold transition text-xs">
+            Chi tiết
+          </button>
+          <a href="/api/documents/${d.id}/download-signed" download title="Lưu / Tải văn bản đã ký về máy (.PDF)" class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition text-xs">
+            <i class="fa-solid fa-file-arrow-down"></i>
+          </a>
+        `;
+
+        // Nút Thu hồi (khi Tổ trưởng chưa duyệt)
+        if (d.status === 'WAITING_LEADER_APPROVAL' && (isAuthor || isAdmin)) {
+          actionBtns += `
+            <button onclick="handleRecallDoc('${d.id}')" title="Thu hồi bài nộp khi tổ trưởng chưa ký" class="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold transition text-xs flex items-center gap-1">
+              <i class="fa-solid fa-rotate-left"></i> Thu hồi
+            </button>
+          `;
+        }
+
+        // Nút Xóa hồ sơ
+        if ((d.status === 'WAITING_LEADER_APPROVAL' || d.status === 'RECALLED' || d.status === 'REJECTED' || isAdmin) && (isAuthor || isAdmin)) {
+          actionBtns += `
+            <button onclick="handleDeleteDoc('${d.id}')" title="Xóa hồ sơ này" class="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition text-xs">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          `;
+        }
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50/80 transition';
@@ -1475,12 +1778,7 @@
           <td class="py-3 px-4">${statusBadge}</td>
           <td class="py-3 px-4 text-center">
             <div class="flex items-center justify-center gap-1.5">
-              <button onclick="openDocDetails('${d.id}')" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold transition text-xs">
-                Chi tiết
-              </button>
-              <a href="/api/documents/${d.id}/download-signed" download title="Lưu / Tải văn bản đã ký về máy (.PDF)" class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition text-xs">
-                <i class="fa-solid fa-file-arrow-down"></i>
-              </a>
+              ${actionBtns}
             </div>
           </td>
         `;
@@ -2271,6 +2569,29 @@
           <span>Tải file gốc</span>
         </a>
       `;
+
+      const isAuthor = currentUser && (doc.authorId === currentUser.id || doc.authorUsername === currentUser.username);
+      const isAdmin = currentUser && currentUser.role === 'ADMIN';
+
+      // Nút Thu Hồi Bài Nộp (khi tổ trưởng chưa ký duyệt)
+      if (doc.status === 'WAITING_LEADER_APPROVAL' && (isAuthor || isAdmin)) {
+        actionsContainer.innerHTML += `
+          <button onclick="handleRecallDoc('${doc.id}')" class="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl font-bold shadow-sm transition flex items-center gap-1.5 text-xs">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>Thu Hồi Bài Nộp</span>
+          </button>
+        `;
+      }
+
+      // Nút Xóa Hồ Sơ
+      if ((doc.status === 'WAITING_LEADER_APPROVAL' || doc.status === 'RECALLED' || doc.status === 'REJECTED' || isAdmin) && (isAuthor || isAdmin)) {
+        actionsContainer.innerHTML += `
+          <button onclick="handleDeleteDoc('${doc.id}')" class="px-3 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold transition flex items-center gap-1.5 text-xs">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Xóa Hồ Sơ</span>
+          </button>
+        `;
+      }
 
       openModal('modalDocDetails');
     }

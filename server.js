@@ -793,13 +793,112 @@ app.post('/api/documents/:id/reject', requireAuth, (req, res) => {
   });
 });
 
-// Xóa hồ sơ (Chỉ tác giả hoặc Admin)
+// Thu hồi kế hoạch bài dạy khi Tổ trưởng chưa ký duyệt (Chỉ tác giả hoặc Admin)
+app.post('/api/documents/:id/recall', requireAuth, (req, res) => {
+  const doc = dataStore.getDocumentById(req.params.id);
+  if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+
+  const isAuthor = doc.authorId === req.user.id || doc.authorUsername === req.user.username;
+  if (req.user.role !== 'ADMIN' && !isAuthor) {
+    return res.status(403).json({ success: false, message: 'Bạn chỉ có quyền thu hồi hồ sơ do chính mình nộp!' });
+  }
+
+  if (doc.status !== 'WAITING_LEADER_APPROVAL') {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Chỉ có thể thu hồi hồ sơ khi đang ở trạng thái "Chờ Tổ trưởng duyệt"!' 
+    });
+  }
+
+  const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const updatedLogs = [
+    ...(doc.logs || []),
+    {
+      time: now,
+      actor: `${req.user.name} (Giáo viên)`,
+      action: 'Đã thu hồi kế hoạch bài dạy trước khi Tổ trưởng phê duyệt để chỉnh sửa nội dung'
+    }
+  ];
+
+  const updatedDoc = dataStore.updateDocument(doc.id, {
+    status: 'RECALLED',
+    currentSignerRole: 'Giáo viên chỉnh sửa / Nộp lại',
+    logs: updatedLogs
+  });
+
+  console.log(`[Document] Hồ sơ ${doc.id} đã được thu hồi bởi ${req.user.name}`);
+  res.json({
+    success: true,
+    message: 'Đã thu hồi kế hoạch bài dạy thành công! Thầy/Cô có thể chỉnh sửa nội dung và ký nộp lại.',
+    data: updatedDoc
+  });
+});
+
+// Cập nhật nội dung giáo án Word/văn bản sau khi giáo viên chỉnh sửa trong trình soạn thảo
+app.post('/api/documents/:id/update-content', requireAuth, async (req, res) => {
+  const doc = dataStore.getDocumentById(req.params.id);
+  if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+
+  const isAuthor = doc.authorId === req.user.id || doc.authorUsername === req.user.username;
+  if (req.user.role !== 'ADMIN' && !isAuthor) {
+    return res.status(403).json({ success: false, message: 'Bạn chỉ có quyền chỉnh sửa hồ sơ của mình!' });
+  }
+
+  const { title, htmlContent } = req.body;
+  const updates = {};
+  if (title && title.trim()) updates.title = title.trim();
+  if (htmlContent) {
+    updates.customContentHtml = htmlContent;
+    try {
+      const htmlDir = path.join(__dirname, 'uploads', 'documents');
+      if (!fs.existsSync(htmlDir)) fs.mkdirSync(htmlDir, { recursive: true });
+      const htmlFile = path.join(htmlDir, `edited_${doc.id}.html`);
+      fs.writeFileSync(htmlFile, htmlContent, 'utf8');
+      updates.editedHtmlPath = htmlFile;
+    } catch (e) {
+      console.error('Lỗi lưu tệp HTML chỉnh sửa:', e.message);
+    }
+  }
+
+  const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  updates.logs = [
+    ...(doc.logs || []),
+    {
+      time: now,
+      actor: `${req.user.name} (Giáo viên)`,
+      action: 'Đã chỉnh sửa và lưu lại nội dung kế hoạch bài dạy trước khi ký duyệt'
+    }
+  ];
+
+  const updatedDoc = dataStore.updateDocument(doc.id, updates);
+  res.json({
+    success: true,
+    message: 'Đã lưu toàn bộ nội dung chỉnh sửa giáo án thành công!',
+    data: updatedDoc
+  });
+});
+
+// Xóa hồ sơ (Chỉ tác giả hoặc Admin khi chưa duyệt hoàn tất)
 app.delete('/api/documents/:id', requireAuth, (req, res) => {
   const doc = dataStore.getDocumentById(req.params.id);
   if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
 
-  if (req.user.role !== 'ADMIN' && doc.authorId !== req.user.id) {
+  const isAuthor = doc.authorId === req.user.id || doc.authorUsername === req.user.username;
+  if (req.user.role !== 'ADMIN' && !isAuthor) {
     return res.status(403).json({ success: false, message: 'Bạn chỉ có quyền xóa hồ sơ của chính mình!' });
+  }
+
+  if (doc.status === 'APPROVED' && req.user.role !== 'ADMIN') {
+    return res.status(400).json({ success: false, message: 'Hồ sơ đã được Ban Giám hiệu phê duyệt chính thức không thể xóa!' });
+  }
+
+  // Dọn dẹp tệp vật lý nếu có
+  try {
+    if (doc.filePath && fs.existsSync(doc.filePath)) fs.unlinkSync(doc.filePath);
+    if (doc.realSignedPath && fs.existsSync(doc.realSignedPath)) fs.unlinkSync(doc.realSignedPath);
+    if (doc.editedHtmlPath && fs.existsSync(doc.editedHtmlPath)) fs.unlinkSync(doc.editedHtmlPath);
+  } catch (e) {
+    console.error('Lỗi dọn dẹp file khi xóa hồ sơ:', e.message);
   }
 
   dataStore.deleteDocument(req.params.id);
