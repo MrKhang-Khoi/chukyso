@@ -571,17 +571,34 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     try {
       console.log(`[VGCA Real] Đang kích hoạt ký số mật mã thật cho giáo viên ${currentUser.name}...`);
       const signResult = await pdfSignerService.signWithRealVgca(newDoc);
-      newDoc.realSignedPath = signResult.signedFilePath;
-      newDoc.realVgcaSigned = true;
-      newDoc.realSignedAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
-      newDoc.signatures[0].signType = 'Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)';
-      newDoc.signatures[0].status = 'VALID';
-      dataStore.saveDocuments(dataStore.getDocuments());
+      
+      const signaturesCopy = Array.isArray(newDoc.signatures) ? [...newDoc.signatures] : [];
+      if (signaturesCopy.length > 0) {
+        signaturesCopy[0] = {
+          ...signaturesCopy[0],
+          signType: 'Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)',
+          status: 'VALID'
+        };
+      }
+
+      const updatedDoc = dataStore.updateDocument(newDoc.id, {
+        realSignedPath: signResult.signedFilePath,
+        realVgcaSigned: true,
+        realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        signatures: signaturesCopy,
+        vgcaInfo: {
+          signer: 'Hà Văn Tý',
+          issuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
+          standard: 'PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)',
+          verified: true
+        }
+      });
+      Object.assign(newDoc, updatedDoc);
       console.log(`[VGCA Real] ✅ Ký số mật mã thật thành công cho hồ sơ: ${newDoc.id}`);
     } catch (err) {
       console.error('Lỗi ký số VGCA thật khi nộp bài:', err.message);
       // Xóa hồ sơ tạm vừa tạo nếu ký số thất bại
-      dataStore.deleteDocument(newDoc.id);
+      try { dataStore.deleteDocument(newDoc.id); } catch(e) {}
       return res.status(500).json({
         success: false,
         message: 'Lỗi xác thực chữ ký số VGCA: ' + err.message

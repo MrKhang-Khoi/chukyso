@@ -240,6 +240,7 @@ function deleteDocument(id) {
 module.exports = {
   DEPARTMENTS,
   getUsers,
+  saveUsers,
   getUserById,
   getUserByUsername,
   createUser,
@@ -247,6 +248,7 @@ module.exports = {
   resetPassword,
   deleteUser,
   getDocuments,
+  saveDocuments,
   getDocumentById,
   createDocument,
   updateDocument,
