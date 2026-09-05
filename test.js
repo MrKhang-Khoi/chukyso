@@ -35,9 +35,9 @@ async function httpRequest(options, postData = null) {
       res.on('end', () => {
         try {
           const parsed = JSON.parse(data);
-          resolve({ status: res.statusCode, body: parsed });
+          resolve({ status: res.statusCode, headers: res.headers, body: parsed });
         } catch {
-          resolve({ status: res.statusCode, body: data });
+          resolve({ status: res.statusCode, headers: res.headers, body: data });
         }
       });
     });
@@ -193,7 +193,50 @@ async function runTests() {
     });
     assert(getSigRes.status === 200 && getSigRes.body.signatureImage === dummySignature, 'Truy xuất mẫu chữ ký cá nhân chính xác');
 
-    // 3.5 Giáo viên nộp bài dạy mới kèm File thật (Base64) & Vị trí chữ ký
+    // 3.4c Kiểm tra BẢO MẬT: Chặn không cho nộp bài nếu chưa ký số
+    await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/admin/users',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminToken}`
+      }
+    }, {
+      name: 'Giáo viên Chưa Ký',
+      username: 'nosig_user',
+      password: '123',
+      department: 'Tổ Toán - Tin',
+      role: 'TEACHER'
+    });
+
+    const nosigLoginRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/auth/login',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    }, { username: 'nosig_user', password: '123' });
+    const nosigToken = nosigLoginRes.body.token;
+
+    const failSubmitRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/documents',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${nosigToken}`
+      }
+    }, {
+      title: 'Giáo án chưa ký tên',
+      grade: 'Khối 9',
+      week: 'Tuần 1'
+    });
+    assert(failSubmitRes.status === 400 && failSubmitRes.body.message.includes('ký số'), 'Hệ thống CHẶN thành công: Từ chối nộp bài nếu giáo viên chưa ký số (Mã lỗi 400)');
+
+    // 3.5 Giáo viên nộp bài dạy mới kèm File thật (Base64) & Chữ ký số hợp lệ
     const sampleFileBuffer = fs.readFileSync(pdfToTest);
     const sampleBase64 = `data:application/pdf;base64,${sampleFileBuffer.toString('base64')}`;
 
@@ -215,10 +258,11 @@ async function runTests() {
       fileType: 'application/pdf',
       fileSize: sampleFileBuffer.length,
       fileBase64: sampleBase64,
+      signatureImage: dummySignature,
       signPlacement: 'bottom-left'
     });
 
-    assert(submitDocRes.status === 200 && submitDocRes.body.success, 'Giáo viên nộp kế hoạch bài dạy kèm File PDF thật thành công');
+    assert(submitDocRes.status === 200 && submitDocRes.body.success, 'Giáo viên nộp kế hoạch bài dạy kèm File PDF thật & Chữ ký số thành công');
     const createdDocId = submitDocRes.body.data.id;
     assert(createdDocId && createdDocId.startsWith('KHBD-'), `Mã hồ sơ tự động khởi tạo: ${createdDocId}`);
     assert(submitDocRes.body.data.fileName === 'GiaoAn_Toan9_T12.pdf', 'Lưu đúng tên tệp gốc của giáo viên');
@@ -279,6 +323,17 @@ async function runTests() {
     });
 
     assert(principalApproveRes.status === 200 && principalApproveRes.body.data.status === 'APPROVED', 'Ban Giám hiệu ký số & Phê duyệt chính thức cấp 3 -> APPROVED');
+
+    // 3.7b Kiểm tra Tải Văn Bản Đã Ký Về Máy Tính (.PDF đầy đủ 3 cấp ký & dấu đỏ)
+    const downloadSignedRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: `/api/documents/${createdDocId}/download-signed`,
+      method: 'GET'
+    });
+    assert(downloadSignedRes.status === 200, 'API /api/documents/:id/download-signed tải file đã ký thành công');
+    assert(downloadSignedRes.headers['content-type'] === 'application/pdf', 'Header Content-Type là application/pdf');
+    assert(downloadSignedRes.body && downloadSignedRes.body.length > 2000, 'File PDF đã ký chứa đầy đủ chữ ký số 3 cấp và con dấu nhà trường');
 
     // 3.8 Kiểm tra API Xác thực chữ ký số
     const verifyHttpRes = await httpRequest({

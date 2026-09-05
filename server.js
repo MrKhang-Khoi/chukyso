@@ -5,6 +5,7 @@ const fs = require('fs');
 const { execSync, execFile } = require('child_process');
 const dataStore = require('./dataStore');
 const googleDriveService = require('./googleDriveService');
+const pdfSignerService = require('./pdfSignerService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -398,14 +399,51 @@ app.get('/api/documents/:id/file', (req, res) => {
   res.status(404).json({ success: false, message: 'Không tìm thấy file văn bản' });
 });
 
-// Giáo viên nộp Kế hoạch bài dạy mới (Hỗ trợ nộp file Word hoặc PDF thật)
+// Tải Văn Bản Đã Ký Về Máy Tính (Đóng dấu & nhúng đầy đủ chữ ký số 3 cấp vào PDF thật)
+app.get('/api/documents/:id/download-signed', async (req, res) => {
+  try {
+    const doc = dataStore.getDocumentById(req.params.id);
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+    }
+
+    const signedPdfBuffer = await pdfSignerService.generateSignedPdf(doc);
+    const safeTitle = (doc.title || doc.id).replace(/[^a-zA-Z0-9_\-]/g, '_').substring(0, 35);
+    const downloadFileName = `KHBD_DaKy_${doc.id}_${safeTitle}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${downloadFileName}"`);
+    res.setHeader('Content-Length', signedPdfBuffer.length);
+    return res.send(Buffer.from(signedPdfBuffer));
+  } catch (err) {
+    console.error('Lỗi xuất file đã ký:', err);
+    res.status(500).json({ success: false, message: 'Lỗi khi tạo file văn bản đã ký: ' + err.message });
+  }
+});
+
+// Giáo viên nộp Kế hoạch bài dạy mới (BẮT BUỘC PHẢI KÝ SỐ TRƯỚC KHI NỘP)
 app.post('/api/documents', requireAuth, (req, res) => {
-  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement } = req.body;
+  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage } = req.body;
   if (!title) {
     return res.status(400).json({ success: false, message: 'Vui lòng nhập Tên kế hoạch bài dạy!' });
   }
 
   const currentUser = req.user;
+  const activeSigImage = signatureImage || currentUser.signatureImage;
+
+  // BẮT BUỘC PHẢI CÓ CHỮ KÝ HỢP LỆ TRƯỚC KHI NỘP
+  if (!activeSigImage) {
+    return res.status(400).json({
+      success: false,
+      message: 'Vui lòng thực hiện ký số vào kế hoạch bài dạy trước khi nộp!'
+    });
+  }
+
+  // Nếu người dùng ký trực tiếp trên modal và chưa lưu vào profile -> tự động lưu để tái sử dụng
+  if (signatureImage && !currentUser.signatureImage) {
+    dataStore.updateUser(currentUser.id, { signatureImage });
+  }
+
   let savedFilePath = null;
 
   // Xử lý lưu file thật nếu có đính kèm
@@ -433,7 +471,7 @@ app.post('/api/documents', requireAuth, (req, res) => {
     fileName: fileName || 'GiaoAn_Chuan.pdf',
     fileType: fileType || 'pdf',
     filePath: savedFilePath,
-    signPlacement: signPlacement || 'bottom-right',
+    signPlacement: signPlacement || 'bottom-left',
     signatures: [
       {
         step: 1,
@@ -444,16 +482,16 @@ app.post('/api/documents', requireAuth, (req, res) => {
         signType: 'Ký duyệt cấp 1',
         status: 'VALID',
         placement: signPlacement || 'bottom-left',
-        visualSignImage: currentUser.signatureImage || null,
-        visualSign: currentUser.signatureImage ? 'Đã đính kèm ảnh chữ ký tay trong suốt' : 'Chữ ký điện tử cá nhân'
+        visualSignImage: activeSigImage,
+        visualSign: 'Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân'
       }
     ]
   }, currentUser);
 
-  console.log(`[Document] Giáo viên ${currentUser.name} (${currentUser.department}) vừa nộp bài: "${newDoc.title}" (File: ${newDoc.fileName})`);
+  console.log(`[Document] Giáo viên ${currentUser.name} (${currentUser.department}) vừa nộp bài có ký số: "${newDoc.title}" (File: ${newDoc.fileName})`);
   res.json({
     success: true,
-    message: 'Nộp kế hoạch bài dạy thành công! Hồ sơ đã được chuyển đến Tổ trưởng chuyên môn duyệt.',
+    message: 'Ký số và nộp kế hoạch bài dạy thành công! Hồ sơ đã được chuyển đến Tổ trưởng chuyên môn duyệt.',
     data: newDoc
   });
 });
@@ -472,8 +510,9 @@ app.post('/api/documents/:id/approve-leader', requireAuth, (req, res) => {
     return res.status(403).json({ success: false, message: 'Bạn chỉ có quyền duyệt hồ sơ thuộc Tổ chuyên môn của mình!' });
   }
 
-  const { comment, signPlacement } = req.body;
+  const { comment, signPlacement, signatureImage } = req.body;
   const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const leaderSigImg = signatureImage || currentUser.signatureImage || signatureProfile.leaderSignatureImg || null;
 
   const sig = {
     step: 2,
@@ -484,7 +523,7 @@ app.post('/api/documents/:id/approve-leader', requireAuth, (req, res) => {
     signType: 'PAdES Incremental Update',
     status: 'VALID',
     placement: signPlacement || 'middle-right',
-    visualSignImage: currentUser.signatureImage || signatureProfile.leaderSignatureImg || null,
+    visualSignImage: leaderSigImg,
     visualSign: `Ký nháy duyệt chuyên môn: ${comment || 'Đạt yêu cầu phân phối chương trình'}`
   };
 
@@ -507,7 +546,7 @@ app.post('/api/documents/:id/approve-leader', requireAuth, (req, res) => {
 
   res.json({
     success: true,
-    message: 'Tổ trưởng đã duyệt thành công! Hồ sơ đã chuyển lên Ban Giám hiệu ký số đóng dấu.',
+    message: 'Tổ trưởng đã ký nháy duyệt thành công! Hồ sơ đã chuyển lên Ban Giám hiệu phê duyệt.',
     data: updatedDoc
   });
 });
@@ -522,8 +561,16 @@ app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
   const doc = dataStore.getDocumentById(req.params.id);
   if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
 
-  const { comment, signPlacement } = req.body;
+  const { comment, signPlacement, signatureImage } = req.body;
   const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+  let sealBase64 = null;
+  const sealPath = path.join(__dirname, 'uploads', 'signatures', 'school_seal.png');
+  if (fs.existsSync(sealPath)) {
+    sealBase64 = `data:image/png;base64,${fs.readFileSync(sealPath).toString('base64')}`;
+  }
+
+  const principalSigImg = signatureImage || currentUser.signatureImage || sealBase64 || null;
 
   const sig = {
     step: 3,
@@ -536,7 +583,7 @@ app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
     signType: 'PAdES LTV (VGCA Digital Signature)',
     status: 'VALID',
     placement: signPlacement || 'bottom-right',
-    visualSignImage: currentUser.signatureImage || signatureProfile.schoolSealImg || null,
+    visualSignImage: principalSigImg,
     visualSign: `Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ`
   };
 
