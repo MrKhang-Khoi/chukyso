@@ -33,10 +33,10 @@ async function generateSignedPdf(doc) {
     }
   }
 
-  // Nếu không có file PDF nguồn (hoặc nộp file docx), dùng file template chuẩn
-  if (!sourcePdfBuffer) {
+  // Nếu không có file PDF nguồn (hoặc file lỗi, rỗng, nộp docx), dùng file template chuẩn
+  if (!sourcePdfBuffer || sourcePdfBuffer.length < 50 || !sourcePdfBuffer.toString('ascii', 0, 5).startsWith('%PDF')) {
     const defaultTemplate = path.join(__dirname, 'GiaoAn_CanKy.pdf');
-    if (fs.existsSync(defaultTemplate)) {
+    if (fs.existsSync(defaultTemplate) && fs.statSync(defaultTemplate).size > 100) {
       sourcePdfBuffer = fs.readFileSync(defaultTemplate);
     } else {
       const emptyDoc = await PDFDocument.create();
@@ -66,26 +66,39 @@ async function generateSignedPdf(doc) {
         const imgBuf = Buffer.from(base64Clean, 'base64');
         const pngSignImg = await pdfDoc.embedPng(imgBuf);
 
-        let stampX = pW * 0.68; // Vị trí mặc định: cột Giáo viên bên phải
-        let stampY = pH * 0.22; // Vị trí nằm ngay trên tên giáo viên
+        const scale = (doc.signCoordinates && typeof doc.signCoordinates.scale === 'number') 
+          ? Math.max(0.4, Math.min(2.5, doc.signCoordinates.scale)) 
+          : 1.0;
+        const stampWidth = Math.round(((doc.signCoordinates && doc.signCoordinates.width) || 95) * scale);
+        const stampHeight = Math.round(((doc.signCoordinates && doc.signCoordinates.height) || 60) * scale);
+
+        const isLandscape = pW > pH;
+        let defaultX = isLandscape ? (pW * 0.745) : (pW * 0.746);
+        let defaultY = isLandscape ? 290 : 504;
+
+        let stampX = defaultX;
+        let stampY = defaultY;
 
         if (doc.signCoordinates && typeof doc.signCoordinates.xPercent === 'number' && typeof doc.signCoordinates.yPercent === 'number') {
           stampX = (doc.signCoordinates.xPercent / 100) * pW;
-          stampY = (1 - (doc.signCoordinates.yPercent / 100)) * pH - 25;
+          stampY = (1 - (doc.signCoordinates.yPercent / 100)) * pH;
         } else if (doc.signPlacement === 'bottom-left') {
-          stampX = pW * 0.15;
+          stampX = pW * 0.18;
+          stampY = defaultY;
         } else if (doc.signPlacement === 'middle-right') {
-          stampX = pW * 0.42;
+          stampX = pW * 0.46;
+          stampY = defaultY;
         }
 
-        stampX = Math.max(10, Math.min(pW - 130, stampX));
-        stampY = Math.max(10, Math.min(pH - 70, stampY));
+        // Tự động kiểm tra biên an toàn (tránh văng khỏi trang PDF)
+        stampX = Math.max(10, Math.min(pW - stampWidth - 10, stampX));
+        stampY = Math.max(10, Math.min(pH - stampHeight - 10, stampY));
 
         lastDocPage.drawImage(pngSignImg, {
           x: stampX,
           y: stampY,
-          width: 110,
-          height: 52
+          width: stampWidth,
+          height: stampHeight
         });
       } catch (e) {
         console.error('Lỗi đóng dấu ảnh chữ ký trực tiếp lên trang văn bản:', e.message);
@@ -385,6 +398,57 @@ async function generateSignedPdf(doc) {
   return await pdfDoc.save();
 }
 
+/**
+ * Thực hiện ký số mật mã thật X.509 PAdES qua RealPdfSigner (Ban Cơ yếu Chính phủ - VGCA)
+ */
+async function signWithRealVgca(doc) {
+  // 1. Tạo file PDF đã đóng dấu ảnh chữ ký chuẩn
+  const stampedPdfBuffer = await generateSignedPdf(doc);
+  const tempDir = path.join(__dirname, 'uploads', 'documents');
+  if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+  const tempInput = path.join(tempDir, `temp_stamped_${doc.id}_${Date.now()}.pdf`);
+  const tempOutput = path.join(tempDir, `RealSigned_${doc.id}_${Date.now()}.pdf`);
+  fs.writeFileSync(tempInput, stampedPdfBuffer);
+
+  const exePath = path.join(__dirname, 'RealPdfSigner', 'bin', 'Debug', 'net8.0', 'RealPdfSigner.exe');
+  if (!fs.existsSync(exePath)) {
+    throw new Error('Không tìm thấy tệp thực thi RealPdfSigner.exe tại: ' + exePath);
+  }
+
+  // Tọa độ đã chuẩn hóa
+  const scale = (doc.signCoordinates && doc.signCoordinates.scale) || 1.0;
+  const w = Math.round(90 * scale);
+  const h = Math.round(60 * scale);
+
+  return new Promise((resolve, reject) => {
+    const { execFile } = require('child_process');
+    execFile(exePath, ['--sign', tempInput, tempOutput, '0', '-1', '-1', String(w), String(h)], { timeout: 120000 }, (error, stdout, stderr) => {
+      // Dọn dẹp file trung gian
+      try {
+        if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
+      } catch (e) {}
+
+      if (error) {
+        console.error('Lỗi khi ký VGCA thật:', stderr || error.message);
+        return reject(new Error('Ký số VGCA thất bại (chưa xác nhận trên điện thoại hoặc lỗi kết nối): ' + (stderr || error.message)));
+      }
+
+      if (fs.existsSync(tempOutput)) {
+        const signedBuf = fs.readFileSync(tempOutput);
+        resolve({
+          signedBuffer: signedBuf,
+          signedFilePath: tempOutput,
+          stdout
+        });
+      } else {
+        reject(new Error('Không tìm thấy tệp PDF kết quả sau khi ký số'));
+      }
+    });
+  });
+}
+
 module.exports = {
-  generateSignedPdf
+  generateSignedPdf,
+  signWithRealVgca
 };

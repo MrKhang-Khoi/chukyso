@@ -107,10 +107,33 @@ namespace RealPdfSigner
 
             // 2. Chuẩn bị file PDF đầu vào và đầu ra
             string currentDir = Directory.GetCurrentDirectory();
-            string inputPdf = args.Length > 0 ? args[0] : System.IO.Path.Combine(currentDir, "GiaoAn_CanKy.pdf");
-            string outputPdf = args.Length > 1 ? args[1] : System.IO.Path.Combine(currentDir, "GiaoAn_DaKy_That.pdf");
-            string reason = args.Length > 2 ? args[2] : "Phê duyệt Kế hoạch bài dạy Tuần 12";
-            string location = args.Length > 3 ? args[3] : "Trường THCS Chu Văn An - Xã Đăk Hà";
+            string inputPdf = "";
+            string outputPdf = "";
+            int targetPage = 0; // 0 = last page
+            float rectX = -1f, rectY = -1f, rectW = 90f, rectH = 60f;
+            string reason = "Hà Văn Tý<hvty-dakha@quangngai.gov.vn> đã ký lên văn bản này!";
+            string location = "Quảng Ngãi";
+
+            int argOffset = 0;
+            if (args.Length > 0 && args[0].Equals("--sign", StringComparison.OrdinalIgnoreCase))
+            {
+                argOffset = 1;
+            }
+
+            if (args.Length > argOffset) inputPdf = args[argOffset];
+            if (args.Length > argOffset + 1) outputPdf = args[argOffset + 1];
+            if (args.Length > argOffset + 2 && int.TryParse(args[argOffset + 2], out int p)) targetPage = p;
+            if (args.Length > argOffset + 3 && float.TryParse(args[argOffset + 3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float xVal)) rectX = xVal;
+            if (args.Length > argOffset + 4 && float.TryParse(args[argOffset + 4], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float yVal)) rectY = yVal;
+            if (args.Length > argOffset + 5 && float.TryParse(args[argOffset + 5], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float wVal)) rectW = wVal;
+            if (args.Length > argOffset + 6 && float.TryParse(args[argOffset + 6], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float hVal)) rectH = hVal;
+            if (args.Length > argOffset + 7) reason = args[argOffset + 7];
+            if (args.Length > argOffset + 8) location = args[argOffset + 8];
+
+            if (string.IsNullOrWhiteSpace(inputPdf))
+                inputPdf = System.IO.Path.Combine(currentDir, "GiaoAn_CanKy.pdf");
+            if (string.IsNullOrWhiteSpace(outputPdf))
+                outputPdf = System.IO.Path.Combine(currentDir, "GiaoAn_DaKy_That.pdf");
 
             if (!File.Exists(inputPdf))
             {
@@ -123,7 +146,41 @@ namespace RealPdfSigner
             }
             Console.WriteLine($"📁 File xuất chữ ký số dự kiến: {outputPdf}");
 
-            // 3. Thực hiện ký số chuẩn PAdES
+            // 3. Xác định trang cần ký và kích thước trang
+            int totalPages = 1;
+            float pageWidth = 595.28f, pageHeight = 841.89f;
+            using (var tempReader = new PdfReader(inputPdf))
+            using (var tempDoc = new PdfDocument(tempReader))
+            {
+                totalPages = tempDoc.GetNumberOfPages();
+                if (targetPage <= 0 || targetPage > totalPages)
+                    targetPage = totalPages;
+
+                var pageObj = tempDoc.GetPage(targetPage);
+                var pageSize = pageObj.GetPageSize();
+                pageWidth = pageSize.GetWidth();
+                pageHeight = pageSize.GetHeight();
+            }
+
+            // Tự động tính tọa độ nếu chưa được chỉ định
+            if (rectX < 0 || rectY < 0)
+            {
+                bool isLandscape = pageWidth > pageHeight;
+                if (isLandscape)
+                {
+                    rectX = 627f;
+                    rectY = 290f;
+                }
+                else
+                {
+                    rectX = 444f;
+                    rectY = 504f;
+                }
+            }
+
+            Console.WriteLine($"📍 Thông số vị trí chữ ký số: Trang {targetPage}/{totalPages} (Kích thước: {pageWidth:F0}x{pageHeight:F0}), X={rectX:F1}, Y={rectY:F1}, W={rectW:F1}, H={rectH:F1}");
+
+            // 4. Thực hiện ký số chuẩn PAdES
             try
             {
                 Console.WriteLine("⚙️ Đang thiết lập cấu trúc chữ ký số PAdES...");
@@ -139,11 +196,11 @@ namespace RealPdfSigner
 
                     // Thiết lập thông tin chữ ký số qua SignerProperties trong iText 9
                     SignerProperties signerProperties = new SignerProperties()
-                        .SetFieldName("SignatureVGCA")
+                        .SetFieldName("SignatureVGCA_" + DateTime.Now.Ticks)
                         .SetReason(reason)
                         .SetLocation(location)
-                        .SetPageNumber(1)
-                        .SetPageRect(new Rectangle(50, 50, 250, 90));
+                        .SetPageNumber(targetPage)
+                        .SetPageRect(new Rectangle(rectX, rectY, rectW, rectH));
 
                     signer.SetSignerProperties(signerProperties);
 
@@ -234,6 +291,24 @@ namespace RealPdfSigner
 
                         bool wholeDoc = signUtil.SignatureCoversWholeDocument(name);
                         Console.WriteLine($"🛡️ Bảo vệ toàn vẹn tài liệu (Covers whole doc): {(wholeDoc ? "CÓ (100% tài liệu được niêm phong mật mã)" : "KHÔNG")}");
+
+                        // In vị trí ô chữ ký (Rectangle và Page)
+                        var form = iText.Forms.PdfAcroForm.GetAcroForm(pdfDoc, false);
+                        if (form != null)
+                        {
+                            var field = form.GetField(name);
+                            if (field != null)
+                            {
+                                var widgets = field.GetWidgets();
+                                foreach (var w in widgets)
+                                {
+                                    var rect = w.GetRectangle().ToRectangle();
+                                    var page = w.GetPage();
+                                    int pageNum = page != null ? pdfDoc.GetPageNumber(page) : -1;
+                                    Console.WriteLine($"📐 Vị trí ô chữ ký: Trang {pageNum}, X={rect.GetX():F1}, Y={rect.GetY():F1}, W={rect.GetWidth():F1}, H={rect.GetHeight():F1}");
+                                }
+                            }
+                        }
 
                         bool isValid = pkcs7.VerifySignatureIntegrityAndAuthenticity();
                         Console.ForegroundColor = isValid ? ConsoleColor.Green : ConsoleColor.Red;
