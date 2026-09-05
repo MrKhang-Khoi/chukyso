@@ -344,6 +344,39 @@ async function runTests() {
     });
     assert(verifyHttpRes.status === 200 && verifyHttpRes.body.data.isValid === true, 'API xác nhận chữ ký số thật HỢP LỆ TUYỆT ĐỐI');
 
+    // 3.9a Kiểm tra tài nguyên tĩnh: Con dấu đỏ nhà trường (/school_seal.png và /uploads/signatures/school_seal.png)
+    const sealDirectRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/school_seal.png',
+      method: 'GET'
+    });
+    assert(sealDirectRes.status === 200, 'Tải thành công con dấu đỏ nhà trường từ /school_seal.png (Mã 200)');
+
+    const sealUploadRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/uploads/signatures/school_seal.png',
+      method: 'GET'
+    });
+    assert(sealUploadRes.status === 200, 'Tải thành công con dấu đỏ nhà trường từ /uploads/signatures/school_seal.png (Mã 200)');
+
+    // 3.9b Kiểm tra cú pháp toàn bộ JavaScript trong file giao diện index.html (Không bị lỗi cú pháp như Unexpected token)
+    const htmlContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+    const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+    let match, scriptIndex = 0, scriptSyntaxErrors = 0;
+    while ((match = scriptRegex.exec(htmlContent)) !== null) {
+      const openTag = match[0].substring(0, match[0].indexOf('>'));
+      if (/src\s*=/i.test(openTag)) continue;
+      scriptIndex++;
+      try {
+        new Function(match[1]);
+      } catch (e) {
+        scriptSyntaxErrors++;
+      }
+    }
+    assert(scriptSyntaxErrors === 0 && scriptIndex > 0, `Kiểm tra mã JavaScript trong index.html: Toàn bộ ${scriptIndex} khối script không có lỗi cú pháp (0 lỗi)`);
+
   } catch (err) {
     assert(false, `Lỗi khi gọi API: ${err.message}`);
   } finally {

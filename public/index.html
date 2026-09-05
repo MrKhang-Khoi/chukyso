@@ -815,7 +815,7 @@
       <!-- Khung Chứng thư số Ban Cơ yếu Chính phủ & Dấu đỏ -->
       <div class="p-3 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl space-y-2 text-xs">
         <div class="flex items-center gap-3">
-          <img src="/uploads/signatures/school_seal.png" onerror="this.style.display='none'" class="w-14 h-14 object-contain drop-shadow" alt="Dấu đỏ">
+          <img src="/school_seal.png" onerror="this.src='/uploads/signatures/school_seal.png'" class="w-14 h-14 object-contain drop-shadow" alt="Dấu đỏ">
           <div class="space-y-0.5">
             <div class="font-bold text-red-900">TRƯỜNG THCS CHU VĂN AN</div>
             <div class="text-[11px] text-red-700 font-medium">Chứng thư số: Ban Cơ yếu Chính phủ (VGCA)</div>
@@ -1816,12 +1816,6 @@
     function printCurrentDocWithSignatures() {
       if (!currentlyViewedDoc) return;
       window.open(`/api/documents/${currentlyViewedDoc.id}/download-signed`, '_blank');
-    }
-        closeModal('modalDocDetails');
-        loadDocuments();
-      } catch (err) {
-        alert('Lỗi: ' + err.message);
-      }
     }
 
     async function rejectDoc(docId) {
