@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduSign - Quản lý & Trình ký Hồ sơ Điện tử VGCA</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .stamp-badge {
+      border: 3px solid #dc2626;
+      color: #dc2626;
+      border-radius: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.2);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- TOP HEADER -->
+  <header class="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 shadow-md">
+          <i class="fa-solid fa-file-signature text-xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold text-lg tracking-tight">EduSign</span>
+            <span class="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-0.5 rounded-full border border-emerald-400/30 font-medium flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>VGCA Đã Kết Nối</span>
+            </span>
+          </div>
+          <p class="text-xs text-blue-200" id="headerSchoolName">Hệ thống Trình ký & Phê duyệt Hồ sơ Số - Trường THCS Chu Văn An</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Nút cấu hình mẫu chữ ký -->
+        <button onclick="openSignatureProfileModal()" class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-signature"></i> Mẫu chữ ký & Con dấu
+        </button>
+
+        <!-- Role Selector -->
+        <div class="flex items-center bg-white/10 backdrop-blur-md rounded-xl p-1.5 border border-white/15">
+          <span class="text-xs font-medium text-blue-200 mr-2 ml-1">Đang đăng nhập:</span>
+          <select id="roleSelector" onchange="changeActiveRole(this.value)" class="bg-slate-900/90 text-white text-xs font-semibold rounded-lg px-3 py-1.5 border border-white/20 focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <option value="TEACHER" selected>👨‍🏫 Thầy Hà Văn Tý (Giáo viên - Chứng thư VGCA thật)</option>
+            <option value="LEADER">👨‍💼 Thầy Trần Văn Nam (Tổ trưởng Toán - Tin)</option>
+            <option value="PRINCIPAL">🏛️ Thầy Nguyễn Văn Hùng (Hiệu trưởng / BGH)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+    <!-- THÔNG TIN CHỨNG THƯ SỐ THẬT ĐƯỢC PHÁT HIỆN TRÊN MÁY -->
+    <div class="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white rounded-2xl p-4 shadow-md border border-emerald-500/30 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 text-2xl shrink-0">
+          <i class="fa-solid fa-id-card-clip"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs uppercase tracking-wider text-emerald-400 font-bold">Chứng thư số công vụ thật (Đã nhận diện từ Windows Store)</span>
+            <span class="bg-emerald-400/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded font-mono font-bold">X.509 v3 Active</span>
+          </div>
+          <h3 class="text-base font-bold text-white mt-0.5" id="bannerSignerName">Thầy Hà Văn Tý - Trường THCS Chu Văn An</h3>
+          <p class="text-xs text-slate-300">
+            Cơ quan cấp: <strong class="text-amber-300">CA phục vụ các cơ quan Nhà nước G2 (Ban Cơ yếu Chính phủ)</strong> • Hạn dùng: 2031
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button onclick="openSignatureProfileModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Đưa ảnh chữ ký tay lên
+        </button>
+        <button onclick="openNewDocModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-file-circle-plus"></i> Nộp Kế hoạch bài dạy
+        </button>
+      </div>
+    </div>
+
+    <!-- STATS CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="statsContainer">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-folder-open"></i>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng hồ sơ Tuần</p>
+          <h3 class="text-2xl font-black text-slate-800" id="statTotal">--</h3>
+          <p class="text-[11px] text-slate-500">Đã nộp trên hệ thống</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-user-clock"></i>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chờ Tổ trưởng duyệt</p>
+          <h3 class="text-2xl font-black text-amber-600" id="statWaitingLeader">--</h3>
+          <p class="text-[11px] text-slate-500">Cần ký nháy chuyên môn</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-building-columns"></i>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chờ BGH phê duyệt</p>
+          <h3 class="text-2xl font-black text-indigo-600" id="statWaitingPrincipal">--</h3>
+          <p class="text-[11px] text-slate-500">Cần đóng dấu nhà trường</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đã hoàn tất lưu trữ</p>
+          <h3 class="text-2xl font-black text-emerald-600" id="statApproved">--</h3>
+          <p class="text-[11px] text-slate-500">Đủ 3 cấp chữ ký số</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN WORKSPACE: DANH SÁCH HỒ SƠ -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
+        <div class="flex items-center gap-2">
+          <h3 class="font-bold text-slate-800 text-base">Danh sách Kế hoạch bài dạy & Hồ sơ chuyên môn</h3>
+          <span class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded-full font-bold" id="docCountBadge">--</span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <button onclick="loadDocuments()" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg transition" title="Làm mới">
+            <i class="fa-solid fa-arrows-rotate text-sm"></i>
+          </button>
+          <div class="h-4 w-px bg-slate-300 mx-1"></div>
+          <span class="text-xs text-slate-500 font-medium">Lọc theo:</span>
+          <select id="statusFilter" onchange="filterDocuments()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="DRAFT">Bản nháp (Chờ GV ký nộp)</option>
+            <option value="WAITING_LEADER_APPROVAL">Chờ Tổ trưởng duyệt</option>
+            <option value="WAITING_PRINCIPAL_APPROVAL">Chờ BGH duyệt</option>
+            <option value="APPROVED">Đã duyệt hoàn tất</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Table Documents -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-100/75 text-slate-600 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-200">
+              <th class="py-3 px-4">Mã hồ sơ / Tên Kế hoạch bài dạy</th>
+              <th class="py-3 px-4">Người soạn</th>
+              <th class="py-3 px-4">Tổ / Khối</th>
+              <th class="py-3 px-4">Tiến độ ký số 3 cấp</th>
+              <th class="py-3 px-4">Trạng thái</th>
+              <th class="py-3 px-4 text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="documentTableBody" class="divide-y divide-slate-100 text-slate-700">
+            <!-- Dynamic Content loaded here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: XEM VĂN BẢN VÀ KÝ DUYỆT TRỰC TIẾP -->
+  <div id="docViewerModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-500/30 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
+            <i class="fa-regular fa-file-lines"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm tracking-tight" id="modalDocTitle">Kế hoạch bài dạy</h3>
+            <p class="text-xs text-slate-400" id="modalDocMeta">Mã: KHBD-01</p>
+          </div>
+        </div>
+        <button onclick="closeDocModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body: Document Preview -->
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-100">
+        
+        <!-- Banner Hướng Dẫn Trạng Thái & Ký Nhanh -->
+        <div id="modalActionBanner" class="max-w-3xl mx-auto"></div>
+
+        <!-- Document Content Paper Mockup -->
+        <div class="bg-white shadow-md rounded-xl p-8 border border-slate-200 text-slate-800 space-y-5 max-w-3xl mx-auto">
+          <div class="text-center border-b border-slate-200 pb-4 space-y-1">
+            <p class="text-xs uppercase tracking-wider font-semibold text-slate-500" id="docPaperHeader">UBND HUYỆN ĐĂK HÀ - TRƯỜNG THCS CHU VĂN AN</p>
+            <h1 class="font-black text-xl text-slate-900" id="previewTitle">KẾ HOẠCH BÀI DẠY</h1>
+            <p class="text-xs text-slate-600" id="previewSubTitle">Môn: Toán 9 | Tuần: 12 | Năm học: 2026 - 2027</p>
+          </div>
+
+          <!-- Sample Body Text -->
+          <div class="text-xs leading-relaxed text-slate-700 space-y-3 font-serif">
+            <p class="font-bold text-slate-900 font-sans uppercase text-[11px] text-blue-900">I. MỤC TIÊU BÀI HỌC:</p>
+            <p>1. Về kiến thức: Học sinh nắm vững các khái niệm trọng tâm, phương pháp giải toán và ứng dụng thực tiễn của bài học.</p>
+            <p>2. Về năng lực: Phát triển năng lực tư duy toán học, tự chủ giải quyết vấn đề và ứng dụng công nghệ thông tin trong học tập.</p>
+            <p>3. Về phẩm chất: Rèn luyện tính cẩn thận, chính xác, trung thực theo định hướng Chương trình GDPT 2018.</p>
+            <p class="font-bold text-slate-900 font-sans uppercase text-[11px] text-blue-900 pt-2">II. TIẾN TRÌNH DẠY HỌC & ĐÁNH GIÁ:</p>
+            <p>Hoạt động 1: Khởi động (10 phút) - Tạo tình huống có vấn đề khơi gợi hứng thú.</p>
+            <p>Hoạt động 2: Hình thành kiến thức mới (45 phút) - Tổ chức hoạt động nhóm và báo cáo kết quả.</p>
+          </div>
+
+          <!-- SIGNATURE BLOCKS (3 CẤP KÝ SỐ) -->
+          <div class="pt-6 border-t-2 border-dashed border-slate-200">
+            <p class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider text-center">KHUNG CHỮ KÝ SỐ ĐIỆN TỬ 3 CẤP (CHUẨN PAdES INCREMENTAL UPDATE)</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="signatureBoxes">
+              <!-- Render động 3 ô: Giáo viên, Tổ trưởng, Hiệu trưởng -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit Log Timeline -->
+        <div class="max-w-3xl mx-auto bg-white rounded-xl p-5 border border-slate-200">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-timeline text-indigo-600"></i> Nhật ký lưu vết luồng phê duyệt (Audit Trail)
+          </h4>
+          <div class="space-y-3 text-xs" id="modalAuditLogs">
+            <!-- Dynamic Logs -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer / Action Buttons -->
+      <div class="px-6 py-3.5 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="text-xs text-slate-500 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Chứng thư số VGCA sẵn sàng qua Virtual CSP</span>
+        </div>
+
+        <div class="flex items-center gap-2" id="modalActionButtons">
+          <!-- Action buttons -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CẤU HÌNH MẪU CHỮ KÝ SỐ & ĐƯA ẢNH CHỮ KÝ LÊN -->
+  <div id="sigProfileModal" style="z-index: 99998 !important;" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200 text-slate-800">
+      <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-5 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center text-xl font-bold">
+            <i class="fa-solid fa-signature text-amber-300"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm tracking-tight">Cấu hình Mẫu Chữ Ký & Con Dấu VGCA</h3>
+            <p class="text-[11px] text-blue-200">Đưa ảnh chữ ký scan tay và con dấu lên hệ thống</p>
+          </div>
+        </div>
+        <button onclick="closeSignatureProfileModal()" class="text-white/70 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5 text-xs">
+        <!-- Thông tin chứng thư số -->
+        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 space-y-1">
+          <div class="flex justify-between font-bold text-emerald-900">
+            <span>Chứng thư số Ban Cơ yếu Chính phủ:</span>
+            <span class="text-emerald-700">Đang hoạt động</span>
+          </div>
+          <p class="text-slate-600">Chủ sở hữu: <strong class="text-slate-900" id="profOwnerName">Hà Văn Tý</strong></p>
+          <p class="text-slate-600">Đơn vị: <span id="profOwnerUnit">Trường THCS Chu Văn An</span></p>
+          <p class="text-slate-500 font-mono text-[10px]">Serial: <span id="profOwnerSerial">6398E3DC...</span></p>
+        </div>
+
+        <!-- Tabs chọn cách đưa chữ ký lên -->
+        <div class="space-y-3">
+          <div class="flex border-b border-slate-200 gap-4">
+            <button onclick="switchSigTab('UPLOAD')" id="tabUploadBtn" class="pb-2 border-b-2 border-indigo-600 text-indigo-600 font-bold">
+              <i class="fa-solid fa-file-image mr-1"></i> Tải ảnh scan chữ ký (.PNG)
+            </button>
+            <button onclick="switchSigTab('DRAW')" id="tabDrawBtn" class="pb-2 border-b-2 border-transparent text-slate-500 font-semibold hover:text-slate-800">
+              <i class="fa-solid fa-pen mr-1"></i> Vẽ chữ ký trực tiếp
+            </button>
+          </div>
+
+          <!-- Tab Upload File -->
+          <div id="tabUploadArea" class="border-2 border-dashed border-slate-300 rounded-2xl p-5 text-center bg-slate-50 space-y-2">
+            <i class="fa-solid fa-cloud-arrow-up text-3xl text-indigo-600"></i>
+            <p class="font-bold text-slate-700">Chọn ảnh chữ ký tay của bạn</p>
+            <p class="text-[11px] text-slate-500">Khuyên dùng ảnh chụp chữ ký mực xanh, nền trong suốt PNG</p>
+            <input type="file" id="sigFileInput" accept="image/*" class="hidden" onchange="handleSignatureFile(this)">
+            <button type="button" onclick="document.getElementById('sigFileInput').click()" class="px-4 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-700 hover:bg-slate-100 shadow-sm">
+              Chọn tệp từ máy tính
+            </button>
+          </div>
+
+          <!-- Tab Vẽ chữ ký -->
+          <div id="tabDrawArea" class="hidden border border-slate-300 rounded-2xl p-3 bg-white space-y-2">
+            <p class="font-semibold text-slate-600">Vẽ chữ ký của bạn bằng chuột hoặc bút cảm ứng vào khung dưới:</p>
+            <canvas id="sigCanvas" width="450" height="150" class="border border-slate-200 rounded-xl bg-slate-50 w-full cursor-crosshair"></canvas>
+            <div class="text-right">
+              <button onclick="clearCanvas()" class="text-rose-600 hover:underline text-[11px] font-semibold">
+                <i class="fa-solid fa-rotate-left"></i> Xóa vẽ lại
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Khung xem trước con dấu hiển thị -->
+        <div class="border border-slate-200 rounded-2xl p-3 bg-slate-50 space-y-1.5">
+          <p class="font-bold text-slate-600 uppercase text-[10px]">Xem trước mẫu chữ ký hiển thị trên văn bản PDF:</p>
+          <div class="bg-white border border-emerald-500/60 rounded-xl p-3 flex items-center gap-3">
+            <div class="w-24 h-16 border border-dashed border-slate-300 rounded-lg flex items-center justify-center overflow-hidden bg-slate-50">
+              <img id="previewSigImg" src="" alt="Chữ ký tay" class="max-h-full max-w-full hidden">
+              <span id="noSigText" class="text-[10px] text-slate-400 italic">Chưa có ảnh</span>
+            </div>
+            <div class="text-[11px] text-slate-700 space-y-0.5">
+              <div class="font-black text-emerald-700"><i class="fa-solid fa-check-circle"></i> ĐÃ KÝ SỐ VGCA</div>
+              <div class="font-bold text-slate-900" id="previewSignerLabel">Hà Văn Tý</div>
+              <div class="text-[10px] text-slate-500" id="previewSchoolLabel">Trường THCS Chu Văn An</div>
+              <div class="text-[9px] text-slate-400">Thời gian: 05/09/2026 10:20:00 (TSA)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nút lưu -->
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+          <button onclick="closeSignatureProfileModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl">Đóng</button>
+          <button onclick="saveSignatureProfile()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md shadow-indigo-600/20">
+            Lưu mẫu chữ ký vào hồ sơ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KÝ SỐ CHUYÊN DÙNG CHÍNH PHỦ VGCA -->
+  <div id="vgcaSignModal" style="z-index: 99999 !important;" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 text-slate-800">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-red-700 via-rose-700 to-red-800 text-white p-5 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center text-xl font-bold">
+            <i class="fa-solid fa-shield-halved text-amber-300"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h3 class="font-extrabold text-sm tracking-tight">BAN CƠ YẾU CHÍNH PHỦ</h3>
+              <span class="bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded">VGCA</span>
+            </div>
+            <p class="text-[11px] text-red-100">Cổng Ký số Chuyên dùng Công vụ - Xác thực 2 lớp (2FA)</p>
+          </div>
+        </div>
+        <button onclick="closeVgcaSignModal()" class="text-white/70 hover:text-white p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-5" id="vgcaModalMainContent">
+        <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-1">
+          <p class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Tài liệu ký số</p>
+          <h4 class="text-xs font-bold text-slate-800" id="vgcaSignDocTitle">Kế hoạch bài dạy</h4>
+          <p class="text-[11px] text-slate-500" id="vgcaSignDocMeta">Mã: KHBD-01 | Chuẩn PAdES Incremental Update</p>
+        </div>
+
+        <div class="border border-emerald-200 bg-emerald-50/50 rounded-2xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-emerald-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-certificate text-emerald-600"></i> Chứng thư số hợp lệ (X.509 v3)
+            </span>
+            <span class="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Sẵn sàng</span>
+          </div>
+          <div class="text-xs space-y-1 text-slate-700">
+            <div class="flex justify-between"><span class="text-slate-500">Người ký:</span><strong class="text-slate-900" id="vgcaCertOwner">Hà Văn Tý</strong></div>
+            <div class="flex justify-between"><span class="text-slate-500">Chức vụ / Đơn vị:</span><span id="vgcaCertUnit">Trường THCS Chu Văn An</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Cơ quan cấp:</span><span class="text-red-700 font-semibold">CA phục vụ các cơ quan Nhà nước G2</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Serial chứng thư:</span><span class="font-mono text-[10px] text-slate-600" id="vgcaCertSerial">6398E3DC...</span></div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-700">Chọn phương thức xác thực:</label>
+          <div class="grid grid-cols-2 gap-2.5">
+            <label class="border-2 border-indigo-500 bg-indigo-50/40 rounded-2xl p-3 flex flex-col justify-between cursor-pointer hover:bg-indigo-50 transition relative">
+              <input type="radio" name="signMethod" value="MOBILE" checked class="absolute top-3 right-3 text-indigo-600 focus:ring-0">
+              <div>
+                <i class="fa-solid fa-mobile-screen-button text-indigo-600 text-lg mb-1"></i>
+                <div class="font-bold text-xs text-slate-900">VGCA Mobile</div>
+                <div class="text-[10px] text-slate-500 mt-0.5">Xác thực đẩy qua App điện thoại (FaceID/Vân tay)</div>
+              </div>
+            </label>
+
+            <label class="border border-slate-200 rounded-2xl p-3 flex flex-col justify-between cursor-pointer hover:bg-slate-50 transition relative">
+              <input type="radio" name="signMethod" value="TOKEN" class="absolute top-3 right-3 text-indigo-600 focus:ring-0">
+              <div>
+                <i class="fa-solid fa-desktop text-slate-600 text-lg mb-1"></i>
+                <div class="font-bold text-xs text-slate-900">Virtual CSP (PC)</div>
+                <div class="text-[10px] text-slate-500 mt-0.5">Ký trực tiếp bằng mã PIN trên máy tính</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button onclick="startVgcaSigningProcess()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-fingerprint text-base"></i> THỰC HIỆN KÝ SỐ NGAY
+          </button>
+        </div>
+      </div>
+
+      <!-- Khung tiến trình mô phỏng ký số -->
+      <div id="vgcaSigningProgress" class="p-8 space-y-5 hidden text-center">
+        <div class="w-16 h-16 mx-auto rounded-full bg-indigo-50 border-4 border-indigo-500 border-t-transparent animate-spin flex items-center justify-center">
+          <i class="fa-solid fa-lock text-indigo-600 text-xl"></i>
+        </div>
+        <div class="space-y-1">
+          <h4 class="font-bold text-sm text-slate-900" id="progressStepTitle">Đang kết nối tới Ban Cơ yếu...</h4>
+          <p class="text-xs text-slate-500" id="progressStepDesc">Vui lòng chờ trong giây lát</p>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+          <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style="width: 25%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NỘP HỒ SƠ MỚI -->
+  <div id="newDocModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-file-circle-plus text-indigo-600"></i> Nộp Kế hoạch bài dạy mới
+        </h3>
+        <button onclick="closeNewDocModal()" class="text-slate-400 hover:text-slate-700 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="newDocForm" onsubmit="handleCreateDocument(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Tên Kế hoạch bài dạy / Chuyên đề:</label>
+          <input type="text" id="inputTitle" required placeholder="Ví dụ: Kế hoạch bài dạy Tuần 13 - Môn Toán 9" class="w-full border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Tổ chuyên môn:</label>
+            <select id="inputDept" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white">
+              <option value="Tổ Toán - Tin">Tổ Toán - Tin</option>
+              <option value="Tổ Ngữ Văn">Tổ Ngữ Văn</option>
+              <option value="Tổ Ngoại Ngữ">Tổ Ngoại Ngữ</option>
+              <option value="Tổ KHTN (Lý - Hóa - Sinh)">Tổ KHTN (Lý - Hóa - Sinh)</option>
+              <option value="Tổ Lịch sử - Địa lý">Tổ Lịch sử - Địa lý</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Tuần áp dụng:</label>
+            <select id="inputWeek" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white">
+              <option value="Tuần 12">Tuần 12</option>
+              <option value="Tuần 13" selected>Tuần 13</option>
+              <option value="Tuần 14">Tuần 14</option>
+              <option value="Tuần 15">Tuần 15</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center bg-slate-50">
+          <i class="fa-solid fa-file-word text-blue-600 text-3xl mb-2"></i>
+          <p class="font-semibold text-slate-700">Chọn tệp giáo án (.docx hoặc .pdf)</p>
+          <p class="text-[11px] text-slate-500 mt-0.5">Hệ thống sẽ tự động chuẩn hóa sang định dạng bảo mật PDF/A-2b</p>
+          <input type="file" class="hidden" id="fileUploadMock">
+          <button type="button" onclick="document.getElementById('fileUploadMock').click()" class="mt-2.5 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100">
+            Duyệt tệp từ máy tính
+          </button>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="closeNewDocModal()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-semibold hover:bg-slate-200">Hủy</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 shadow-md shadow-indigo-600/20">Khởi tạo và Ký nộp</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT CONTROLLER -->
+  <script>
+    let allDocuments = [];
+    let currentRole = 'TEACHER';
+    let selectedDoc = null;
+    let pendingSignAction = null;
+    let realCertData = null;
+    let currentSignatureBase64 = null;
+
+    // Canvas drawing variables
+    let canvas, ctx, isDrawing = false;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await fetchRealCertificates();
+      await loadSignatureProfile();
+      await loadStats();
+      await loadDocuments();
+      initCanvas();
+    });
+
+    async function fetchRealCertificates() {
+      try {
+        const res = await fetch('/api/system/certificates');
+        const json = await res.json();
+        if (json.success && json.data.realSigner) {
+          realCertData = json.data.realSigner;
+          document.getElementById('headerSchoolName').innerText = `Hệ thống Trình ký & Phê duyệt Hồ sơ Số - ${realCertData.school}`;
+          document.getElementById('bannerSignerName').innerText = `Thầy ${realCertData.name} - ${realCertData.school}`;
+          document.getElementById('docPaperHeader').innerText = `UBND HUYỆN ĐĂK HÀ - ${realCertData.school.toUpperCase()}`;
+          
+          document.getElementById('profOwnerName').innerText = realCertData.name;
+          document.getElementById('profOwnerUnit').innerText = realCertData.school;
+          document.getElementById('profOwnerSerial').innerText = realCertData.thumbprint;
+          document.getElementById('previewSignerLabel').innerText = realCertData.name;
+          document.getElementById('previewSchoolLabel').innerText = realCertData.school;
+        }
+      } catch (err) {
+        console.error('Lỗi đọc chứng thư số:', err);
+      }
+    }
+
+    async function loadSignatureProfile() {
+      try {
+        const res = await fetch('/api/user/signature-profile');
+        const json = await res.json();
+        if (json.success && json.data.profile.teacherSignatureImg) {
+          currentSignatureBase64 = json.data.profile.teacherSignatureImg;
+          document.getElementById('previewSigImg').src = currentSignatureBase64;
+          document.getElementById('previewSigImg').classList.remove('hidden');
+          document.getElementById('noSigText').classList.add('hidden');
+        }
+      } catch (err) {}
+    }
+
+    function changeActiveRole(newRole) {
+      currentRole = newRole;
+      renderDocumentTable();
+      if (selectedDoc) openDocViewer(selectedDoc.id);
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const json = await res.json();
+        if (json.success) {
+          document.getElementById('statTotal').innerText = json.data.total;
+          document.getElementById('statWaitingLeader').innerText = json.data.waitingLeader;
+          document.getElementById('statWaitingPrincipal').innerText = json.data.waitingPrincipal;
+          document.getElementById('statApproved').innerText = json.data.approved;
+        }
+      } catch (err) {}
+    }
+
+    async function loadDocuments() {
+      try {
+        const res = await fetch('/api/documents');
+        const json = await res.json();
+        if (json.success) {
+          allDocuments = json.data;
+          renderDocumentTable();
+        }
+      } catch (err) {}
+    }
+
+    function renderDocumentTable() {
+      const tbody = document.getElementById('documentTableBody');
+      const filter = document.getElementById('statusFilter').value;
+      
+      let docs = allDocuments;
+      if (filter !== 'ALL') {
+        docs = docs.filter(d => d.status === filter);
+      }
+
+      document.getElementById('docCountBadge').innerText = docs.length;
+
+      if (docs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400 text-xs">Không có hồ sơ nào phù hợp</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = docs.map(doc => {
+        let statusBadge = '';
+        if (doc.status === 'DRAFT') {
+          statusBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600"><i class="fa-solid fa-pen-ruler text-[10px]"></i> Bản nháp</span>`;
+        } else if (doc.status === 'WAITING_LEADER_APPROVAL') {
+          statusBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800"><i class="fa-solid fa-clock text-[10px]"></i> Chờ Tổ trưởng duyệt</span>`;
+        } else if (doc.status === 'WAITING_PRINCIPAL_APPROVAL') {
+          statusBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800"><i class="fa-solid fa-hourglass-half text-[10px]"></i> Chờ BGH phê duyệt</span>`;
+        } else if (doc.status === 'APPROVED') {
+          statusBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle-check text-[10px]"></i> Đã duyệt & Lưu kho</span>`;
+        }
+
+        const hasSig1 = doc.signatures.some(s => s.step === 1);
+        const hasSig2 = doc.signatures.some(s => s.step === 2);
+        const hasSig3 = doc.signatures.some(s => s.step === 3);
+
+        const progressDots = `
+          <div class="flex items-center space-x-1.5 text-xs font-semibold">
+            <span class="w-6 h-6 rounded-full flex items-center justify-center ${hasSig1 ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}" title="Cấp 1: Giáo viên soạn thảo">GV</span>
+            <span class="text-slate-300">➔</span>
+            <span class="w-6 h-6 rounded-full flex items-center justify-center ${hasSig2 ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-400'}" title="Cấp 2: Tổ trưởng duyệt chuyên môn">TT</span>
+            <span class="text-slate-300">➔</span>
+            <span class="w-6 h-6 rounded-full flex items-center justify-center ${hasSig3 ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-400'}" title="Cấp 3: Hiệu trưởng phê duyệt & Đóng dấu">BGH</span>
+          </div>
+        `;
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="py-3.5 px-4 font-medium text-slate-900">
+              <div class="flex items-center gap-2">
+                <i class="fa-regular fa-file-pdf text-rose-500 text-lg"></i>
+                <div>
+                  <div class="font-bold text-slate-800 hover:text-indigo-600 cursor-pointer" onclick="openDocViewer('${doc.id}')">${doc.title}</div>
+                  <div class="text-[11px] text-slate-400">${doc.id} • ${doc.fileSize} • ${doc.pages} trang</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3.5 px-4 text-xs font-medium">${doc.author}</td>
+            <td class="py-3.5 px-4 text-xs text-slate-500">${doc.department} <br><span class="text-[10px] text-slate-400">${doc.grade}</span></td>
+            <td class="py-3.5 px-4">${progressDots}</td>
+            <td class="py-3.5 px-4">${statusBadge}</td>
+            <td class="py-3.5 px-4 text-right">
+              <button onclick="openDocViewer('${doc.id}')" class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+                <i class="fa-solid fa-signature mr-1"></i> Xem & Ký
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterDocuments() {
+      renderDocumentTable();
+    }
+
+    function openDocViewer(docId) {
+      selectedDoc = allDocuments.find(d => d.id === docId);
+      if (!selectedDoc) return;
+
+      document.getElementById('modalDocTitle').innerText = selectedDoc.title;
+      document.getElementById('modalDocMeta').innerText = `Mã: ${selectedDoc.id} | Người nộp: ${selectedDoc.author} (${selectedDoc.department})`;
+      document.getElementById('previewTitle').innerText = selectedDoc.title.toUpperCase();
+      document.getElementById('previewSubTitle').innerText = `${selectedDoc.department} | ${selectedDoc.week} | Năm học: 2026 - 2027`;
+
+      const bannerEl = document.getElementById('modalActionBanner');
+      if (selectedDoc.status === 'DRAFT') {
+        bannerEl.innerHTML = `
+          <div class="bg-amber-50 border-2 border-amber-400 text-amber-900 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-sm">1</span>
+              <div>
+                <p class="font-bold text-xs text-amber-950 uppercase tracking-wide">Bước 1: Giáo viên (${selectedDoc.author}) cần ký số để nộp hồ sơ</p>
+                <p class="text-[11px] text-amber-800">Tài liệu này chưa có chữ ký. Bạn hãy bấm nút bên phải để ký số nộp ngay!</p>
+              </div>
+            </div>
+            <button onclick="quickSignAs('TEACHER')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/30 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-signature text-sm"></i> KÝ SỐ NỘP BÀI NGAY
+            </button>
+          </div>
+        `;
+      } else if (selectedDoc.status === 'WAITING_LEADER_APPROVAL') {
+        bannerEl.innerHTML = `
+          <div class="bg-blue-50 border-2 border-blue-400 text-blue-900 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm">2</span>
+              <div>
+                <p class="font-bold text-xs text-blue-950 uppercase tracking-wide">Bước 2: Chờ Tổ trưởng chuyên môn ký nháy duyệt</p>
+                <p class="text-[11px] text-blue-800">Giáo viên đã ký xong. Tổ trưởng kiểm tra và bấm ký nháy để chuyển BGH.</p>
+              </div>
+            </div>
+            <button onclick="quickSignAs('LEADER')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/30 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-check-double text-sm"></i> TỔ TRƯỞNG KÝ NHÁY DUYỆT
+            </button>
+          </div>
+        `;
+      } else if (selectedDoc.status === 'WAITING_PRINCIPAL_APPROVAL') {
+        bannerEl.innerHTML = `
+          <div class="bg-purple-50 border-2 border-purple-400 text-purple-900 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-sm">3</span>
+              <div>
+                <p class="font-bold text-xs text-purple-950 uppercase tracking-wide">Bước 3: Chờ Ban Giám hiệu phê duyệt chính thức</p>
+                <p class="text-[11px] text-purple-800">Tổ chuyên môn đã thông qua. Hiệu trưởng ký số và đóng dấu trường học.</p>
+              </div>
+            </div>
+            <button onclick="quickSignAs('PRINCIPAL')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-600/30 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-stamp text-sm"></i> BGH PHÊ DUYỆT & ĐÓNG DẤU
+            </button>
+          </div>
+        `;
+      } else if (selectedDoc.status === 'APPROVED') {
+        bannerEl.innerHTML = `
+          <div class="bg-emerald-50 border-2 border-emerald-400 text-emerald-900 rounded-2xl p-3.5 flex items-center gap-2.5 shadow-sm">
+            <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-base"><i class="fa-solid fa-check"></i></span>
+            <div>
+              <p class="font-bold text-xs text-emerald-950 uppercase tracking-wide">Hồ sơ đã được phê duyệt chính thức và lưu trữ số</p>
+              <p class="text-[11px] text-emerald-800">Đầy đủ 3 cấp chữ ký số VGCA chuẩn PAdES có giá trị pháp lý vĩnh viễn.</p>
+            </div>
+          </div>
+        `;
+      }
+
+      renderSignatureBoxes(selectedDoc);
+
+      const logContainer = document.getElementById('modalAuditLogs');
+      logContainer.innerHTML = selectedDoc.logs.map(log => `
+        <div class="flex items-start gap-2 border-l-2 border-indigo-400 pl-3 py-0.5">
+          <span class="text-[10px] text-slate-400 font-mono">${log.time.split(' ')[1]}</span>
+          <div>
+            <span class="font-bold text-slate-700">${log.actor}:</span>
+            <span class="text-slate-600">${log.action}</span>
+          </div>
+        </div>
+      `).join('');
+
+      const btnContainer = document.getElementById('modalActionButtons');
+      let buttonsHtml = `<button onclick="closeDocModal()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Đóng</button>`;
+
+      if (selectedDoc.status === 'DRAFT') {
+        buttonsHtml += `
+          <button onclick="quickSignAs('TEACHER')" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 flex items-center gap-1.5">
+            <i class="fa-solid fa-signature"></i> Ký số Giáo viên & Trình Tổ trưởng
+          </button>
+        `;
+      } else if (selectedDoc.status === 'WAITING_LEADER_APPROVAL') {
+        buttonsHtml += `
+          <button onclick="quickSignAs('LEADER')" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 flex items-center gap-1.5">
+            <i class="fa-solid fa-check-double"></i> Ký nháy Duyệt & Trình BGH
+          </button>
+        `;
+      } else if (selectedDoc.status === 'WAITING_PRINCIPAL_APPROVAL') {
+        buttonsHtml += `
+          <button onclick="quickSignAs('PRINCIPAL')" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-md shadow-purple-600/20 flex items-center gap-1.5">
+            <i class="fa-solid fa-stamp"></i> Phê duyệt Chính thức & Đóng dấu cơ quan
+          </button>
+        `;
+      }
+
+      btnContainer.innerHTML = buttonsHtml;
+      document.getElementById('docViewerModal').classList.remove('hidden');
+    }
+
+    function closeDocModal() {
+      document.getElementById('docViewerModal').classList.add('hidden');
+    }
+
+    function quickSignAs(role) {
+      currentRole = role;
+      document.getElementById('roleSelector').value = role;
+      triggerSigningFlow(role);
+    }
+
+    function renderSignatureBoxes(doc) {
+      const container = document.getElementById('signatureBoxes');
+      const sig1 = doc.signatures.find(s => s.step === 1);
+      const sig2 = doc.signatures.find(s => s.step === 2);
+      const sig3 = doc.signatures.find(s => s.step === 3);
+
+      container.innerHTML = `
+        <!-- Ô 1: Giáo viên -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 text-center flex flex-col justify-between min-h-[160px]">
+          <div>
+            <p class="font-bold text-[11px] text-slate-700 uppercase">1. Giáo viên soạn bài</p>
+            <p class="text-[10px] text-slate-500">(Ký và ghi rõ họ tên)</p>
+          </div>
+          ${sig1 ? `
+            <div class="border border-emerald-500 bg-emerald-50/80 rounded-lg p-2 text-[10px] text-emerald-800 font-sans shadow-sm my-1">
+              ${sig1.visualSignImage ? `<img src="${sig1.visualSignImage}" class="h-8 mx-auto mb-1">` : ''}
+              <div class="font-extrabold text-emerald-700"><i class="fa-solid fa-check-circle"></i> ĐÃ KÝ SỐ VGCA</div>
+              <div class="font-semibold text-slate-800">${sig1.signerName}</div>
+              <div class="text-[9px] text-slate-500">${sig1.signedAt}</div>
+              <div class="text-[8px] text-slate-400 font-mono">SN: ${sig1.certSerial.substring(0, 16)}...</div>
+            </div>
+          ` : `
+            <button onclick="quickSignAs('TEACHER')" class="w-full my-2 py-2.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] shadow-md shadow-emerald-600/30 flex items-center justify-center gap-1.5 transition">
+              <i class="fa-solid fa-signature"></i> BẤM VÀO ĐÂY ĐỂ KÝ SỐ
+            </button>
+          `}
+          <p class="font-semibold text-xs text-slate-800">${doc.author}</p>
+        </div>
+
+        <!-- Ô 2: Tổ trưởng chuyên môn -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 text-center flex flex-col justify-between min-h-[160px]">
+          <div>
+            <p class="font-bold text-[11px] text-slate-700 uppercase">2. Duyệt của Tổ trưởng</p>
+            <p class="text-[10px] text-slate-500">(Ký nháy chuyên môn)</p>
+          </div>
+          ${sig2 ? `
+            <div class="border border-blue-500 bg-blue-50/80 rounded-lg p-2 text-[10px] text-blue-800 font-sans shadow-sm my-1">
+              <div class="font-extrabold text-blue-700"><i class="fa-solid fa-check-circle"></i> ĐÃ DUYỆT CHUYÊN MÔN</div>
+              <div class="font-semibold text-slate-800">${sig2.signerName}</div>
+              <div class="text-[9px] text-slate-500">${sig2.signedAt}</div>
+              <div class="text-[8px] text-slate-400 font-mono">SN: ${sig2.certSerial.substring(0, 16)}...</div>
+            </div>
+          ` : (sig1 ? `
+            <button onclick="quickSignAs('LEADER')" class="w-full my-2 py-2.5 px-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-[11px] shadow-md shadow-blue-600/30 flex items-center justify-center gap-1.5 transition">
+              <i class="fa-solid fa-check-double"></i> BẤM ĐỂ KÝ NHÁY DUYỆT
+            </button>
+          ` : `
+            <div class="h-12 border border-dashed border-slate-300 rounded-lg flex items-center justify-center text-[10px] text-slate-400 my-2">
+              Chờ GV ký trước
+            </div>
+          `)}
+          <p class="font-semibold text-xs text-slate-800">Trần Văn Nam</p>
+        </div>
+
+        <!-- Ô 3: Ban Giám hiệu -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 text-center flex flex-col justify-between min-h-[160px]">
+          <div>
+            <p class="font-bold text-[11px] text-slate-700 uppercase">3. Hiệu trưởng phê duyệt</p>
+            <p class="text-[10px] text-slate-500">(Ký số & Đóng dấu cơ quan)</p>
+          </div>
+          ${sig3 ? `
+            <div class="stamp-badge p-2 text-[10px] font-sans shadow-sm my-1 bg-red-50/40">
+              <div class="font-black text-rose-700 flex items-center justify-center gap-1">
+                <i class="fa-solid fa-stamp"></i> PHÊ DUYỆT CHÍNH THỨC
+              </div>
+              <div class="font-bold text-slate-900 mt-0.5">${doc.school || 'TRƯỜNG THCS CHU VĂN AN'}</div>
+              <div class="text-[9px] text-slate-700">Ký bởi: ${sig3.signerName}</div>
+              <div class="text-[8px] text-slate-500">${sig3.signedAt}</div>
+            </div>
+          ` : (sig2 ? `
+            <button onclick="quickSignAs('PRINCIPAL')" class="w-full my-2 py-2.5 px-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-[11px] shadow-md shadow-purple-600/30 flex items-center justify-center gap-1.5 transition">
+              <i class="fa-solid fa-stamp"></i> BẤM ĐỂ PHÊ DUYỆT
+            </button>
+          ` : `
+            <div class="h-12 border border-dashed border-slate-300 rounded-lg flex items-center justify-center text-[10px] text-slate-400 my-2">
+              Chờ Tổ trưởng duyệt
+            </div>
+          `)}
+          <p class="font-semibold text-xs text-slate-800">Nguyễn Văn Hùng</p>
+        </div>
+      `;
+    }
+
+    function triggerSigningFlow(roleCode) {
+      if (!selectedDoc) return;
+      pendingSignAction = {
+        docId: selectedDoc.id,
+        roleCode: roleCode
+      };
+
+      const signerName = roleCode === 'TEACHER' ? (realCertData ? realCertData.name : 'Hà Văn Tý') : (roleCode === 'LEADER' ? 'Trần Văn Nam' : 'Nguyễn Văn Hùng');
+      const signerUnit = roleCode === 'TEACHER' ? (realCertData ? realCertData.school : 'Trường THCS Chu Văn An') : (roleCode === 'LEADER' ? 'Tổ trưởng Toán - Tin' : 'Hiệu trưởng');
+      const serial = roleCode === 'TEACHER' ? (realCertData ? realCertData.thumbprint : '6398E3DC...') : '54:02:88:AC...';
+
+      document.getElementById('vgcaSignDocTitle').innerText = selectedDoc.title;
+      document.getElementById('vgcaSignDocMeta').innerText = `Mã: ${selectedDoc.id} | Người nộp: ${selectedDoc.author}`;
+      document.getElementById('vgcaCertOwner').innerText = signerName;
+      document.getElementById('vgcaCertUnit').innerText = signerUnit;
+      document.getElementById('vgcaCertSerial').innerText = serial;
+      
+      document.getElementById('vgcaModalMainContent').classList.remove('hidden');
+      document.getElementById('vgcaSigningProgress').classList.add('hidden');
+      document.getElementById('vgcaSignModal').classList.remove('hidden');
+    }
+
+    function closeVgcaSignModal() {
+      document.getElementById('vgcaSignModal').classList.add('hidden');
+      pendingSignAction = null;
+    }
+
+    async function startVgcaSigningProcess() {
+      if (!pendingSignAction) return;
+
+      const mainContent = document.getElementById('vgcaModalMainContent');
+      const progressContent = document.getElementById('vgcaSigningProgress');
+      const progressTitle = document.getElementById('progressStepTitle');
+      const progressDesc = document.getElementById('progressStepDesc');
+      const progressBar = document.getElementById('progressBar');
+
+      mainContent.classList.add('hidden');
+      progressContent.classList.remove('hidden');
+
+      // Bước 1: Hash file SHA-256
+      progressTitle.innerText = "1. Tính toán mã băm tài liệu...";
+      progressDesc.innerText = "Đang tạo SHA-256 Hash từ file giáo án...";
+      progressBar.style.width = "30%";
+      await new Promise(r => setTimeout(r, 600));
+
+      // Bước 2: Bắt tay với HSM/Virtual CSP Ban Cơ yếu
+      progressTitle.innerText = "2. Kết nối Cổng Ký số VGCA...";
+      progressDesc.innerText = "Xác thực chứng thư số với Cục Chứng thực số & Bảo mật thông tin...";
+      progressBar.style.width = "65%";
+      await new Promise(r => setTimeout(r, 700));
+
+      // Bước 3: Đóng gói PAdES Incremental Update
+      progressTitle.innerText = "3. Đóng gói chữ ký số PAdES...";
+      progressDesc.innerText = "Áp dụng ảnh chữ ký tay & Ghi nối tiếp Incremental Update...";
+      progressBar.style.width = "90%";
+      await new Promise(r => setTimeout(r, 600));
+
+      try {
+        const res = await fetch(`/api/documents/${pendingSignAction.docId}/sign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signerRoleCode: pendingSignAction.roleCode,
+            signatureImageBase64: currentSignatureBase64,
+            comment: pendingSignAction.roleCode === 'LEADER' ? 'Đã duyệt đạt chuẩn kiến thức kỹ năng' : 'Phê duyệt ban hành chính thức'
+          })
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          progressBar.style.width = "100%";
+          progressTitle.innerText = "4. Ký số thành công 100%!";
+          progressDesc.innerText = json.message;
+          await new Promise(r => setTimeout(r, 600));
+
+          closeVgcaSignModal();
+          selectedDoc = json.data;
+          await loadStats();
+          await loadDocuments();
+          openDocViewer(selectedDoc.id);
+        } else {
+          alert('Lỗi: ' + json.message);
+          closeVgcaSignModal();
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ!');
+        closeVgcaSignModal();
+      }
+    }
+
+    // Modal Signature Profile
+    function openSignatureProfileModal() {
+      document.getElementById('sigProfileModal').classList.remove('hidden');
+    }
+    function closeSignatureProfileModal() {
+      document.getElementById('sigProfileModal').classList.add('hidden');
+    }
+
+    function switchSigTab(tab) {
+      if (tab === 'UPLOAD') {
+        document.getElementById('tabUploadArea').classList.remove('hidden');
+        document.getElementById('tabDrawArea').classList.add('hidden');
+        document.getElementById('tabUploadBtn').className = "pb-2 border-b-2 border-indigo-600 text-indigo-600 font-bold";
+        document.getElementById('tabDrawBtn').className = "pb-2 border-b-2 border-transparent text-slate-500 font-semibold hover:text-slate-800";
+      } else {
+        document.getElementById('tabUploadArea').classList.add('hidden');
+        document.getElementById('tabDrawArea').classList.remove('hidden');
+        document.getElementById('tabDrawBtn').className = "pb-2 border-b-2 border-indigo-600 text-indigo-600 font-bold";
+        document.getElementById('tabUploadBtn').className = "pb-2 border-b-2 border-transparent text-slate-500 font-semibold hover:text-slate-800";
+      }
+    }
+
+    function handleSignatureFile(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          currentSignatureBase64 = e.target.result;
+          document.getElementById('previewSigImg').src = currentSignatureBase64;
+          document.getElementById('previewSigImg').classList.remove('hidden');
+          document.getElementById('noSigText').classList.add('hidden');
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    async function saveSignatureProfile() {
+      if (document.getElementById('tabDrawArea').classList.contains('hidden') === false) {
+        // Lấy chữ ký từ canvas
+        currentSignatureBase64 = canvas.toDataURL('image/png');
+      }
+
+      if (!currentSignatureBase64) {
+        alert('Vui lòng chọn ảnh chụp chữ ký hoặc vẽ chữ ký trước khi lưu!');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/user/signature-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            teacherSignatureImg: currentSignatureBase64
+          })
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert('Đã lưu mẫu chữ ký thành công! Mẫu này sẽ tự động đóng dấu vào mọi văn bản khi bạn ký số.');
+          closeSignatureProfileModal();
+        }
+      } catch (err) {
+        alert('Lỗi lưu mẫu chữ ký!');
+      }
+    }
+
+    // Canvas drawing
+    function initCanvas() {
+      canvas = document.getElementById('sigCanvas');
+      if (!canvas) return;
+      ctx = canvas.getContext('2d');
+      ctx.strokeStyle = '#1d4ed8'; // Màu mực xanh bút máy
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        ctx.beginPath();
+        ctx.moveTo(e.offsetX, e.offsetY);
+      });
+      canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+      });
+      canvas.addEventListener('mouseup', () => {
+        isDrawing = false;
+        currentSignatureBase64 = canvas.toDataURL('image/png');
+        document.getElementById('previewSigImg').src = currentSignatureBase64;
+        document.getElementById('previewSigImg').classList.remove('hidden');
+        document.getElementById('noSigText').classList.add('hidden');
+      });
+    }
+
+    function clearCanvas() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      currentSignatureBase64 = null;
+      document.getElementById('previewSigImg').src = '';
+      document.getElementById('previewSigImg').classList.add('hidden');
+      document.getElementById('noSigText').classList.remove('hidden');
+    }
+
+    function openNewDocModal() {
+      document.getElementById('newDocModal').classList.remove('hidden');
+    }
+    function closeNewDocModal() {
+      document.getElementById('newDocModal').classList.add('hidden');
+    }
+
+    async function handleCreateDocument(e) {
+      e.preventDefault();
+      const title = document.getElementById('inputTitle').value;
+      const dept = document.getElementById('inputDept').value;
+      const week = document.getElementById('inputWeek').value;
+
+      try {
+        const res = await fetch('/api/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: title,
+            department: dept,
+            week: week,
+            grade: 'Khối 9'
+          })
+        });
+        const json = await res.json();
+        if (json.success) {
+          closeNewDocModal();
+          await loadStats();
+          await loadDocuments();
+          openDocViewer(json.data.id);
+        }
+      } catch (err) {
+        alert('Lỗi khởi tạo hồ sơ!');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "edusign-vgca-workflow",
+  "version": "1.0.0",
+  "description": "Hệ thống Quản lý và Trình ký Hồ sơ Giáo dục Điện tử tích hợp Chữ ký số VGCA",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.2"
+  }
+}
