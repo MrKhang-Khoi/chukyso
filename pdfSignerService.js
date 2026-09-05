@@ -1,4 +1,4 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 
@@ -50,6 +50,48 @@ async function generateSignedPdf(doc) {
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+  // Đóng dấu chữ ký ảnh trực tiếp lên trang văn bản nguồn (trang cuối của bài dạy)
+  const sourcePages = pdfDoc.getPages();
+  if (sourcePages.length > 0) {
+    const lastDocPage = sourcePages[sourcePages.length - 1];
+    const { width: pW, height: pH } = lastDocPage.getSize();
+    
+    // Tìm chữ ký giáo viên
+    const teacherSignature = (doc.signatures || []).find(s => s.step === 1);
+    const teacherSigImgData = (teacherSignature && teacherSignature.visualSignImage) || doc.signatureImage;
+
+    if (teacherSigImgData && teacherSigImgData.includes('base64')) {
+      try {
+        const base64Clean = teacherSigImgData.replace(/^data:image\/\w+;base64,/, '');
+        const imgBuf = Buffer.from(base64Clean, 'base64');
+        const pngSignImg = await pdfDoc.embedPng(imgBuf);
+
+        let stampX = pW * 0.68; // Vị trí mặc định: cột Giáo viên bên phải
+        let stampY = pH * 0.22; // Vị trí nằm ngay trên tên giáo viên
+
+        if (doc.signCoordinates && typeof doc.signCoordinates.xPercent === 'number' && typeof doc.signCoordinates.yPercent === 'number') {
+          stampX = (doc.signCoordinates.xPercent / 100) * pW;
+          stampY = (1 - (doc.signCoordinates.yPercent / 100)) * pH - 25;
+        } else if (doc.signPlacement === 'bottom-left') {
+          stampX = pW * 0.15;
+        } else if (doc.signPlacement === 'middle-right') {
+          stampX = pW * 0.42;
+        }
+
+        stampX = Math.max(10, Math.min(pW - 130, stampX));
+        stampY = Math.max(10, Math.min(pH - 70, stampY));
+
+        lastDocPage.drawImage(pngSignImg, {
+          x: stampX,
+          y: stampY,
+          width: 110,
+          height: 52
+        });
+      } catch (e) {
+        console.error('Lỗi đóng dấu ảnh chữ ký trực tiếp lên trang văn bản:', e.message);
+      }
+    }
+  }
 
   // Thêm một trang phụ lục xác nhận chữ ký số chính thức (Official Digital Signature Certificate Sheet)
   const certPage = pdfDoc.addPage([595.28, 841.89]);

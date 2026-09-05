@@ -424,7 +424,7 @@ app.get('/api/documents/:id/download-signed', async (req, res) => {
 
 // Giáo viên nộp Kế hoạch bài dạy mới (BẮT BUỘC PHẢI KÝ SỐ TRƯỚC KHI NỘP)
 app.post('/api/documents', requireAuth, (req, res) => {
-  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage } = req.body;
+  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage, signCoordinates } = req.body;
   if (!title) {
     return res.status(400).json({ success: false, message: 'Vui lòng nhập Tên kế hoạch bài dạy!' });
   }
@@ -472,7 +472,8 @@ app.post('/api/documents', requireAuth, (req, res) => {
     fileName: fileName || 'GiaoAn_Chuan.pdf',
     fileType: fileType || 'pdf',
     filePath: savedFilePath,
-    signPlacement: signPlacement || 'bottom-left',
+    signPlacement: signPlacement || 'bottom-right',
+    signCoordinates: signCoordinates || null,
     signatures: [
       {
         step: 1,
@@ -482,7 +483,8 @@ app.post('/api/documents', requireAuth, (req, res) => {
         signedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
         signType: 'Ký duyệt cấp 1',
         status: 'VALID',
-        placement: signPlacement || 'bottom-left',
+        placement: signPlacement || 'bottom-right',
+        coordinates: signCoordinates || null,
         visualSignImage: activeSigImage,
         visualSign: 'Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân'
       }
