@@ -410,6 +410,61 @@ app.get('/api/documents/:id/file', (req, res) => {
   res.status(404).json({ success: false, message: 'Không tìm thấy file văn bản' });
 });
 
+// Chuẩn bị tệp PDF đã đóng dấu ảnh chữ ký trước khi đưa vào công cụ ký số mật mã thật
+app.get('/api/documents/:id/prepare-signing-pdf', async (req, res) => {
+  try {
+    const doc = dataStore.getDocumentById(req.params.id);
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+    }
+
+    const stampedPdfBuffer = await pdfSignerService.generateSignedPdf(doc);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="prepared_${doc.id}.pdf"`);
+    res.send(Buffer.from(stampedPdfBuffer));
+  } catch (err) {
+    console.error('Lỗi chuẩn bị tệp PDF ký số:', err.message);
+    res.status(500).json({ success: false, message: 'Lỗi chuẩn bị tệp ký: ' + err.message });
+  }
+});
+
+// Chuẩn bị tệp PDF đã đóng dấu ảnh chữ ký cho hồ sơ mới tải lên
+app.post('/api/documents/prepare-signing-pdf', async (req, res) => {
+  try {
+    const docData = req.body || {};
+    const tempDoc = {
+      id: docData.id || 'DOC_' + Date.now(),
+      title: docData.title || 'Kế hoạch bài dạy',
+      author: docData.author || 'Hà Văn Tý',
+      authorId: docData.authorId || null,
+      department: docData.department || 'Tổ Toán - Tin',
+      filePath: docData.filePath || null,
+      fileBase64: docData.fileBase64 || null,
+      fileName: docData.fileName || 'GiaoAn.pdf',
+      signPlacement: docData.signPlacement || 'bottom-right',
+      signCoordinates: docData.signCoordinates || null,
+      signatureImage: docData.signatureImage || '/uploads/signatures/sig_user_cvaty.png',
+      signatures: docData.signatures || [{
+        step: 1,
+        role: 'Giáo viên',
+        signerName: docData.author || 'Hà Văn Tý',
+        visualSignImage: docData.signatureImage || '/uploads/signatures/sig_user_cvaty.png'
+      }]
+    };
+
+    const stampedPdfBuffer = await pdfSignerService.generateSignedPdf(tempDoc);
+    const pdfBase64 = 'data:application/pdf;base64,' + Buffer.from(stampedPdfBuffer).toString('base64');
+    res.json({
+      success: true,
+      pdfBase64,
+      size: stampedPdfBuffer.length
+    });
+  } catch (err) {
+    console.error('Lỗi chuẩn bị tệp PDF nộp mới:', err.message);
+    res.status(500).json({ success: false, message: 'Lỗi chuẩn bị tệp ký: ' + err.message });
+  }
+});
+
 // Tải Văn Bản Đã Ký Về Máy Tính (Đóng dấu & nhúng đầy đủ chữ ký số 3 cấp vào PDF thật)
 app.get('/api/documents/:id/download-signed', async (req, res) => {
   try {
@@ -998,6 +1053,7 @@ app.post('/api/local-sign-doc', async (req, res) => {
       author: docData.author || 'Hà Văn Tý',
       department: docData.department || 'Tổ Toán - Tin',
       filePath: tempFilePath,
+      isPreStamped: !!docData.isPreStamped,
       signPlacement: docData.signPlacement || 'bottom-right',
       signCoordinates: docData.signCoordinates || null,
       signatures: docData.signatures || [{

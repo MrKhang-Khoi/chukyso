@@ -289,6 +289,35 @@ async function runTests() {
     });
     assert(getFileRes.status === 200, 'API /api/documents/:id/file phục vụ file tài liệu xem trước thành công');
 
+    // 3.5c Kiểm tra API chuẩn bị tệp ký có đóng dấu ảnh chữ ký giáo viên
+    const prepDocRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/api/documents/${createdDocId}/prepare-signing-pdf`,
+      method: 'GET'
+    }, null, true);
+    assert(prepDocRes.status === 200, 'API /api/documents/:id/prepare-signing-pdf chuẩn bị tệp đóng dấu thành công');
+    assert(prepDocRes.headers['content-type'] === 'application/pdf', 'Tệp chuẩn bị trả về đúng định dạng application/pdf');
+    assert(prepDocRes.body.length > 500, 'Dung lượng tệp PDF chuẩn bị hợp lệ');
+
+    // 3.5d Kiểm tra POST /api/documents/prepare-signing-pdf cho tệp nộp mới
+    const postPrepRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/documents/prepare-signing-pdf',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      title: 'Giáo án chuẩn bị ký',
+      fileBase64: sampleBase64,
+      signatureImage: dummySignature
+    });
+    assert(postPrepRes.status === 200 && postPrepRes.body.success, 'API POST /api/documents/prepare-signing-pdf chuẩn bị tệp mới thành công');
+    assert(typeof postPrepRes.body.pdfBase64 === 'string' && postPrepRes.body.pdfBase64.startsWith('data:application/pdf;base64,'), 'Trả về dữ liệu Base64 PDF đã đóng dấu ảnh chữ ký hợp lệ');
+
     // 3.6 Tổ trưởng đăng nhập & Duyệt cấp 2
     const leaderLoginRes = await httpRequest({
       hostname: '127.0.0.1',

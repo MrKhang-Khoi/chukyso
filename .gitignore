@@ -27,6 +27,7 @@ uploads/signatures/*
 **/obj/
 *.user
 *.suo
+*.pdb
 .vs/
 
 # Google Drive local mirror generated files

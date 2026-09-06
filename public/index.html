@@ -3459,7 +3459,31 @@
 
           const targetHost = (authInfo && authInfo.localHost) || ping.host;
           if (ping.available || targetHost) {
-            const signResult = await signDocViaLocalAgent(payload, payload.fileBase64, targetHost || 'http://127.0.0.1:18888');
+            let preparedPdfBase64 = payload.fileBase64;
+            try {
+              const prepRes = await fetch('/api/documents/prepare-signing-pdf', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify(payload)
+              });
+              if (prepRes.ok) {
+                const prepData = await prepRes.json();
+                if (prepData && prepData.pdfBase64) {
+                  preparedPdfBase64 = prepData.pdfBase64;
+                }
+              }
+            } catch (errPrep) {
+              console.warn('Không thể chuẩn bị file đóng dấu trước:', errPrep);
+            }
+
+            const signPayload = {
+              ...payload,
+              isPreStamped: true
+            };
+            const signResult = await signDocViaLocalAgent(signPayload, preparedPdfBase64, targetHost || 'http://127.0.0.1:18888');
             realSignedPdfBase64 = signResult.signedPdfBase64;
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
@@ -3768,10 +3792,13 @@
 
           const targetHost = (authInfo && authInfo.localHost) || ping.host;
           if (ping.available || targetHost) {
-            // Lấy file gốc từ server
+            // Lấy file đã đóng dấu ảnh chữ ký trực quan từ server trước khi đưa vào bộ ký số mật mã
             let fileBase64 = null;
             try {
-              const fileRes = await fetch(`/api/documents/${docId}/file`);
+              let fileRes = await fetch(`/api/documents/${docId}/prepare-signing-pdf`);
+              if (!fileRes.ok) {
+                fileRes = await fetch(`/api/documents/${docId}/file`);
+              }
               if (fileRes.ok) {
                 const blob = await fileRes.blob();
                 fileBase64 = await new Promise((resolve) => {
@@ -3781,10 +3808,14 @@
                 });
               }
             } catch (e) {
-              console.warn('Không lấy được tệp gốc:', e);
+              console.warn('Không lấy được tệp chuẩn bị ký:', e);
             }
 
-            const signResult = await signDocViaLocalAgent(doc, fileBase64, targetHost || 'http://127.0.0.1:18888');
+            const signPayload = {
+              ...doc,
+              isPreStamped: true
+            };
+            const signResult = await signDocViaLocalAgent(signPayload, fileBase64, targetHost || 'http://127.0.0.1:18888');
             realSignedPdfBase64 = signResult.signedPdfBase64;
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(

@@ -57,13 +57,75 @@ function convertDocxToPdf(docxPath, outputPath) {
 }
 
 /**
+ * Chuyển đổi linh hoạt dữ liệu ảnh (Base64 data URI, file path đĩa, web URL) thành Buffer
+ */
+function resolveImageBuffer(imgDataOrPath) {
+  if (!imgDataOrPath) return null;
+  if (typeof imgDataOrPath === 'string') {
+    if (imgDataOrPath.includes('base64')) {
+      try {
+        const base64Clean = imgDataOrPath.replace(/^data:image\/\w+;base64,/, '');
+        return Buffer.from(base64Clean, 'base64');
+      } catch (e) {
+        return null;
+      }
+    }
+    // Xử lý đường dẫn web hoặc đường dẫn file cục bộ
+    let candidatePath = imgDataOrPath;
+    if (candidatePath.startsWith('/uploads/') || candidatePath.startsWith('uploads/')) {
+      candidatePath = path.join(__dirname, candidatePath.replace(/^\//, ''));
+    } else if (!path.isAbsolute(candidatePath)) {
+      candidatePath = path.join(__dirname, candidatePath);
+    }
+    if (fs.existsSync(candidatePath)) {
+      try {
+        return fs.readFileSync(candidatePath);
+      } catch (e) {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Nhúng ảnh (PNG hoặc JPG) an toàn vào tài liệu PDF
+ */
+async function embedImageToPdf(pdfDoc, imgBuffer) {
+  if (!imgBuffer || imgBuffer.length === 0) return null;
+  try {
+    return await pdfDoc.embedPng(imgBuffer);
+  } catch (ePng) {
+    try {
+      return await pdfDoc.embedJpg(imgBuffer);
+    } catch (eJpg) {
+      console.error('Không thể nhúng ảnh vào PDF:', ePng.message, eJpg.message);
+      return null;
+    }
+  }
+}
+
+/**
  * Đóng dấu ảnh chữ ký & chứng nhận điện tử vào tệp PDF
  */
 async function generateSignedPdf(doc) {
   let sourcePdfBuffer = null;
 
-  // 1. Đọc file nguồn nếu có
-  if (doc.filePath && fs.existsSync(doc.filePath)) {
+  // 1. Đọc file nguồn từ fileBase64 nếu có
+  if (doc.fileBase64 && typeof doc.fileBase64 === 'string') {
+    try {
+      const cleanB64 = doc.fileBase64.replace(/^data:[^;]+;base64,/, '');
+      const buf = Buffer.from(cleanB64, 'base64');
+      if (buf.length > 50 && buf.toString('ascii', 0, 5).startsWith('%PDF')) {
+        sourcePdfBuffer = buf;
+      }
+    } catch (err) {
+      console.error('Lỗi đọc fileBase64 trong generateSignedPdf:', err.message);
+    }
+  }
+
+  // 2. Đọc file nguồn từ filePath nếu chưa có từ fileBase64
+  if (!sourcePdfBuffer && doc.filePath && fs.existsSync(doc.filePath)) {
     const ext = path.extname(doc.filePath).toLowerCase();
     if (ext === '.pdf') {
       try {
@@ -88,7 +150,12 @@ async function generateSignedPdf(doc) {
     }
   }
 
-  // Nếu không có file PDF nguồn (hoặc file lỗi, rỗng, nộp docx), dùng file template chuẩn
+  // Nếu tài liệu đã được đóng dấu ảnh từ trước (isPreStamped), không đóng dấu lặp lại
+  if (doc.isPreStamped && sourcePdfBuffer && sourcePdfBuffer.length > 50) {
+    return sourcePdfBuffer;
+  }
+
+  // Nếu không có file PDF nguồn (hoặc file lỗi, rỗng), dùng file template chuẩn
   if (!sourcePdfBuffer || sourcePdfBuffer.length < 50 || !sourcePdfBuffer.toString('ascii', 0, 5).startsWith('%PDF')) {
     const defaultTemplate = path.join(__dirname, 'GiaoAn_CanKy.pdf');
     if (fs.existsSync(defaultTemplate) && fs.statSync(defaultTemplate).size > 100) {
@@ -100,70 +167,74 @@ async function generateSignedPdf(doc) {
     }
   }
 
-  // 2. Nạp PDF bằng pdf-lib
+  // 3. Nạp PDF bằng pdf-lib để đóng dấu ảnh chữ ký trực quan
   const pdfDoc = await PDFDocument.load(sourcePdfBuffer);
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const fontOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-  // Đóng dấu chữ ký ảnh trực tiếp lên trang văn bản nguồn (trang cuối của bài dạy)
   const sourcePages = pdfDoc.getPages();
   if (sourcePages.length > 0) {
     const lastDocPage = sourcePages[sourcePages.length - 1];
     const { width: pW, height: pH } = lastDocPage.getSize();
     
-    // Tìm chữ ký giáo viên
+    // 1. Tìm chữ ký giáo viên (Cấp 1)
     const teacherSignature = (doc.signatures || []).find(s => s.step === 1);
-    const teacherSigImgData = (teacherSignature && teacherSignature.visualSignImage) || doc.signatureImage;
+    let teacherSigImgData = (teacherSignature && teacherSignature.visualSignImage) || doc.signatureImage;
 
-    if (teacherSigImgData && teacherSigImgData.includes('base64')) {
+    // Tìm buffer ảnh chữ ký giáo viên
+    let teacherImgBuf = resolveImageBuffer(teacherSigImgData);
+    if (!teacherImgBuf) {
+      // Fallback chữ ký trong suốt mặc định của thầy Hà Văn Tý
+      const fallbackSig = path.join(__dirname, 'uploads', 'signatures', 'sig_user_cvaty.png');
+      if (fs.existsSync(fallbackSig)) {
+        teacherImgBuf = fs.readFileSync(fallbackSig);
+      }
+    }
+
+    if (teacherImgBuf) {
       try {
-        const base64Clean = teacherSigImgData.replace(/^data:image\/\w+;base64,/, '');
-        const imgBuf = Buffer.from(base64Clean, 'base64');
-        const pngSignImg = await pdfDoc.embedPng(imgBuf);
+        const pngSignImg = await embedImageToPdf(pdfDoc, teacherImgBuf);
+        if (pngSignImg) {
+          const scale = (doc.signCoordinates && typeof doc.signCoordinates.scale === 'number') 
+            ? Math.max(0.4, Math.min(2.5, doc.signCoordinates.scale)) 
+            : 1.0;
+          const stampWidth = Math.round(((doc.signCoordinates && doc.signCoordinates.width) || 95) * scale);
+          const stampHeight = Math.round(((doc.signCoordinates && doc.signCoordinates.height) || 60) * scale);
 
-        const scale = (doc.signCoordinates && typeof doc.signCoordinates.scale === 'number') 
-          ? Math.max(0.4, Math.min(2.5, doc.signCoordinates.scale)) 
-          : 1.0;
-        const stampWidth = Math.round(((doc.signCoordinates && doc.signCoordinates.width) || 95) * scale);
-        const stampHeight = Math.round(((doc.signCoordinates && doc.signCoordinates.height) || 60) * scale);
+          const isLandscape = pW > pH;
+          let defaultX = isLandscape ? (pW * 0.745) : (pW * 0.74);
+          let defaultY = isLandscape ? 275 : 120;
 
-        const isLandscape = pW > pH;
-        let defaultX = isLandscape ? (pW * 0.745) : (pW * 0.74);
-        let defaultY = isLandscape ? 275 : 120;
+          let stampX = defaultX;
+          let stampY = defaultY;
 
-        let stampX = defaultX;
-        let stampY = defaultY;
+          // Tự động tìm neo vị trí chữ ký thông minh (Smart Pedagogical Anchor)
+          const teacherName = (teacherSignature && teacherSignature.signerName) || doc.author || 'Hà Văn Tý';
+          const smartAnchor = await findSmartSignatureAnchor(sourcePdfBuffer, teacherName, 'teacher');
 
-        // Tự động tìm neo vị trí chữ ký thông minh (Smart Pedagogical Anchor)
-        const teacherName = (teacherSignature && teacherSignature.signerName) || doc.author || 'Hà Văn Tý';
-        const smartAnchor = await findSmartSignatureAnchor(sourcePdfBuffer, teacherName, 'teacher');
+          if (smartAnchor && smartAnchor.found) {
+            stampX = smartAnchor.x;
+            stampY = smartAnchor.y;
+          } else if (doc.signCoordinates && doc.signCoordinates.isManualDrag && typeof doc.signCoordinates.xPercent === 'number' && typeof doc.signCoordinates.yPercent === 'number') {
+            stampX = (doc.signCoordinates.xPercent / 100) * pW;
+            const safeYPercent = doc.signCoordinates.yPercent < 40 ? (isLandscape ? 52 : 82) : doc.signCoordinates.yPercent;
+            stampY = (1 - (safeYPercent / 100)) * pH;
+          } else if (doc.signPlacement === 'bottom-left') {
+            stampX = pW * 0.18;
+            stampY = defaultY;
+          } else if (doc.signPlacement === 'middle-right') {
+            stampX = pW * 0.46;
+            stampY = defaultY;
+          }
 
-        if (smartAnchor && smartAnchor.found) {
-          stampX = smartAnchor.x;
-          stampY = smartAnchor.y;
-        } else if (doc.signCoordinates && doc.signCoordinates.isManualDrag && typeof doc.signCoordinates.xPercent === 'number' && typeof doc.signCoordinates.yPercent === 'number') {
-          stampX = (doc.signCoordinates.xPercent / 100) * pW;
-          // Tránh trường hợp kéo thả trên iframe modal bị lệch lên nửa trên hoặc bảng phân phối (Y < 40%)
-          const safeYPercent = doc.signCoordinates.yPercent < 40 ? (isLandscape ? 52 : 82) : doc.signCoordinates.yPercent;
-          stampY = (1 - (safeYPercent / 100)) * pH;
-        } else if (doc.signPlacement === 'bottom-left') {
-          stampX = pW * 0.18;
-          stampY = defaultY;
-        } else if (doc.signPlacement === 'middle-right') {
-          stampX = pW * 0.46;
-          stampY = defaultY;
+          // Tự động kiểm tra biên an toàn (tránh văng khỏi trang PDF)
+          stampX = Math.max(10, Math.min(pW - stampWidth - 10, stampX));
+          stampY = Math.max(10, Math.min(pH - stampHeight - 10, stampY));
+
+          lastDocPage.drawImage(pngSignImg, {
+            x: stampX,
+            y: stampY,
+            width: stampWidth,
+            height: stampHeight
+          });
         }
-
-        // Tự động kiểm tra biên an toàn (tránh văng khỏi trang PDF)
-        stampX = Math.max(10, Math.min(pW - stampWidth - 10, stampX));
-        stampY = Math.max(10, Math.min(pH - stampHeight - 10, stampY));
-
-        lastDocPage.drawImage(pngSignImg, {
-          x: stampX,
-          y: stampY,
-          width: stampWidth,
-          height: stampHeight
-        });
       } catch (e) {
         console.error('Lỗi đóng dấu ảnh chữ ký trực tiếp lên trang văn bản:', e.message);
       }
@@ -171,31 +242,35 @@ async function generateSignedPdf(doc) {
 
     // 2. Chữ ký Tổ trưởng chuyên môn (Duyệt cấp 2) nếu có
     const leaderSig = (doc.signatures || []).find(s => s.step === 2);
-    if (leaderSig && leaderSig.visualSignImage && leaderSig.visualSignImage.includes('base64')) {
-      try {
-        const base64Clean = leaderSig.visualSignImage.replace(/^data:image\/\w+;base64,/, '');
-        const pngLeaderImg = await pdfDoc.embedPng(Buffer.from(base64Clean, 'base64'));
-        const scale = (doc.signCoordinates && doc.signCoordinates.scale) || 1.0;
-        const sW = Math.round(95 * scale);
-        const sH = Math.round(60 * scale);
-        let leaderX = (pW * 0.46);
-        let leaderY = (pW > pH ? 275 : 120);
+    if (leaderSig) {
+      let leaderImgBuf = resolveImageBuffer(leaderSig.visualSignImage);
+      if (leaderImgBuf) {
+        try {
+          const pngLeaderImg = await embedImageToPdf(pdfDoc, leaderImgBuf);
+          if (pngLeaderImg) {
+            const scale = (doc.signCoordinates && doc.signCoordinates.scale) || 1.0;
+            const sW = Math.round(95 * scale);
+            const sH = Math.round(60 * scale);
+            let leaderX = (pW * 0.46);
+            let leaderY = (pW > pH ? 275 : 120);
 
-        const leaderName = (leaderSig && leaderSig.signerName) || 'Tổ trưởng chuyên môn';
-        const leaderAnchor = await findSmartSignatureAnchor(sourcePdfBuffer, leaderName, 'leader');
-        if (leaderAnchor && leaderAnchor.found) {
-          leaderX = leaderAnchor.x;
-          leaderY = leaderAnchor.y;
+            const leaderName = (leaderSig && leaderSig.signerName) || 'Tổ trưởng chuyên môn';
+            const leaderAnchor = await findSmartSignatureAnchor(sourcePdfBuffer, leaderName, 'leader');
+            if (leaderAnchor && leaderAnchor.found) {
+              leaderX = leaderAnchor.x;
+              leaderY = leaderAnchor.y;
+            }
+
+            lastDocPage.drawImage(pngLeaderImg, {
+              x: Math.max(10, Math.min(pW - sW - 10, leaderX)),
+              y: Math.max(10, Math.min(pH - sH - 10, leaderY)),
+              width: sW,
+              height: sH
+            });
+          }
+        } catch (e) {
+          console.error('Lỗi đóng dấu tổ trưởng:', e.message);
         }
-
-        lastDocPage.drawImage(pngLeaderImg, {
-          x: Math.max(10, Math.min(pW - sW - 10, leaderX)),
-          y: Math.max(10, Math.min(pH - sH - 10, leaderY)),
-          width: sW,
-          height: sH
-        });
-      } catch (e) {
-        console.error('Lỗi đóng dấu tổ trưởng:', e.message);
       }
     }
 
@@ -203,25 +278,31 @@ async function generateSignedPdf(doc) {
     const principalSig = (doc.signatures || []).find(s => s.step === 3);
     if (principalSig || doc.status === 'APPROVED') {
       try {
-        const sealPath = path.join(__dirname, 'uploads', 'signatures', 'school_seal.png');
+        let sealPath = path.join(__dirname, 'uploads', 'signatures', 'school_seal.png');
+        if (!fs.existsSync(sealPath)) {
+          sealPath = path.join(__dirname, 'school_seal.png');
+        }
         if (fs.existsSync(sealPath)) {
-          const pngSeal = await pdfDoc.embedPng(fs.readFileSync(sealPath));
-          const sealSize = 85;
-          let sealX = (pW * 0.18);
-          let sealY = (pW > pH ? 260 : 105);
+          const sealBuf = fs.readFileSync(sealPath);
+          const pngSeal = await embedImageToPdf(pdfDoc, sealBuf);
+          if (pngSeal) {
+            const sealSize = 85;
+            let sealX = (pW * 0.18);
+            let sealY = (pW > pH ? 260 : 105);
 
-          const principalAnchor = await findSmartSignatureAnchor(sourcePdfBuffer, 'Ban Giám hiệu', 'principal');
-          if (principalAnchor && principalAnchor.found) {
-            sealX = principalAnchor.x;
-            sealY = principalAnchor.y;
+            const principalAnchor = await findSmartSignatureAnchor(sourcePdfBuffer, 'Ban Giám hiệu', 'principal');
+            if (principalAnchor && principalAnchor.found) {
+              sealX = principalAnchor.x;
+              sealY = principalAnchor.y;
+            }
+
+            lastDocPage.drawImage(pngSeal, {
+              x: Math.max(10, Math.min(pW - sealSize - 10, sealX)),
+              y: Math.max(10, Math.min(pH - sealSize - 10, sealY)),
+              width: sealSize,
+              height: sealSize
+            });
           }
-
-          lastDocPage.drawImage(pngSeal, {
-            x: Math.max(10, Math.min(pW - sealSize - 10, sealX)),
-            y: Math.max(10, Math.min(pH - sealSize - 10, sealY)),
-            width: sealSize,
-            height: sealSize
-          });
         }
       } catch (e) {
         console.error('Lỗi đóng con dấu nhà trường:', e.message);
