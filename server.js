@@ -606,7 +606,7 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
         if (!session || session.status !== 'CONFIRMED') {
           return res.status(400).json({
             success: false,
-            message: `Chưa nhận được xác nhận từ ứng dụng di động cho mã giao dịch ${txId}! Thầy vui lòng mở SmartCA trên điện thoại và nhấn [Xác nhận Ký].`
+            message: `Chưa nhận được xác nhận từ ứng dụng di động cho mã giao dịch ${txId}! Vui lòng mở SmartCA trên điện thoại và nhấn [Xác nhận Ký].`
           });
         }
         if (session) session.status = 'COMPLETED';
@@ -1204,7 +1204,7 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     if (!session || session.status !== 'CONFIRMED') {
       return res.status(400).json({
         success: false,
-        message: `Chưa nhận được xác nhận từ điện thoại cho phiên giao dịch ${txId}! Thầy vui lòng mở ứng dụng SmartCA và nhấn [Xác nhận Ký] trên điện thoại trước khi nộp bài.`
+        message: `Chưa nhận được xác nhận từ điện thoại cho phiên giao dịch ${txId}! Vui lòng mở ứng dụng SmartCA và nhấn [Xác nhận Ký] trên điện thoại trước khi nộp bài.`
       });
     }
   }
@@ -1324,7 +1324,7 @@ app.post('/api/documents', requireAuth, async (req, res) => {
           try { dataStore.deleteDocument(newDoc.id); } catch(e) {}
           return res.status(400).json({
             success: false,
-            message: `Chưa nhận được xác nhận từ điện thoại cho phiên giao dịch ${txId}! Thầy vui lòng mở ứng dụng SmartCA và nhấn [Xác nhận Ký] trên điện thoại trước khi nộp bài.`
+            message: `Chưa nhận được xác nhận từ điện thoại cho phiên giao dịch ${txId}! Vui lòng mở ứng dụng SmartCA và nhấn [Xác nhận Ký] trên điện thoại trước khi nộp bài.`
           });
         }
         session.status = 'COMPLETED';
@@ -1629,7 +1629,7 @@ app.post('/api/documents/:id/recall', requireAuth, (req, res) => {
   console.log(`[Document] Hồ sơ ${doc.id} đã được thu hồi bởi ${req.user.name}`);
   res.json({
     success: true,
-    message: 'Đã thu hồi kế hoạch bài dạy thành công! Thầy/Cô có thể chỉnh sửa nội dung và ký nộp lại.',
+    message: 'Đã thu hồi kế hoạch bài dạy thành công! Bạn có thể chỉnh sửa nội dung và ký nộp lại.',
     data: updatedDoc
   });
 });

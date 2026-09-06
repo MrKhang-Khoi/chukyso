@@ -40,4 +40,5 @@ GoogleDrive_KhoTruong/**
 
 # Tunnel tools
 cloudflared.exe
+--copy-sign
 

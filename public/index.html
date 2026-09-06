@@ -255,73 +255,75 @@
       <!-- ==================== TAB 1: DANH SÁCH HỒ SƠ GIÁO ÁN ==================== -->
       <section id="tabContentDocs" class="space-y-4">
         
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-          <div>
-            <h2 class="text-base font-bold text-slate-900" id="docsViewHeading">Kế hoạch bài dạy</h2>
-            <p class="text-xs text-slate-500" id="docsViewSubHeading">Danh sách hồ sơ cần theo dõi và phê duyệt</p>
-          </div>
+        <!-- THANH ĐIỀU KHIỂN & TÁC VỤ KHOA HỌC -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
+          <!-- Hàng 1: Tiêu đề & Nút tác vụ chính -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-base sm:text-lg font-bold text-slate-900" id="docsViewHeading">Kế hoạch bài dạy</h2>
+                <span id="docCountBadge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">0</span>
+              </div>
+              <p class="text-xs text-slate-500" id="docsViewSubHeading">Danh sách hồ sơ cần theo dõi và phê duyệt</p>
+            </div>
 
-          <div class="flex items-center gap-2 self-stretch sm:self-auto">
-            <button onclick="loadDocuments()" class="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition" title="Làm mới">
-              <i class="fa-solid fa-rotate-right text-xs"></i>
-            </button>
+            <div class="flex items-center gap-2">
+              <button onclick="loadDocuments()" class="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition" title="Làm mới">
+                <i class="fa-solid fa-rotate-right text-xs"></i>
+              </button>
 
-            <button onclick="openNewDocModal()"
-              class="flex-1 sm:flex-none px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2">
-              <i class="fa-solid fa-cloud-arrow-up"></i>
-              <span>Nộp Kế Hoạch Bài Dạy Mới</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- THANH CÔNG CỤ KÝ SỐ VGCA CHUẨN HỌC BẠ SỐ (CSDL.MOET.GOV.VN - HÌNH 3) -->
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200 shadow-sm text-xs">
-          <div class="flex flex-wrap items-center gap-2.5">
-            <button type="button" onclick="handleBatchSignClick()" id="btnBatchSignVgca"
-              class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl border border-slate-300 transition flex items-center gap-1.5 shadow-xs">
-              <i class="fa-solid fa-file-signature text-blue-600"></i>
-              <span>Ký duyệt giáo án</span>
-            </button>
-            <button type="button" onclick="handleBatchSyncOneDrive()" id="btnBatchSyncOneDrive"
-              class="px-4 py-2 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 hover:from-sky-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
-              title="Lưu hồ sơ đã chọn (hoặc tất cả) vào thư mục OneDrive (5TB) của trường">
-              <i class="fa-brands fa-microsoft text-white text-sm"></i>
-              <span>Lưu vào OneDrive (5TB)</span>
-            </button>
-            <button type="button" onclick="promptSelectOneDriveFolder(true)" id="btnOneDriveFolderConfig"
-              class="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 font-semibold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer"
-              title="Nhấn để chọn hoặc đổi thư mục lưu OneDrive trên máy tính (sẽ được tự động ghi nhớ cho các lần sau)">
-              <i class="fa-solid fa-folder-open text-sky-600"></i>
-              <span id="lblOneDriveFolderName">Thư mục: Chọn thư mục OneDrive</span>
-              <span class="text-[10px] text-sky-600 underline font-bold ml-0.5">[Đổi]</span>
-            </button>
-            <span class="text-slate-500 font-medium text-[11px]">Đã chọn <strong class="text-blue-600 font-bold" id="selectedDocCountText">0</strong> bản ghi</span>
-            <span class="hidden sm:inline-block h-4 w-px bg-slate-200"></span>
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-red-50/80 border border-red-200 text-red-700 font-bold shadow-xs">
-              <span class="italic font-serif font-black tracking-tight text-red-600">VGCA</span>
-              <span class="text-[11px] font-bold text-slate-700">Chữ ký số Ban Cơ yếu Chính phủ</span>
+              <button onclick="openNewDocModal()"
+                class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Nộp Kế Hoạch Mới</span>
+              </button>
             </div>
           </div>
 
-          <!-- Nút Đăng nhập tài khoản VGCA (Hình 3 chuẩn Viettel Học bạ số) -->
-          <div id="vgcaBarActionArea" class="flex items-center gap-2">
-            <!-- Trạng thái 1: Chưa đăng nhập VGCA -->
-            <button type="button" id="btnVgcaBarLogin" onclick="openVgcaLoginModal()"
-              class="px-3.5 py-2 bg-white hover:bg-blue-50 border-2 border-blue-600 text-blue-700 font-bold rounded-xl shadow-xs transition flex items-center gap-2">
-              <i class="fa-solid fa-right-to-bracket text-blue-600"></i>
-              <span>Đăng nhập tài khoản VGCA</span>
-            </button>
+          <!-- Hàng 2: Thanh tác vụ nhanh (Ký duyệt, OneDrive, Trạng thái VGCA) -->
+          <div class="flex flex-wrap items-center justify-between gap-2.5 text-xs">
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" onclick="handleBatchSignClick()" id="btnBatchSignVgca"
+                class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-300 transition flex items-center gap-1.5 shadow-xs">
+                <i class="fa-solid fa-file-signature text-blue-600"></i>
+                <span>Ký duyệt</span>
+                <span class="text-[11px] text-slate-500">(<strong id="selectedDocCountText" class="text-blue-600">0</strong>)</span>
+              </button>
 
-            <!-- Trạng thái 2: Đã đăng nhập VGCA -->
-            <div id="vgcaBarLoggedIn" class="hidden flex items-center gap-2 bg-emerald-50 border border-emerald-300 text-emerald-800 px-3 py-1.5 rounded-xl shadow-xs">
-              <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
-              <span class="font-bold text-xs" id="vgcaBarSignerName">Hà Văn Tý (Đã kết nối VGCA)</span>
-              <button type="button" onclick="openVgcaAccountInfoModal()" title="Xem chứng thư số VGCA" class="text-blue-700 hover:underline font-bold text-[11px] ml-1">
-                [Chi tiết]
+              <button type="button" onclick="handleBatchSyncOneDrive()" id="btnBatchSyncOneDrive"
+                class="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-lg shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                title="Lưu hồ sơ đã chọn vào thư mục OneDrive (5TB)">
+                <i class="fa-brands fa-microsoft text-white text-xs"></i>
+                <span>Lưu vào OneDrive</span>
               </button>
-              <button type="button" onclick="handleVgcaLogout()" title="Đăng xuất tài khoản VGCA" class="text-slate-400 hover:text-rose-600 ml-1 text-xs">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+
+              <button type="button" onclick="promptSelectOneDriveFolder(true)" id="btnOneDriveFolderConfig"
+                class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-medium transition flex items-center gap-1.5 cursor-pointer"
+                title="Nhấn để đổi thư mục lưu OneDrive trên máy tính">
+                <i class="fa-regular fa-folder text-slate-500"></i>
+                <span id="lblOneDriveFolderName" class="truncate max-w-[220px]">Thư mục: Chọn thư mục OneDrive</span>
+                <span class="text-[10px] text-blue-600 underline font-bold ml-0.5">[Đổi]</span>
               </button>
+            </div>
+
+            <!-- Trạng thái tài khoản VGCA -->
+            <div id="vgcaBarActionArea" class="flex items-center gap-2">
+              <button type="button" id="btnVgcaBarLogin" onclick="openVgcaLoginModal()"
+                class="px-3 py-1.5 bg-white hover:bg-blue-50 border border-blue-600 text-blue-700 font-bold rounded-lg shadow-xs transition flex items-center gap-1.5 text-xs">
+                <i class="fa-solid fa-right-to-bracket text-blue-600"></i>
+                <span>Đăng nhập VGCA</span>
+              </button>
+
+              <div id="vgcaBarLoggedIn" class="hidden flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 text-emerald-800 px-2.5 py-1 rounded-lg text-xs">
+                <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                <span class="font-bold truncate max-w-[140px]" id="vgcaBarSignerName">Hà Văn Tý</span>
+                <button type="button" onclick="openVgcaAccountInfoModal()" title="Xem chứng thư số VGCA" class="text-blue-700 hover:underline font-bold text-[11px]">
+                  [Chi tiết]
+                </button>
+                <button type="button" onclick="handleVgcaLogout()" title="Đăng xuất VGCA" class="text-slate-400 hover:text-rose-600 ml-0.5 text-xs">
+                  <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -331,17 +333,14 @@
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th class="py-3.5 px-3 w-10 text-center">
+                  <th class="py-3 px-3 w-10 text-center">
                     <input type="checkbox" id="checkAllDocs" onchange="toggleSelectAllDocs(this)" title="Chọn tất cả bản ghi" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
                   </th>
-                  <th class="py-3.5 px-4">Mã hồ sơ</th>
-                  <th class="py-3.5 px-4">Tên bài dạy / Kế hoạch</th>
-                  <th class="py-3.5 px-4">File đính kèm</th>
-                  <th class="py-3.5 px-4">Giáo viên</th>
-                  <th class="py-3.5 px-4">Tổ bộ môn</th>
-                  <th class="py-3.5 px-4">Tuần / Lớp</th>
-                  <th class="py-3.5 px-4">Trạng thái duyệt</th>
-                  <th class="py-3.5 px-4 text-center">Thao tác</th>
+                  <th class="py-3 px-4">Kế hoạch bài dạy / Tài liệu</th>
+                  <th class="py-3 px-4">Tệp đính kèm</th>
+                  <th class="py-3 px-4">Tuần / Lớp</th>
+                  <th class="py-3 px-4">Trạng thái</th>
+                  <th class="py-3 px-4 text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody id="docsTableBody" class="divide-y divide-slate-100 font-medium">
@@ -484,7 +483,7 @@
                 <i class="fa-solid fa-certificate"></i>
               </div>
               <div>
-                <h4 class="text-sm font-bold text-slate-900" id="studioCertSignerName">Thầy Hà Văn Tý</h4>
+                <h4 class="text-sm font-bold text-slate-900" id="studioCertSignerName">Hà Văn Tý</h4>
                 <p class="text-xs text-slate-600">Giáo viên - <span id="studioCertDept">Tổ Toán - Tin</span> • Trường THCS Chu Văn An</p>
                 <span class="text-[11px] text-red-700 font-bold">Ban Cơ yếu Chính phủ (VGCA CA) cấp phát</span>
               </div>
@@ -552,7 +551,7 @@
                   <span class="text-[10px] font-black uppercase text-red-700">CHỮ KÝ SỐ BAN CƠ YẾU CHÍNH PHỦ</span>
                   <span class="ml-auto text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold">X.509</span>
                 </div>
-                <div class="text-xs font-black text-slate-900" id="sampleSignerNameDisplay">Thầy Hà Văn Tý</div>
+                <div class="text-xs font-black text-slate-900" id="sampleSignerNameDisplay">Hà Văn Tý</div>
                 <div class="text-[10px] text-slate-600">Giáo viên - <span id="sampleDeptDisplay">Tổ Toán - Tin</span> • THCS Chu Văn An</div>
                 <div class="text-[9px] text-slate-400 mt-1 flex items-center gap-1">
                   <i class="fa-regular fa-clock"></i>
@@ -718,7 +717,7 @@
                 <img id="newDocSigPreviewImg" src="/uploads/signatures/sig_user_cvaty.png" class="max-h-full max-w-full object-contain" alt="Chữ ký">
               </div>
               <div class="leading-tight">
-                <div class="font-bold text-slate-900 text-xs" id="newDocCertSignerName">Thầy Hà Văn Tý</div>
+                <div class="font-bold text-slate-900 text-xs" id="newDocCertSignerName">Hà Văn Tý</div>
                 <div class="text-[11px] text-slate-500">Giáo viên - <span id="newDocCertDept">Tổ Toán - Tin</span> • THCS Chu Văn An</div>
                 <div class="text-[10px] text-blue-600 font-medium mt-0.5">
                   <i class="fa-solid fa-mobile-screen"></i> Xác thực di động qua ứng dụng VGCA
@@ -1007,14 +1006,14 @@
         <!-- Tấm chắn chống kẹt chuột khi kéo thả trên iframe PDF -->
         <div id="viewerDragShield" class="absolute inset-0 z-30 hidden" style="cursor: move;"></div>
 
-        <!-- Khung chữ ký của giáo viên kéo thả trực tiếp (Trong suốt 100% - Chuẩn Hình 1 để Thầy căn chỉnh không bị che chữ) -->
+        <!-- Khung chữ ký của giáo viên kéo thả trực tiếp (Trong suốt 100% - Chuẩn Hình 1 để căn chỉnh không bị che chữ) -->
         <div id="draggableSignatureStamp" class="absolute z-40 hidden cursor-move select-none group" style="left: 74.5%; top: 51.3%; width: 150px;">
           <div class="relative border-2 border-dashed border-blue-500 hover:border-blue-700 bg-transparent hover:bg-blue-500/5 rounded-xl p-0.5 transition shadow-sm">
             <!-- Ảnh chữ ký giáo viên hiển thị trong suốt -->
             <div class="flex items-center justify-center p-0.5 bg-transparent">
               <img id="draggableSignatureImg" src="/uploads/signatures/sig_user_cvaty.png" class="max-h-20 w-auto object-contain pointer-events-none select-none drop-shadow-sm transition-all duration-100" alt="Chữ ký giáo viên">
             </div>
-            <!-- Ẩn hoàn toàn vùng hiển thị tọa độ theo yêu cầu của Thầy để nhìn rõ văn bản bên dưới và kéo cho khớp -->
+            <!-- Ẩn hoàn toàn vùng hiển thị tọa độ theo yêu cầu để nhìn rõ văn bản bên dưới và kéo cho khớp -->
             <div class="hidden">
               <span id="draggableStampSignerName">Hà Văn Tý</span>
               <span id="draggableStampCoords">X: 75% | Y: 51% | 100%</span>
@@ -1317,7 +1316,7 @@
             </div>
             <div class="flex justify-between items-center text-[11px]">
               <span class="text-slate-500">Chủ thể ký số:</span>
-              <strong id="vgcaStep1Signer" class="text-blue-800 font-bold">Thầy Hà Văn Tý (THCS Chu Văn An)</strong>
+              <strong id="vgcaStep1Signer" class="text-blue-800 font-bold">Hà Văn Tý (THCS Chu Văn An)</strong>
             </div>
           </div>
 
@@ -1345,7 +1344,7 @@
               </p>
               <div class="p-2 bg-emerald-50 rounded-lg border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center gap-1.5">
                 <i class="fa-solid fa-key text-emerald-600"></i>
-                <span>Nếu Thầy đã cắm USB Token trên máy tính, xin chuyển sang tab <strong>[USB Token]</strong> để ký ngay trong 1 giây mà không cần chờ điện thoại.</span>
+                <span>Nếu đã cắm USB Token trên máy tính, xin chuyển sang tab <strong>[USB Token]</strong> để ký ngay trong 1 giây mà không cần chờ điện thoại.</span>
               </div>
             </div>
 
@@ -1473,7 +1472,7 @@
                 <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center text-xl shadow-md animate-bounce">
                   <i class="fa-solid fa-mobile-screen"></i>
                 </div>
-                <span class="text-[10px] font-bold text-blue-700 mt-1">Điện thoại Thầy</span>
+                <span class="text-[10px] font-bold text-blue-700 mt-1">Điện thoại xác thực</span>
               </div>
             </div>
 
@@ -1490,11 +1489,11 @@
                 <h4 class="font-extrabold text-sm text-blue-900 uppercase tracking-tight">XÁC THỰC KÝ SỐ BAN CƠ YẾU CHÍNH PHỦ (VIRTUAL CSP)</h4>
                 <p id="vgcaModalStatusDesc" class="text-xs text-slate-700 leading-relaxed max-w-sm mx-auto">
                   Hệ thống đang kết nối với <strong>Virtual CSP (TSE / Di động)</strong> của Ban Cơ yếu Chính phủ.<br>
-                  Thầy mở ứng dụng trên điện thoại nhấn <strong>[ĐỒNG Ý]</strong> để hoàn tất niêm phong chữ ký số ngay!
+                  Mở ứng dụng trên điện thoại nhấn <strong>[ĐỒNG Ý]</strong> để hoàn tất niêm phong chữ ký số ngay!
                 </p>
                 <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100/90 text-emerald-800 font-semibold text-[11px]">
                   <i class="fa-solid fa-shield-halved text-emerald-600"></i>
-                  <span>Người ký: Thầy Hà Văn Tý (Ban Cơ yếu Chính phủ - Virtual CSP)</span>
+                  <span>Người ký: Hà Văn Tý (Ban Cơ yếu Chính phủ - Virtual CSP)</span>
                 </div>
               </div>
 
@@ -1656,7 +1655,7 @@
             <span>Dịch vụ Ký số từ xa Virtual CSP / Di động:</span>
           </div>
           <p>
-            Thầy chỉ cần đăng nhập tài khoản một lần. Hệ thống tự động ghi nhớ để Thầy chỉ việc bấm ký và xác nhận [ĐỒNG Ý] trên điện thoại.
+            Chỉ cần đăng nhập tài khoản một lần. Hệ thống tự động ghi nhớ để chỉ việc bấm ký và xác nhận [ĐỒNG Ý] trên điện thoại.
           </p>
         </div>
 
@@ -1673,7 +1672,7 @@
           <label class="block font-bold text-slate-700 mb-1">Mật khẩu tài khoản VGCA *</label>
           <div class="relative">
             <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
-            <input type="password" id="inputVgcaLoginPassword" required placeholder="Nhập mật khẩu VGCA của Thầy"
+            <input type="password" id="inputVgcaLoginPassword" required placeholder="Nhập mật khẩu tài khoản VGCA"
               class="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-medium text-xs">
             <button type="button" onclick="togglePasswordVisibility('inputVgcaLoginPassword')" class="absolute right-3.5 top-2.5 text-slate-400 hover:text-slate-600">
               <i class="fa-solid fa-eye text-sm"></i>
@@ -2131,7 +2130,7 @@
       }
       if (cell) {
         const row = cell.parentElement;
-        if (confirm('Thầy/Cô có chắc chắn muốn xóa dòng này khỏi bảng?')) {
+        if (confirm('Bạn có chắc chắn muốn xóa dòng này khỏi bảng?')) {
           row.remove();
         }
       } else {
@@ -2165,13 +2164,13 @@
         }
       } else if (selectedUploadFile) {
         window.currentCustomDocxHtml = html;
-        alert('🎉 Đã lưu thay đổi vào bản xem trước! Khi Thầy nhấn "Ký Số & Nộp Trình Duyệt", nội dung đã chỉnh sửa này sẽ được nộp lên.');
+        alert('🎉 Đã lưu thay đổi vào bản xem trước! Khi nhấn "Ký Số & Nộp Trình Duyệt", nội dung đã chỉnh sửa này sẽ được nộp lên.');
       }
     }
 
     // Thu hồi kế hoạch bài dạy khi tổ trưởng chưa ký duyệt
     async function handleRecallDoc(docId) {
-      if (!confirm('Thầy/Cô có chắc chắn muốn THU HỒI kế hoạch bài dạy này không?\n\nSau khi thu hồi, Tổ trưởng sẽ không thể duyệt nữa và Thầy/Cô có thể chỉnh sửa nội dung hoặc nộp lại.')) {
+      if (!confirm('Bạn có chắc chắn muốn THU HỒI kế hoạch bài dạy này không?\n\nSau khi thu hồi, Tổ trưởng sẽ không thể duyệt nữa và Bạn có thể chỉnh sửa nội dung hoặc nộp lại.')) {
         return;
       }
 
@@ -2196,7 +2195,7 @@
 
     // Xóa hồ sơ giáo án
     async function handleDeleteDoc(docId) {
-      if (!confirm('⚠️ CẢNH BÁO: Thầy/Cô có chắc chắn muốn XÓA HOÀN TOÀN hồ sơ này không?\n\nHành động này không thể hoàn tác và sẽ xóa tệp đính kèm khỏi hệ thống.')) {
+      if (!confirm('⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XÓA HOÀN TOÀN hồ sơ này không?\n\nHành động này không thể hoàn tác và sẽ xóa tệp đính kèm khỏi hệ thống.')) {
         return;
       }
 
@@ -2417,8 +2416,8 @@
           <button onclick="viewSignedDocument('${d.id}')" title="Xem văn bản đã ký số trực tiếp trên trình duyệt" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer">
             <i class="fa-solid fa-eye text-emerald-600"></i> Xem
           </button>
-          <button onclick="openDocDetails('${d.id}')" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold transition text-xs cursor-pointer">
-            Chi tiết
+          <button onclick="openDocDetails('${d.id}')" title="Xem chi tiết lịch sử ký số" class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition text-xs cursor-pointer">
+            <i class="fa-solid fa-circle-info"></i>
           </button>
           ${oneDriveRowBtn}
           <a href="/api/documents/${d.id}/download-signed" onclick="currentlyViewedDoc = currentDocList.find(x => x.id === '${d.id}') || currentlyViewedDoc" download title="Lưu / Tải văn bản đã ký về máy (.PDF)" class="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-xs">
@@ -2452,20 +2451,26 @@
           <td class="py-3 px-3 text-center">
             <input type="checkbox" value="${d.id}" onchange="updateSelectedDocsCount()" class="doc-row-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
           </td>
-          <td class="py-3 px-4 font-mono font-bold text-slate-600">${d.id}</td>
-          <td class="py-3 px-4 font-bold text-slate-900 max-w-xs truncate" title="Nhấn để xem văn bản: ${d.title}">
-            <button type="button" onclick="viewSignedDocument('${d.id}')" class="text-left font-bold text-slate-900 hover:text-blue-600 transition truncate max-w-xs block cursor-pointer">
-              ${d.title}
-            </button>
+          <td class="py-3 px-4">
+            <div class="flex flex-col">
+              <button type="button" onclick="viewSignedDocument('${d.id}')" class="text-left font-bold text-slate-900 hover:text-blue-600 transition truncate max-w-sm block cursor-pointer" title="Nhấn để xem văn bản: ${d.title}">
+                ${d.title}
+              </button>
+              <div class="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                <span class="font-mono text-slate-400">#${d.id}</span>
+                <span>•</span>
+                <span>${d.author || 'Giáo viên'}</span>
+                <span>•</span>
+                <span>${d.department || ''}</span>
+              </div>
+            </div>
           </td>
           <td class="py-3 px-4 text-slate-700">
             <button type="button" onclick="viewSignedDocument('${d.id}')" class="inline-flex items-center gap-1 font-medium text-[11px] text-slate-700 hover:text-blue-600 transition cursor-pointer" title="Nhấn để xem tệp: ${d.fileName || 'GiaoAn.pdf'}">
               ${fileIcon} <span class="truncate max-w-[120px] underline decoration-slate-300 underline-offset-2">${d.fileName || 'GiaoAn.pdf'}</span>
             </button>
           </td>
-          <td class="py-3 px-4 text-slate-700">${d.author}</td>
-          <td class="py-3 px-4 text-slate-600">${d.department}</td>
-          <td class="py-3 px-4 text-slate-600">${d.week || ''} — ${d.grade || ''}</td>
+          <td class="py-3 px-4 text-slate-600 whitespace-nowrap">${d.week || ''} — ${d.grade || ''}</td>
           <td class="py-3 px-4">${statusBadge}${oneDriveBadge}</td>
           <td class="py-3 px-4 text-center">
             <div class="flex items-center justify-center gap-1.5">
@@ -2574,7 +2579,7 @@
       if (!currentUser) return;
       const nameEl = document.getElementById('newDocCertSignerName');
       const deptEl = document.getElementById('newDocCertDept');
-      if (nameEl) nameEl.innerText = currentUser.name || 'Thầy Hà Văn Tý';
+      if (nameEl) nameEl.innerText = currentUser.name || 'Hà Văn Tý';
       if (deptEl) deptEl.innerText = currentUser.department || 'Tổ Toán - Tin';
 
       const sigImg = currentUser.signatureImage || '/uploads/signatures/sig_user_cvaty.png';
@@ -3114,7 +3119,7 @@
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
-              'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
+              'Chưa phát hiện công cụ Ký số EduSign trên máy tính này!\n\n' +
               '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
               '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.'
             );
@@ -3169,7 +3174,7 @@
                 '✓ Ban Cơ yếu Chính phủ đã niêm phong chữ ký số PAdES X.509\n' +
                 `✓ Dòng chứng thực: ${copyOptions.copyText}\n` +
                 '✓ Hồ sơ đã chuyển đến Tổ trưởng chuyên môn phê duyệt.\n\n' +
-                'Thầy có thể bấm tải file PDF về để kiểm tra bản sao y có đầy đủ giá trị pháp lý!');
+                'Bạn có thể bấm tải file PDF về để kiểm tra bản sao y có đầy đủ giá trị pháp lý!');
           loadDocuments();
         }
       });
@@ -3253,7 +3258,7 @@
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
-              'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
+              'Chưa phát hiện công cụ Ký số EduSign trên máy tính này!\n\n' +
               '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
               '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.'
             );
@@ -3495,7 +3500,7 @@
               '• Chủ thể: ' + data.data.signerName + '\n' +
               '• Cơ quan: Ban Cơ yếu Chính phủ\n' +
               '• Phương thức: Virtual CSP (Xác thực di động)\n\n' +
-              'Từ giờ khi ký giáo án, hệ thống sẽ gửi yêu cầu xác thực tới điện thoại của Thầy.');
+              'Từ giờ khi ký giáo án, hệ thống sẽ gửi yêu cầu xác thực tới điện thoại.');
 
         if (pendingVgcaSigningOptions) {
           const pending = pendingVgcaSigningOptions;
@@ -3511,7 +3516,7 @@
     }
 
     async function handleVgcaLogout() {
-      if (!confirm('Thầy có chắc chắn muốn đăng xuất tài khoản VGCA trên máy tính này không?')) return;
+      if (!confirm('Bạn có chắc chắn muốn đăng xuất tài khoản VGCA trên máy tính này không?')) return;
       try {
         await fetch('/api/vgca/logout', {
           method: 'POST',
@@ -3522,7 +3527,7 @@
       if (currentUser) currentUser.vgcaAuth = null;
       updateVgcaBarStatus();
       closeModal('modalVgcaAccountInfo');
-      alert('Đã đăng xuất tài khoản VGCA thành công. Khi cần ký tiếp, Thầy có thể đăng nhập lại bất kỳ lúc nào.');
+      alert('Đã đăng xuất tài khoản VGCA thành công. Khi cần ký tiếp, Bạn có thể đăng nhập lại bất kỳ lúc nào.');
     }
 
     function openVgcaAccountInfoModal() {
@@ -3589,7 +3594,7 @@
     function handleBatchSignClick() {
       const checkboxes = document.querySelectorAll('.doc-row-checkbox:checked');
       if (checkboxes.length === 0) {
-        alert('Thầy vui lòng chọn ít nhất 1 kế hoạch bài dạy trong danh sách để thực hiện ký duyệt!');
+        alert('Vui lòng chọn ít nhất 1 kế hoạch bài dạy trong danh sách để thực hiện ký duyệt!');
         return;
       }
       const firstId = checkboxes[0].value;
@@ -3802,7 +3807,7 @@
             clearInterval(vgcaCountdownTimer);
             if (vgcaPollTimer) clearInterval(vgcaPollTimer);
             if (countdownEl) countdownEl.innerText = 'Hết hạn';
-            alert('⚠️ Quá thời gian chờ Thầy xác nhận trên điện thoại (90 giây)!\nPhiên giao dịch đã tự động hủy bỏ để bảo mật.');
+            alert('⚠️ Quá thời gian chờ xác nhận trên điện thoại (90 giây)!\nPhiên giao dịch đã tự động hủy bỏ để bảo mật.');
             closeVgcaMobileAuthModal();
             return;
           }
@@ -3813,7 +3818,7 @@
           }
         }, 1000);
 
-        // Kiểm tra kết nối EduSign Agent trên máy tính Thầy (Cổng 18888 / 3000)
+        // Kiểm tra kết nối EduSign Agent trên máy tính (Cổng 18888 / 3000)
         let ping = { available: false };
         try {
           ping = await pingLocalSigner(800);
@@ -3862,7 +3867,7 @@
             </span>
             <div>
               <div class="font-bold text-emerald-900">🟢 Đã kết nối EduSign Agent trên máy tính</div>
-              <div class="text-[11px] text-emerald-700">Đã gửi tín hiệu Push Notification tới điện thoại của Thầy...</div>
+              <div class="text-[11px] text-emerald-700">Đã gửi tín hiệu Push Notification tới điện thoại...</div>
             </div>
           </div>
           <span class="px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded font-mono font-bold text-[10px]">Cổng 18888</span>
@@ -3875,7 +3880,7 @@
             <div class="flex-1">
               <div class="font-bold text-amber-900">Chưa phát hiện phần mềm EduSign Agent trên máy tính!</div>
               <div class="text-[11px] text-amber-800 leading-relaxed mt-1">
-                Để Ban Cơ yếu gửi thông báo xác thực tới điện thoại, Thầy vui lòng mở ứng dụng <strong>EduSign Agent</strong> trên máy tính (ở góc khay hệ thống cạnh đồng hồ).
+                Để Ban Cơ yếu gửi thông báo xác thực tới điện thoại, Vui lòng mở ứng dụng <strong>EduSign Agent</strong> trên máy tính (ở góc khay hệ thống cạnh đồng hồ).
               </div>
             </div>
           </div>
@@ -3901,7 +3906,7 @@
       if (ping.available) {
         startAgentSigningWorkflow(ping.host);
       } else {
-        alert('Vẫn chưa phát hiện EduSign Agent!\n\nThầy hãy chắc chắn đã chạy tệp EduSign_Agent.exe trên máy tính để biểu tượng khiên xanh hiển thị ở góc khay hệ thống (cạnh đồng hồ).');
+        alert('Vẫn chưa phát hiện EduSign Agent!\n\nVui lòng chắc chắn đã chạy tệp EduSign_Agent.exe trên máy tính để biểu tượng khiên xanh hiển thị ở góc khay hệ thống (cạnh đồng hồ).');
       }
     }
 
@@ -3911,13 +3916,13 @@
 
       const desc = document.getElementById('vgcaModalStatusDesc');
       if (desc) {
-        desc.innerHTML = '📲 <strong>ĐÃ GỬI TÍN HIỆU TỚI ĐIỆN THOẠI CỦA THẦY!</strong><br>Xin mời Thầy mở thông báo trên điện thoại và nhấn <strong>[ĐỒNG Ý]</strong> để hoàn tất niêm phong chữ ký số.';
+        desc.innerHTML = '📲 <strong>ĐÃ GỬI TÍN HIỆU TỚI THIẾT BỊ DI ĐỘNG!</strong><br>Xin mời bạn mở thông báo trên điện thoại và nhấn <strong>[ĐỒNG Ý]</strong> để hoàn tất niêm phong chữ ký số.';
       }
 
       const btn = document.getElementById('btnVgcaConfirmFromPhone');
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang chờ Thầy nhấn [ĐỒNG Ý] trên điện thoại...</span>';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang chờ nhấn [ĐỒNG Ý] trên điện thoại...</span>';
       }
 
       try {
@@ -3967,7 +3972,7 @@
         if (err && err.cancelled) {
           // Người dùng hủy hoặc từ chối trên điện thoại -> TỰ ĐỘNG HỦY PHIÊN KÝ NGAY LẬP TỨC!
           closeVgcaMobileAuthModal();
-          alert('🛑 ĐÃ HỦY PHIÊN KÝ SỐ!\n\nThầy đã từ chối hoặc hủy yêu cầu xác nhận trên điện thoại.\nHồ sơ chưa được ký duyệt.');
+          alert('🛑 ĐÃ HỦY PHIÊN KÝ SỐ!\n\nĐã từ chối hoặc hủy yêu cầu xác nhận trên điện thoại.\nHồ sơ chưa được ký duyệt.');
           return;
         }
 
@@ -3987,8 +3992,8 @@
               <span class="px-2 py-0.5 bg-amber-200 text-amber-900 rounded font-mono font-bold text-[10px]">Cloud SmartCA</span>
             </div>
             <div class="text-[11px] text-amber-800 leading-relaxed">
-              👉 Thầy hãy mở ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại và bấm <strong>[Xác nhận]</strong>.<br>
-              Hoặc sau khi đã bấm xác nhận trên điện thoại, Thầy nhấn nút màu xanh bên dưới để hoàn tất.
+              👉 Vui lòng mở ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại và bấm <strong>[Xác nhận]</strong>.<br>
+              Hoặc sau khi đã bấm xác nhận trên điện thoại, nhấn nút màu xanh bên dưới để hoàn tất.
             </div>
           `;
         }
@@ -4051,7 +4056,7 @@
         if (btn && btn.disabled) {
           btn.disabled = false;
           btn.innerHTML = origHtml;
-          alert('⚠️ Hết thời gian chờ phản hồi ký số từ Ban Cơ yếu (90 giây)!\nThầy vui lòng kiểm tra lại kết nối mạng hoặc thử lại.');
+          alert('⚠️ Hết thời gian chờ phản hồi ký số từ Ban Cơ yếu (90 giây)!\nVui lòng kiểm tra lại kết nối mạng hoặc thử lại.');
         }
       }, 90000);
 
@@ -4206,14 +4211,14 @@
         btn.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i> <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>';
       }
       if (desc) {
-        desc.innerHTML = '📲 <strong>ĐÃ GỬI THÔNG BÁO XÁC THỰC TỚI ĐIỆN THOẠI CỦA THẦY!</strong><br>Vui lòng mở ứng dụng VGCA / EduSign trên điện thoại và nhấn <strong>[ĐỒNG Ý]</strong> để xác nhận ký số.';
+        desc.innerHTML = '📲 <strong>ĐÃ GỬI THÔNG BÁO XÁC THỰC TỚI THIẾT BỊ DI ĐỘNG!</strong><br>Vui lòng mở ứng dụng VGCA / EduSign trên điện thoại và nhấn <strong>[ĐỒNG Ý]</strong> để xác nhận ký số.';
       }
 
       closeModal('modalVgcaMobileAuth');
     }
 
     // ==================== CẦU NỐI KÝ SỐ CỤC BỘ (LOCAL SIGNER BRIDGE) ====================
-    // Phục vụ kết nối thiết bị ký số VGCA trên máy tính Thầy khi truy cập từ Render Cloud
+    // Phục vụ kết nối thiết bị ký số VGCA trên máy tính khi truy cập từ Render Cloud
     let cachedLocalSignerHost = null;
 
     async function pingLocalSigner(timeoutMs = 800) {
@@ -4297,7 +4302,7 @@
       return await activeLocalSignPromise;
     }
 
-    // Thử nghiệm gửi thông báo xác thực tới điện thoại của Thầy
+    // Thử nghiệm gửi thông báo xác thực tới điện thoại
     function testSendVgcaMobileAuth() {
       startVgcaMobileSigning({
         docTitle: 'Văn bản thử nghiệm kết nối SmartCA.pdf',
@@ -4330,7 +4335,7 @@
           return data;
         },
         onSuccess: (data) => {
-          alert('🎉 Kết nối thiết bị di động VGCA thành công 100%!\n\nĐiện thoại của Thầy đã nhận yêu cầu và xác nhận ký số mật mã thành công.');
+          alert('🎉 Kết nối thiết bị di động VGCA thành công 100%!\n\nThiết bị di động đã nhận yêu cầu và xác nhận ký số mật mã thành công.');
         }
       });
     }
@@ -4465,10 +4470,10 @@
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
-              'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
+              'Chưa phát hiện công cụ Ký số EduSign trên máy tính này!\n\n' +
               '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
               '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.\n' +
-              '3. Hoặc Thầy có thể chọn [Ký nhanh nội bộ] bên dưới để nộp giáo án kịp tiến độ.'
+              '3. Hoặc Bạn có thể chọn [Ký nhanh nội bộ] bên dưới để nộp giáo án kịp tiến độ.'
             );
           }
 
@@ -4502,10 +4507,10 @@
           document.getElementById('formNewDoc').reset();
           removeSelectedFile();
           alert('🎉🎉🎉 KÝ SỐ MẬT MÃ THẬT VGCA VÀ NỘP BÀI THÀNH CÔNG 100%!\n\n' +
-                '✓ Chủ thể: Thầy Hà Văn Tý\n' +
+                '✓ Chủ thể: Hà Văn Tý\n' +
                 '✓ Ban Cơ yếu Chính phủ đã niêm phong chữ ký số PAdES X.509 RFC 3279\n' +
                 '✓ Hồ sơ đã chuyển đến Tổ trưởng chuyên môn phê duyệt.\n\n' +
-                'Thầy có thể bấm tải file PDF về để kiểm tra chữ ký số công vụ có giá trị pháp lý!');
+                'Bạn có thể bấm tải file PDF về để kiểm tra chữ ký số công vụ có giá trị pháp lý!');
           loadDocuments();
         }
       });
@@ -4750,7 +4755,7 @@
         alert(`🎉 ĐÃ LƯU THÀNH CÔNG LÊN GOOGLE DRIVE TRƯỜNG!\n\n` +
               `📁 Cây thư mục: ${data.driveInfo.folderPath}\n` +
               `⏰ Thời điểm: ${data.driveInfo.uploadedAt}\n\n` +
-              `Thầy có thể bấm nút "Mở Trên Google Drive" vừa xuất hiện trong bảng chi tiết để xem trực tiếp.`);
+              `Bạn có thể bấm nút "Mở Trên Google Drive" vừa xuất hiện trong bảng chi tiết để xem trực tiếp.`);
 
         await loadDocuments();
         openDocDetails(docId);
@@ -4862,11 +4867,6 @@
       }
 
       try {
-        alert('📂 HƯỚNG DẪN CHỌN THƯ MỤC ONEDRIVE:\n\n' +
-              'Ở cửa sổ tiếp theo, Thầy vui lòng duyệt và chọn thư mục OneDrive trường trên máy tính\n' +
-              '(Ví dụ: "OneDrive - Sở GD&ĐT Quảng Ngãi" hoặc "15. HÀ VĂN TÝ 26-27").\n\n' +
-              '✅ Hệ thống sẽ tự động lưu lại đường dẫn này để các lần sau tự động lưu mà không cần chọn lại!');
-
         const dirHandle = await window.showDirectoryPicker({
           id: 'edusign_onedrive_picker',
           mode: 'readwrite',
@@ -5082,16 +5082,15 @@
           alert('Chưa có kế hoạch bài dạy nào trong danh sách để lưu vào OneDrive!');
           return;
         }
-        const confirmAll = confirm(`Thầy chưa tích chọn hồ sơ cụ thể nào.\n\nThầy có muốn lưu toàn bộ ${currentDocList.length} hồ sơ trong danh sách vào thư mục OneDrive trường (5TB) không?`);
-        if (!confirmAll) return;
-        docIds = currentDocList.map(d => d.id);
+        alert('Vui lòng tích chọn ít nhất 1 kế hoạch bài dạy trong danh sách để lưu vào OneDrive!');
+        return;
       }
 
       // 1. Kiểm tra và chọn thư mục OneDrive
       let dirHandle = null;
       if (window.showDirectoryPicker) {
         dirHandle = await promptSelectOneDriveFolder(false);
-        if (!dirHandle) return; // Thầy hủy chọn
+        if (!dirHandle) return; // Người dùng hủy chọn
       }
 
       const btn = document.getElementById('btnBatchSyncOneDrive');
@@ -5145,7 +5144,7 @@
               `✅ Đường dẫn đã được lưu lại để tự động sử dụng cho các lần sau!\n` +
               (failCount > 0 ? `⚠️ Có ${failCount} hồ sơ chưa lưu được do chưa đính kèm tệp.` : 'Tất cả hồ sơ đã được lưu vào thư mục máy tính và đồng bộ lên đám mây trường.'));
       } else {
-        alert('⚠️ Không thể lưu hồ sơ vào OneDrive. Thầy vui lòng kiểm tra xem hồ sơ đã có tệp đính kèm chưa!');
+        alert('⚠️ Không thể lưu hồ sơ vào OneDrive. Vui lòng kiểm tra xem hồ sơ đã có tệp đính kèm chưa!');
       }
     }
 
@@ -5203,10 +5202,10 @@
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
-              'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
+              'Chưa phát hiện công cụ Ký số EduSign trên máy tính này!\n\n' +
               '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
               '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.\n' +
-              '3. Hoặc Thầy có thể chọn [Ký nhanh nội bộ] bên dưới để hoàn tất việc ký duyệt.'
+              '3. Hoặc Bạn có thể chọn [Ký nhanh nội bộ] bên dưới để hoàn tất việc ký duyệt.'
             );
           }
 
@@ -5228,11 +5227,11 @@
         },
         onSuccess: (data) => {
           alert('🎉🎉🎉 KÝ SỐ MẬT MÃ THẬT VGCA THÀNH CÔNG 100%!\n\n' +
-                '✓ Chủ thể: Thầy Hà Văn Tý\n' +
+                '✓ Chủ thể: Hà Văn Tý\n' +
                 '✓ Cơ quan cấp phát: Ban Cơ yếu Chính phủ\n' +
                 '✓ Tiêu chuẩn: PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)\n' +
                 '✓ Bảo vệ toàn vẹn: 100% tài liệu được niêm phong mật mã\n\n' +
-                'Thầy có thể bấm nút "Lưu Văn Bản Đã Ký Về Máy (.PDF)" để mở file bằng Adobe Acrobat Reader kiểm tra chứng nhận hợp lệ!');
+                'Bạn có thể bấm nút "Lưu Văn Bản Đã Ký Về Máy (.PDF)" để mở file bằng Adobe Acrobat Reader kiểm tra chứng nhận hợp lệ!');
           loadDocuments();
           openDocDetails(docId);
         }
