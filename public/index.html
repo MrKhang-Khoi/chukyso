@@ -1788,7 +1788,7 @@
 
     // ==================== CẤU HÌNH & TẠO CON DẤU CHỮ KÝ SỐ VGCA ====================
     let currentStampPlacement = 'bottom-right';
-    let currentStampCoords = { xPercent: 74.5, yPercent: 51.3 };
+    let currentStampCoords = { xPercent: 74.5, yPercent: 52.0, isManualDrag: false };
     let currentStampScale = 1.0;
     let isDraggingStamp = false;
     let stampDragStartX = 0, stampDragStartY = 0;
@@ -2006,29 +2006,29 @@
       const container = document.getElementById('viewerContentArea');
       if (!stamp || !container) return;
 
-      let leftPct = 74.5, topPct = 51.3;
+      let leftPct = 74.5, topPct = 52.0;
       let label = 'Cột Giáo viên (Bên phải)';
 
       if (role === 'teacher') {
         leftPct = 74.5;
-        topPct = 51.3;
+        topPct = 52.0;
         currentStampPlacement = 'bottom-right';
         label = 'Cột Giáo viên (Bên phải)';
       } else if (role === 'leader') {
         leftPct = 47.5;
-        topPct = 51.3;
+        topPct = 52.0;
         currentStampPlacement = 'middle-right';
         label = 'Cột Tổ trưởng (Ở giữa)';
       } else if (role === 'principal') {
         leftPct = 21.5;
-        topPct = 51.3;
+        topPct = 52.0;
         currentStampPlacement = 'bottom-left';
         label = 'Cột Ban Giám hiệu (Bên trái)';
       }
 
       stamp.style.left = leftPct + '%';
       stamp.style.top = topPct + '%';
-      currentStampCoords = { xPercent: leftPct, yPercent: topPct };
+      currentStampCoords = { xPercent: leftPct, yPercent: topPct, isManualDrag: false };
       updateStampCoordsDisplay(label);
 
       const sel = document.getElementById('newDocSignPlacement');
@@ -2161,7 +2161,7 @@
 
         const xPct = Math.round((newLeft / container.clientWidth) * 1000) / 10;
         const yPct = Math.round((newTop / container.clientHeight) * 1000) / 10;
-        currentStampCoords = { xPercent: xPct, yPercent: yPct };
+        currentStampCoords = { xPercent: xPct, yPercent: yPct, isManualDrag: true };
 
         if (xPct > 55) currentStampPlacement = 'bottom-right';
         else if (xPct > 32) currentStampPlacement = 'middle-right';
@@ -2437,10 +2437,11 @@
         signPlacement,
         signCoordinates: {
           xPercent: (currentStampCoords && currentStampCoords.xPercent) || 74.5,
-          yPercent: (currentStampCoords && currentStampCoords.yPercent) || 51.3,
+          yPercent: (currentStampCoords && currentStampCoords.yPercent) || 52.0,
           scale: currentStampScale || 1.0,
           width: Math.round(95 * (currentStampScale || 1.0)),
-          height: Math.round(60 * (currentStampScale || 1.0))
+          height: Math.round(60 * (currentStampScale || 1.0)),
+          isManualDrag: !!(currentStampCoords && currentStampCoords.isManualDrag)
         },
         signatureImage: signatureToSubmit,
         fileName: selectedUploadFile ? selectedUploadFile.name : 'GiaoAn_Chuan.pdf',

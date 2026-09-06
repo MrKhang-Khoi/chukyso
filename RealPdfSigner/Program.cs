@@ -1,11 +1,16 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using iText.Bouncycastle.X509;
 using iText.Commons.Bouncycastle.Cert;
 using iText.Kernel.Geom;
 using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas.Parser;
+using iText.Kernel.Pdf.Canvas.Parser.Listener;
+using iText.Kernel.Pdf.Canvas.Parser.Data;
 using iText.Layout;
 using iText.Layout.Element;
 using iText.Signatures;
@@ -70,6 +75,15 @@ namespace RealPdfSigner
             {
                 string verifyFile = args.Length > 1 ? args[1] : System.IO.Path.Combine(Directory.GetCurrentDirectory(), "GiaoAn_DaKy_That.pdf");
                 KiemTraChuKyPdf(verifyFile);
+                return;
+            }
+
+            if (args.Length > 0 && args[0].Equals("--find-anchor", StringComparison.OrdinalIgnoreCase))
+            {
+                string pdfFile = args.Length > 1 ? args[1] : "GiaoAn_CanKy.pdf";
+                string signerName = args.Length > 2 ? args[2] : "Hà Văn Tý";
+                string role = args.Length > 3 ? args[3] : "teacher";
+                FindAnchor(pdfFile, signerName, role);
                 return;
             }
 
@@ -169,12 +183,12 @@ namespace RealPdfSigner
                 if (isLandscape)
                 {
                     rectX = 627f;
-                    rectY = 290f;
+                    rectY = 275f;
                 }
                 else
                 {
-                    rectX = 444f;
-                    rectY = 504f;
+                    rectX = 440f;
+                    rectY = 120f;
                 }
             }
 
@@ -325,6 +339,208 @@ namespace RealPdfSigner
                 Console.WriteLine($"❌ Lỗi đọc chữ ký số: {ex.Message}");
                 Console.ResetColor();
             }
+        }
+
+        public static void FindAnchor(string pdfPath, string signerName, string role)
+        {
+            try
+            {
+                if (!File.Exists(pdfPath))
+                {
+                    Console.WriteLine("[ANCHOR_RESULT_JSON]");
+                    Console.WriteLine(JsonSerializer.Serialize(new { found = false, message = "File not found" }));
+                    return;
+                }
+
+                using var pdfReader = new PdfReader(pdfPath);
+                using var pdfDoc = new PdfDocument(pdfReader);
+                int pageCount = pdfDoc.GetNumberOfPages();
+                var page = pdfDoc.GetPage(pageCount);
+                var pageSize = page.GetPageSize();
+                float pW = pageSize.GetWidth();
+                float pH = pageSize.GetHeight();
+                bool isLandscape = pW > pH;
+
+                var listener = new TextCollectorListener();
+                var processor = new PdfCanvasProcessor(listener);
+                processor.ProcessPageContent(page);
+
+                // Nhóm text chunk thành từng dòng theo tọa độ Y
+                var lines = new List<(float Y, List<TextChunk> Chunks, string Text)>();
+                listener.Chunks.Sort((a, b) => b.Y.CompareTo(a.Y));
+
+                var curLineChunks = new List<TextChunk>();
+                foreach (var chunk in listener.Chunks)
+                {
+                    if (curLineChunks.Count == 0)
+                    {
+                        curLineChunks.Add(chunk);
+                    }
+                    else
+                    {
+                        if (Math.Abs(curLineChunks[0].Y - chunk.Y) <= 4.0f)
+                        {
+                            curLineChunks.Add(chunk);
+                        }
+                        else
+                        {
+                            curLineChunks.Sort((a, b) => a.X.CompareTo(b.X));
+                            string lineText = string.Join("", curLineChunks.ConvertAll(c => c.Text));
+                            lines.Add((curLineChunks[0].Y, new List<TextChunk>(curLineChunks), lineText));
+                            curLineChunks.Clear();
+                            curLineChunks.Add(chunk);
+                        }
+                    }
+                }
+                if (curLineChunks.Count > 0)
+                {
+                    curLineChunks.Sort((a, b) => a.X.CompareTo(b.X));
+                    string lineText = string.Join("", curLineChunks.ConvertAll(c => c.Text));
+                    lines.Add((curLineChunks[0].Y, new List<TextChunk>(curLineChunks), lineText));
+                }
+
+                bool isTeacher = role.ToLower().Contains("teacher") || role.Contains("1") || (!role.ToLower().Contains("leader") && !role.ToLower().Contains("principal"));
+                bool isLeader = role.ToLower().Contains("leader") || role.Contains("2");
+                bool isPrincipal = role.ToLower().Contains("principal") || role.Contains("3");
+
+                float minColX = isTeacher ? (pW * 0.55f) : (isLeader ? (pW * 0.30f) : 0f);
+                float maxColX = isTeacher ? pW : (isLeader ? (pW * 0.65f) : (pW * 0.35f));
+
+                float? targetNameY = null;
+                float? targetNameX = null;
+                float? targetRoleY = null;
+                float? targetRoleX = null;
+
+                foreach (var line in lines)
+                {
+                    string lt = line.Text;
+                    if (lt.Contains("GIÁO VIÊN", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("TỔ TRƯỞNG", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("HIỆU TRƯỞNG", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("PHÓ HIỆU", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("Người lập", StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetRoleY = line.Y;
+                        var colChunks = line.Chunks.FindAll(c => c.X >= minColX && c.X <= maxColX);
+                        if (colChunks.Count > 0)
+                        {
+                            targetRoleX = colChunks[0].X;
+                        }
+                    }
+
+                    if (lt.Contains("Hà Văn Tý", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("Phan Thị", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("Ngô Thị", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("Trần Văn", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("Trần Khắc", StringComparison.OrdinalIgnoreCase) ||
+                        (!string.IsNullOrWhiteSpace(signerName) && lt.Contains(signerName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        targetNameY = line.Y;
+                        var colChunks = line.Chunks.FindAll(c => c.X >= minColX && c.X <= maxColX);
+                        if (colChunks.Count > 0)
+                        {
+                            targetNameX = colChunks[0].X;
+                        }
+                    }
+                }
+
+                float stampW = 95f;
+                float stampH = 60f;
+                float defaultX = isTeacher ? (isLandscape ? pW * 0.745f : pW * 0.74f)
+                               : isLeader ? (isLandscape ? pW * 0.46f : pW * 0.46f)
+                               : (isLandscape ? pW * 0.18f : pW * 0.18f);
+                float defaultY = isLandscape ? 275f : 120f;
+
+                float stampX = defaultX;
+                float stampY = defaultY;
+                bool foundAnchor = false;
+
+                if (targetNameY.HasValue && targetRoleY.HasValue)
+                {
+                    float midY = (targetRoleY.Value + targetNameY.Value) / 2f;
+                    stampY = midY - (stampH / 2f);
+                    float anchorX = targetNameX ?? targetRoleX ?? defaultX;
+                    stampX = anchorX - (stampW * 0.15f);
+                    foundAnchor = true;
+                }
+                else if (targetNameY.HasValue)
+                {
+                    stampY = targetNameY.Value + 15f;
+                    float anchorX = targetNameX ?? defaultX;
+                    stampX = anchorX - (stampW * 0.15f);
+                    foundAnchor = true;
+                }
+                else if (targetRoleY.HasValue)
+                {
+                    stampY = targetRoleY.Value - stampH - 15f;
+                    float anchorX = targetRoleX ?? defaultX;
+                    stampX = anchorX - (stampW * 0.15f);
+                    foundAnchor = true;
+                }
+
+                stampX = Math.Max(10f, Math.Min(pW - stampW - 10f, stampX));
+                stampY = Math.Max(10f, Math.Min(pH - stampH - 10f, stampY));
+
+                var result = new
+                {
+                    found = foundAnchor,
+                    x = Math.Round(stampX, 1),
+                    y = Math.Round(stampY, 1),
+                    width = stampW,
+                    height = stampH,
+                    page = pageCount,
+                    pageWidth = pW,
+                    pageHeight = pH
+                };
+
+                Console.WriteLine("[ANCHOR_RESULT_JSON]");
+                Console.WriteLine(JsonSerializer.Serialize(result));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[ANCHOR_RESULT_JSON]");
+                Console.WriteLine(JsonSerializer.Serialize(new { found = false, error = ex.Message }));
+            }
+        }
+    }
+
+    public class TextChunk
+    {
+        public string Text { get; set; } = "";
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
+    }
+
+    public class TextCollectorListener : IEventListener
+    {
+        public List<TextChunk> Chunks { get; } = new List<TextChunk>();
+
+        public void EventOccurred(IEventData data, EventType type)
+        {
+            if (type == EventType.RENDER_TEXT)
+            {
+                var renderInfo = (TextRenderInfo)data;
+                string text = renderInfo.GetText();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    var rect = renderInfo.GetBaseline().GetBoundingRectangle();
+                    Chunks.Add(new TextChunk
+                    {
+                        Text = text,
+                        X = rect.GetX(),
+                        Y = rect.GetY(),
+                        Width = rect.GetWidth(),
+                        Height = rect.GetHeight()
+                    });
+                }
+            }
+        }
+
+        public ICollection<EventType> GetSupportedEvents()
+        {
+            return new HashSet<EventType> { EventType.RENDER_TEXT };
         }
     }
 }

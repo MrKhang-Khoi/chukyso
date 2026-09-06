@@ -128,15 +128,24 @@ async function generateSignedPdf(doc) {
         const stampHeight = Math.round(((doc.signCoordinates && doc.signCoordinates.height) || 60) * scale);
 
         const isLandscape = pW > pH;
-        let defaultX = isLandscape ? (pW * 0.745) : (pW * 0.746);
-        let defaultY = isLandscape ? 290 : 504;
+        let defaultX = isLandscape ? (pW * 0.745) : (pW * 0.74);
+        let defaultY = isLandscape ? 275 : 120;
 
         let stampX = defaultX;
         let stampY = defaultY;
 
-        if (doc.signCoordinates && typeof doc.signCoordinates.xPercent === 'number' && typeof doc.signCoordinates.yPercent === 'number') {
+        // Tự động tìm neo vị trí chữ ký thông minh (Smart Pedagogical Anchor)
+        const teacherName = (teacherSignature && teacherSignature.signerName) || doc.author || 'Hà Văn Tý';
+        const smartAnchor = await findSmartSignatureAnchor(sourcePdfBuffer, teacherName, 'teacher');
+
+        if (smartAnchor && smartAnchor.found) {
+          stampX = smartAnchor.x;
+          stampY = smartAnchor.y;
+        } else if (doc.signCoordinates && doc.signCoordinates.isManualDrag && typeof doc.signCoordinates.xPercent === 'number' && typeof doc.signCoordinates.yPercent === 'number') {
           stampX = (doc.signCoordinates.xPercent / 100) * pW;
-          stampY = (1 - (doc.signCoordinates.yPercent / 100)) * pH;
+          // Tránh trường hợp kéo thả trên iframe modal bị lệch lên nửa trên hoặc bảng phân phối (Y < 40%)
+          const safeYPercent = doc.signCoordinates.yPercent < 40 ? (isLandscape ? 52 : 82) : doc.signCoordinates.yPercent;
+          stampY = (1 - (safeYPercent / 100)) * pH;
         } else if (doc.signPlacement === 'bottom-left') {
           stampX = pW * 0.18;
           stampY = defaultY;
@@ -169,10 +178,15 @@ async function generateSignedPdf(doc) {
         const scale = (doc.signCoordinates && doc.signCoordinates.scale) || 1.0;
         const sW = Math.round(95 * scale);
         const sH = Math.round(60 * scale);
-        const leaderX = (pW * 0.46);
-        const leaderY = (doc.signCoordinates && typeof doc.signCoordinates.yPercent === 'number')
-          ? (1 - (doc.signCoordinates.yPercent / 100)) * pH
-          : (pW > pH ? 290 : 504);
+        let leaderX = (pW * 0.46);
+        let leaderY = (pW > pH ? 275 : 120);
+
+        const leaderName = (leaderSig && leaderSig.signerName) || 'Tổ trưởng chuyên môn';
+        const leaderAnchor = await findSmartSignatureAnchor(sourcePdfBuffer, leaderName, 'leader');
+        if (leaderAnchor && leaderAnchor.found) {
+          leaderX = leaderAnchor.x;
+          leaderY = leaderAnchor.y;
+        }
 
         lastDocPage.drawImage(pngLeaderImg, {
           x: Math.max(10, Math.min(pW - sW - 10, leaderX)),
@@ -193,10 +207,14 @@ async function generateSignedPdf(doc) {
         if (fs.existsSync(sealPath)) {
           const pngSeal = await pdfDoc.embedPng(fs.readFileSync(sealPath));
           const sealSize = 85;
-          const sealX = (pW * 0.18);
-          const sealY = (doc.signCoordinates && typeof doc.signCoordinates.yPercent === 'number')
-            ? (1 - (doc.signCoordinates.yPercent / 100)) * pH - 15
-            : (pW > pH ? 275 : 489);
+          let sealX = (pW * 0.18);
+          let sealY = (pW > pH ? 260 : 105);
+
+          const principalAnchor = await findSmartSignatureAnchor(sourcePdfBuffer, 'Ban Giám hiệu', 'principal');
+          if (principalAnchor && principalAnchor.found) {
+            sealX = principalAnchor.x;
+            sealY = principalAnchor.y;
+          }
 
           lastDocPage.drawImage(pngSeal, {
             x: Math.max(10, Math.min(pW - sealSize - 10, sealX)),
@@ -240,6 +258,56 @@ function findSignerRunner() {
       return { command: 'dotnet', argsPrefix: ['run', '--project', path.join(__dirname, 'RealPdfSigner'), '--'] };
     }
   } catch (e) {}
+
+  return null;
+}
+
+/**
+ * Tự động tìm tọa độ neo thông minh (Smart Pedagogical Anchor) cho chữ ký số
+ * Dò tìm chính xác vị trí tên giáo viên / chức danh trên trang cuối văn bản
+ */
+async function findSmartSignatureAnchor(pdfBufferOrPath, signerName = 'Hà Văn Tý', role = 'teacher') {
+  const runner = findSignerRunner();
+  if (!runner) return null;
+
+  let tempPath = null;
+  let shouldCleanup = false;
+
+  try {
+    if (typeof pdfBufferOrPath === 'string' && fs.existsSync(pdfBufferOrPath)) {
+      tempPath = pdfBufferOrPath;
+    } else if (Buffer.isBuffer(pdfBufferOrPath)) {
+      const tempDir = path.join(__dirname, 'uploads', 'documents');
+      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+      tempPath = path.join(tempDir, `anchor_scan_${Date.now()}_${Math.random().toString(36).substring(7)}.pdf`);
+      fs.writeFileSync(tempPath, pdfBufferOrPath);
+      shouldCleanup = true;
+    } else {
+      return null;
+    }
+
+    const { execFile } = require('child_process');
+    const stdout = await new Promise((resolve) => {
+      execFile(runner.command, [...runner.argsPrefix, '--find-anchor', tempPath, signerName, role], { timeout: 10000 }, (err, out) => {
+        if (err) resolve('');
+        else resolve(out || '');
+      });
+    });
+
+    if (stdout && stdout.includes('[ANCHOR_RESULT_JSON]')) {
+      const jsonStr = stdout.split('[ANCHOR_RESULT_JSON]')[1].trim().split('\n')[0].trim();
+      const parsed = JSON.parse(jsonStr);
+      if (parsed && parsed.found) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    // An toàn: nếu có lỗi thì trả về null để dùng tọa độ mặc định
+  } finally {
+    if (shouldCleanup && tempPath && fs.existsSync(tempPath)) {
+      try { fs.unlinkSync(tempPath); } catch (e) {}
+    }
+  }
 
   return null;
 }

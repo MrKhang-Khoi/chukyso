@@ -573,7 +573,7 @@ app.post('/api/test-vgca-ping', requireAuth, async (req, res) => {
       author: req.user.name,
       department: req.user.department || 'THCS Chu Văn An',
       signPlacement: 'bottom-right',
-      signCoordinates: { xPercent: 74.5, yPercent: 51.3, scale: 1.0 }
+      signCoordinates: { xPercent: 74.5, yPercent: 52.0, scale: 1.0 }
     };
 
     console.log(`[VGCA Ping] Gửi tín hiệu xác thực thử nghiệm đến điện thoại của ${req.user.name}...`);
