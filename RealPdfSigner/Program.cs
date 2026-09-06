@@ -53,12 +53,12 @@ namespace RealPdfSigner
 
         public byte[] Sign(byte[] message)
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("===============================================================");
-            Console.WriteLine($"📲 ĐANG KÍCH HOẠT KÝ SỐ MẬT MÃ ({GetSignatureAlgorithmName()}) QUA BAN CƠ YẾU CHÍNH PHỦ (VGCA)...");
-            Console.WriteLine("👉 ĐÃ GỬI TÍN HIỆU TỚI THIẾT BỊ / USB TOKEN CỦA THẦY!");
-            Console.WriteLine("===============================================================");
-            Console.ResetColor();
+            Program.SetColor(ConsoleColor.Yellow);
+            Program.WriteLine("===============================================================");
+            Program.WriteLine($"📲 ĐANG KÍCH HOẠT KÝ SỐ MẬT MÃ ({GetSignatureAlgorithmName()}) QUA BAN CƠ YẾU CHÍNH PHỦ (VGCA)...");
+            Program.WriteLine("👉 ĐÃ GỬI TÍN HIỆU TỚI THIẾT BỊ / USB TOKEN CỦA THẦY!");
+            Program.WriteLine("===============================================================");
+            Program.ResetColor();
 
             if (_ecdsa != null)
             {
@@ -105,26 +105,28 @@ namespace RealPdfSigner
         private static extern bool AttachConsole(int dwProcessId);
         private const int ATTACH_PARENT_PROCESS = -1;
 
+        public static void SetColor(ConsoleColor color)
+        {
+            try { Console.ForegroundColor = color; } catch { }
+        }
+
+        public static void ResetColor()
+        {
+            try { Console.ResetColor(); } catch { }
+        }
+
+        public static void WriteLine(string? message = "")
+        {
+            try { Console.WriteLine(message); } catch { }
+        }
+
         [STAThread]
         static void Main(string[] args)
         {
-            // Nếu chạy ứng dụng mà không truyền tham số CLI, hoặc có cờ --tray/--agent:
-            // TỰ ĐỘNG CHẠY NGẦM KHAY HỆ THỐNG (SYSTEM TRAY) - KHÔNG MỞ MÀN HÌNH ĐEN
-            if (args.Length == 0 || (args.Length == 1 && (args[0].Equals("--tray", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--agent", StringComparison.OrdinalIgnoreCase))))
-            {
-                RunTrayAgent();
-                return;
-            }
+            string debugLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_debug.log");
+            try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Main entered with args: '{string.Join(" ", args)}'\n"); } catch { }
 
-            if (args.Length == 1 && args[0].Equals("--console", StringComparison.OrdinalIgnoreCase))
-            {
-                AttachConsole(ATTACH_PARENT_PROCESS);
-                RunConsoleAgent();
-                return;
-            }
-
-            // Gắn vào cửa sổ dòng lệnh gọi đến (nếu gọi từ cmd/powershell/node child_process)
-            AttachConsole(ATTACH_PARENT_PROCESS);
+            try { AttachConsole(ATTACH_PARENT_PROCESS); } catch { }
             try
             {
                 var stdOutStream = Console.OpenStandardOutput();
@@ -137,9 +139,25 @@ namespace RealPdfSigner
                 {
                     Console.SetError(new StreamWriter(stdErrStream, System.Text.Encoding.UTF8) { AutoFlush = true });
                 }
+                Console.OutputEncoding = System.Text.Encoding.UTF8;
             }
             catch { }
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+            // Nếu chạy ứng dụng mà không truyền tham số CLI, hoặc có cờ --tray/--agent:
+            // TỰ ĐỘNG CHẠY NGẦM KHAY HỆ THỐNG (SYSTEM TRAY) - KHÔNG MỞ MÀN HÌNH ĐEN
+            if (args.Length == 0 || (args.Length == 1 && (args[0].Equals("--tray", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--agent", StringComparison.OrdinalIgnoreCase))))
+            {
+                try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Calling RunTrayAgent...\n"); } catch { }
+                RunTrayAgent();
+                return;
+            }
+
+            if (args.Length == 1 && args[0].Equals("--console", StringComparison.OrdinalIgnoreCase))
+            {
+                try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Calling RunConsoleAgent...\n"); } catch { }
+                RunConsoleAgent();
+                return;
+            }
             Console.WriteLine("╔══════════════════════════════════════════════════════════════╗");
             Console.WriteLine("║   HỆ THỐNG KÝ SỐ THẬT CHUYÊN DÙNG BAN CƠ YẾU CHÍNH PHỦ (VGCA)║");
             Console.WriteLine("║   Trường THCS Chu Văn An - Xã Đăk Hà - Tỉnh Quảng Ngãi       ║");
@@ -753,13 +771,24 @@ namespace RealPdfSigner
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"⚠️ Ký số qua Virtual CSP bị hủy hoặc gặp sự cố ({ex.Message})");
+                Console.WriteLine($"⚠️ Ký số qua Virtual CSP bị gián đoạn hoặc gặp sự cố: {ex.Message}");
                 Console.ResetColor();
-                if (strict)
+
+                string msgLower = ex.Message.ToLowerInvariant();
+                bool isUserCancel = msgLower.Contains("cancelled by the user") ||
+                                   msgLower.Contains("hủy") ||
+                                   msgLower.Contains("từ chối") ||
+                                   msgLower.Contains("cancel");
+
+                if (strict && isUserCancel)
                 {
-                    throw; // Ném lại ngoại lệ nếu người dùng từ chối trên điện thoại
+                    // Chỉ ném ngoại lệ nếu người dùng thực sự chủ động bấm Hủy / Từ chối trên điện thoại
+                    throw;
                 }
-                Console.WriteLine("...kích hoạt bộ ký số BouncyCastle...");
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("💡 Virtual CSP gặp sự cố (Broken Token / Driver). Tự động kích hoạt bộ niêm phong dự phòng mật mã chuẩn X.509 PAdES...");
+                Console.ResetColor();
             }
 
             return SignBytesWithBouncyCastle(inputPdfBytes, cert, reason, location);
@@ -781,31 +810,31 @@ namespace RealPdfSigner
 
         public static void RunConsoleAgent()
         {
-            Console.Clear();
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("╔══════════════════════════════════════════════════════════════════════╗");
-            Console.WriteLine("║        CÔNG CỤ KÝ SỐ CHUYÊN DỤNG EDUSIGN AGENT (VGCA DESKTOP)        ║");
-            Console.WriteLine("║            Trường THCS Chu Văn An - Tỉnh Quảng Ngãi                  ║");
-            Console.WriteLine("║            Phiên bản 2.0.0 - Chuẩn Nghị định 30/2020/NĐ-CP           ║");
-            Console.WriteLine("╚══════════════════════════════════════════════════════════════════════╝");
-            Console.ResetColor();
+            try { Console.Clear(); } catch { }
+            SetColor(ConsoleColor.Cyan);
+            WriteLine("╔══════════════════════════════════════════════════════════════════════╗");
+            WriteLine("║        CÔNG CỤ KÝ SỐ CHUYÊN DỤNG EDUSIGN AGENT (VGCA DESKTOP)        ║");
+            WriteLine("║            Trường THCS Chu Văn An - Tỉnh Quảng Ngãi                  ║");
+            WriteLine("║            Phiên bản 2.0.0 - Chuẩn Nghị định 30/2020/NĐ-CP           ║");
+            WriteLine("╚══════════════════════════════════════════════════════════════════════╝");
+            ResetColor();
 
             var cert = FindVgcaCertificate();
             if (cert != null)
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"\n✓ ĐÃ NHẬN DIỆN CHỨNG THƯ SỐ CÔNG VỤ:");
-                Console.WriteLine($"  - Chủ sở hữu: {cert.Subject}");
-                Console.WriteLine($"  - Cơ quan cấp: {cert.Issuer}");
-                Console.WriteLine($"  - Hạn dùng: {cert.NotAfter:dd/MM/yyyy HH:mm:ss} | Khóa riêng: {(cert.HasPrivateKey ? "CÓ SẴN (ĐÃ CẮM)" : "CHƯA NHẬN")}");
-                Console.ResetColor();
+                SetColor(ConsoleColor.Green);
+                WriteLine($"\n✓ ĐÃ NHẬN DIỆN CHỨNG THƯ SỐ CÔNG VỤ:");
+                WriteLine($"  - Chủ sở hữu: {cert.Subject}");
+                WriteLine($"  - Cơ quan cấp: {cert.Issuer}");
+                WriteLine($"  - Hạn dùng: {cert.NotAfter:dd/MM/yyyy HH:mm:ss} | Khóa riêng: {(cert.HasPrivateKey ? "CÓ SẴN (ĐÃ CẮM)" : "CHƯA NHẬN")}");
+                ResetColor();
             }
             else
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("\n⚠️ CHƯA PHÁT HIỆN USB TOKEN BAN CƠ YẾU HOẶC CHỨNG THƯ SỐ");
-                Console.WriteLine("  Xin vui lòng cắm USB Token vào máy tính trước khi bấm ký trên web.");
-                Console.ResetColor();
+                SetColor(ConsoleColor.Yellow);
+                WriteLine("\n⚠️ CHƯA PHÁT HIỆN USB TOKEN BAN CƠ YẾU HOẶC CHỨNG THƯ SỐ");
+                WriteLine("  Xin vui lòng cắm USB Token vào máy tính trước khi bấm ký trên web.");
+                ResetColor();
             }
 
             var prefixes = new List<string> { "http://127.0.0.1:18888/", "http://localhost:18888/" };
@@ -819,17 +848,17 @@ namespace RealPdfSigner
             try
             {
                 listener.Start();
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("\n🚀 DỊCH VỤ KÝ SỐ CỤC BỘ ĐANG CHẠY...");
-                foreach (var p in prefixes) Console.WriteLine($"   👉 Lắng nghe kết nối an toàn tại: {p}");
-                Console.WriteLine("\n💡 Thầy hãy giữ cửa sổ này mở khi ký trên trang web (Local hoặc Render Cloud).");
-                Console.ResetColor();
+                SetColor(ConsoleColor.Cyan);
+                WriteLine("\n🚀 DỊCH VỤ KÝ SỐ CỤC BỘ ĐANG CHẠY...");
+                foreach (var p in prefixes) WriteLine($"   👉 Lắng nghe kết nối an toàn tại: {p}");
+                WriteLine("\n💡 Thầy hãy giữ cửa sổ này mở khi ký trên trang web (Local hoặc Render Cloud).");
+                ResetColor();
             }
             catch (Exception ex)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"❌ Không thể khởi động cổng lắng nghe: {ex.Message}");
-                Console.ResetColor();
+                SetColor(ConsoleColor.Red);
+                WriteLine($"❌ Không thể khởi động cổng lắng nghe: {ex.Message}");
+                ResetColor();
                 return;
             }
 
@@ -970,16 +999,19 @@ namespace RealPdfSigner
                     }
                     catch (Exception ex)
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🛑 Thao tác ký số bị hủy hoặc từ chối trên điện thoại: {ex.Message}");
-                        Console.ResetColor();
+                        SetColor(ConsoleColor.Red);
+                        WriteLine($"[{DateTime.Now:HH:mm:ss}] 🛑 Thao tác ký số bị gián đoạn: {ex.Message}");
+                        ResetColor();
 
-                        res.StatusCode = 400;
+                        string msgLower = ex.Message.ToLowerInvariant();
+                        bool isCancelled = msgLower.Contains("cancelled by the user") || msgLower.Contains("hủy") || msgLower.Contains("từ chối") || msgLower.Contains("cancel");
+
+                        res.StatusCode = isCancelled ? 400 : 500;
                         var errObj = new
                         {
                             success = false,
-                            cancelled = true,
-                            message = "Người dùng đã từ chối hoặc hủy xác nhận ký số trên điện thoại."
+                            cancelled = isCancelled,
+                            message = isCancelled ? "Người dùng đã từ chối hoặc hủy xác nhận ký số trên điện thoại." : ("Sự cố dịch vụ ký số: " + ex.Message)
                         };
                         byte[] errBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(errObj));
                         res.OutputStream.Write(errBytes, 0, errBytes.Length);
@@ -1002,18 +1034,18 @@ namespace RealPdfSigner
                     }
 
                     string signer = ExtractCn(cert.Subject);
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 📲 Đang kích hoạt tín hiệu Push Notification tới điện thoại của {signer}...");
-                    Console.ResetColor();
+                    SetColor(ConsoleColor.Cyan);
+                    WriteLine($"[{DateTime.Now:HH:mm:ss}] 📲 Đang kích hoạt tín hiệu Push Notification tới điện thoại của {signer}...");
+                    ResetColor();
 
                     // Kích hoạt hàm SignData của Ban Cơ yếu để gửi lệnh tới điện thoại ngay lập tức
                     byte[] testPayload = System.Text.Encoding.UTF8.GetBytes("VGCA_PING_" + DateTime.UtcNow.Ticks);
                     var vgcaSig = new VgcaSignature(cert);
                     byte[] sig = vgcaSig.Sign(testPayload);
 
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎉 Giáo viên đã bấm [ĐỒNG Ý] trên điện thoại thành công!");
-                    Console.ResetColor();
+                    SetColor(ConsoleColor.Green);
+                    WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎉 Giáo viên đã bấm [ĐỒNG Ý] trên điện thoại thành công!");
+                    ResetColor();
 
                     var okObj = new
                     {
@@ -1151,6 +1183,9 @@ namespace RealPdfSigner
         private static extern bool GetMessage(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
 
         [DllImport("user32.dll")]
+        private static extern bool PeekMessage(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax, uint wRemoveMsg);
+
+        [DllImport("user32.dll")]
         private static extern bool TranslateMessage([In] ref MSG lpMsg);
 
         [DllImport("user32.dll")]
@@ -1193,9 +1228,13 @@ namespace RealPdfSigner
         private Thread? _listenerThread;
         private static readonly IntPtr IDI_SHIELD = (IntPtr)32518;
         private static readonly IntPtr IDI_APPLICATION = (IntPtr)32512;
+        private static readonly ManualResetEvent _exitEvent = new ManualResetEvent(false);
 
         public void Run()
         {
+            string debugLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_debug.log");
+            try { File.AppendAllText(debugLog, $"[{DateTime.Now}] EduSignWin32Tray.Run entered\n"); } catch { }
+
             string className = "EduSignAgentTrayWin_" + Guid.NewGuid().ToString("N");
             IntPtr hInstance = GetModuleHandle(null);
 
@@ -1216,37 +1255,53 @@ namespace RealPdfSigner
                 hIconSm = IntPtr.Zero
             };
 
-            RegisterClassEx(ref wndClass);
-
-            _hWnd = CreateWindowEx(0, className, "EduSignAgentHiddenWindow", 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
-
-            IntPtr hIcon = LoadIcon(IntPtr.Zero, IDI_SHIELD);
-            if (hIcon == IntPtr.Zero) hIcon = LoadIcon(IntPtr.Zero, IDI_APPLICATION);
-
-            _nid = new NOTIFYICONDATA
-            {
-                cbSize = Marshal.SizeOf<NOTIFYICONDATA>(),
-                hWnd = _hWnd,
-                uID = 1,
-                uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
-                uCallbackMessage = WM_TRAYICON,
-                hIcon = hIcon,
-                szTip = "EduSign Agent v2.0 - Ban Cơ yếu CP"
-            };
-
-            Shell_NotifyIcon(NIM_ADD, ref _nid);
-
-            ShowBalloon("EduSign Desktop Agent", "Dịch vụ ký số Ban Cơ yếu đang chạy ngầm an toàn tại khay hệ thống.", NIIF_INFO);
-
             StartHttpServer();
 
-            while (GetMessage(out MSG msg, IntPtr.Zero, 0, 0))
+            try
             {
-                TranslateMessage(ref msg);
-                DispatchMessage(ref msg);
+                RegisterClassEx(ref wndClass);
+                _hWnd = CreateWindowEx(0, className, "EduSignAgentHiddenWindow", 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
+            }
+            catch { }
+
+            if (_hWnd != IntPtr.Zero)
+            {
+                IntPtr hIcon = LoadIcon(IntPtr.Zero, IDI_SHIELD);
+                if (hIcon == IntPtr.Zero) hIcon = LoadIcon(IntPtr.Zero, IDI_APPLICATION);
+
+                _nid = new NOTIFYICONDATA
+                {
+                    cbSize = Marshal.SizeOf<NOTIFYICONDATA>(),
+                    hWnd = _hWnd,
+                    uID = 1,
+                    uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
+                    uCallbackMessage = WM_TRAYICON,
+                    hIcon = hIcon,
+                    szTip = "EduSign Agent v2.0 - Ban Cơ yếu CP"
+                };
+
+                Shell_NotifyIcon(NIM_ADD, ref _nid);
+                ShowBalloon("EduSign Desktop Agent", "Dịch vụ ký số Ban Cơ yếu đang chạy ngầm an toàn tại khay hệ thống.", NIIF_INFO);
             }
 
-            Shell_NotifyIcon(NIM_DELETE, ref _nid);
+            while (!_exitEvent.WaitOne(50))
+            {
+                while (PeekMessage(out MSG msg, IntPtr.Zero, 0, 0, 1))
+                {
+                    if (msg.message == 0x0012)
+                    {
+                        _exitEvent.Set();
+                        break;
+                    }
+                    TranslateMessage(ref msg);
+                    DispatchMessage(ref msg);
+                }
+            }
+
+            if (_hWnd != IntPtr.Zero)
+            {
+                Shell_NotifyIcon(NIM_DELETE, ref _nid);
+            }
             try { _listener?.Stop(); _listener?.Close(); } catch { }
         }
 
@@ -1328,6 +1383,7 @@ namespace RealPdfSigner
             }
             else if (cmd == 107)
             {
+                _exitEvent.Set();
                 PostQuitMessage(0);
             }
         }
@@ -1394,6 +1450,8 @@ namespace RealPdfSigner
                         try { _listener.Prefixes.Add(prefix); } catch { }
                     }
                     _listener.Start();
+                    string debugLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_debug.log");
+                    try { File.AppendAllText(debugLog, $"[{DateTime.Now}] HttpListener started successfully on 18888\n"); } catch { }
 
                     while (_listener != null && _listener.IsListening)
                     {
@@ -1410,7 +1468,11 @@ namespace RealPdfSigner
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    string debugLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_debug.log");
+                    try { File.AppendAllText(debugLog, $"[{DateTime.Now}] StartHttpServer EXCEPTION: {ex}\n"); } catch { }
+                }
             })
             {
                 IsBackground = true,

@@ -3158,6 +3158,8 @@
         }
       } catch (err) {
         console.error('Lỗi trong tiến trình ký qua Agent:', err);
+        isAgentSigningActive = false;
+
         if (err && err.cancelled) {
           // Người dùng hủy hoặc từ chối trên điện thoại -> TỰ ĐỘNG HỦY PHIÊN KÝ NGAY LẬP TỨC!
           closeVgcaMobileAuthModal();
@@ -3165,69 +3167,54 @@
           return;
         }
 
-        // Kiểm tra nếu lỗi do trình duyệt chặn kết nối loopback (Chrome PNA / Failed to fetch)
-        const isLoopbackBlocked = err && (
-          err.name === 'TypeError' || 
-          (err.message && (err.message.includes('fetch') || err.message.includes('loopback') || err.message.includes('NetworkError') || err.message.includes('CORS')))
-        );
+        // Bất kể lỗi gì từ Agent cục bộ (Loopback, 500 CSP Broken Token, timeout):
+        // Tự động chuyển giao diện sang xác thực Cloud SmartCA an toàn, không để modal bị treo!
+        console.warn('[EduSign] Chuyển tiếp quy trình sang niêm phong Cloud SmartCA:', err);
 
-        if (isLoopbackBlocked) {
-          console.warn('[EduSign] Trình duyệt chặn cổng 18888 do chính sách Loopback của Chrome. Tự động chuyển sang xác thực Cloud SmartCA...');
-          
-          // Cập nhật giao diện hướng dẫn Thầy rõ ràng và thân thiện
-          const agentBox = document.getElementById('vgcaAgentConnectionStatus');
-          if (agentBox) {
-            agentBox.className = 'p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 space-y-1.5';
-            agentBox.innerHTML = `
-              <div class="flex items-center justify-between">
-                <div class="font-bold flex items-center gap-1.5 text-amber-900">
-                  <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
-                  <span>Trình duyệt Chrome/Edge đang chặn cổng nội bộ (Loopback)</span>
-                </div>
-                <span class="px-2 py-0.5 bg-amber-200 text-amber-900 rounded font-mono font-bold text-[10px]">Cổng 18888</span>
+        const agentBox = document.getElementById('vgcaAgentConnectionStatus');
+        if (agentBox) {
+          agentBox.className = 'p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 space-y-1.5';
+          agentBox.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div class="font-bold flex items-center gap-1.5 text-amber-900">
+                <i class="fa-solid fa-cloud text-amber-600"></i>
+                <span>Chuyển sang ký số qua Cổng Đám mây Ban Cơ yếu (Cloud SmartCA)</span>
               </div>
-              <div class="text-[11px] text-amber-800 leading-relaxed">
-                👉 <strong>Để kích hoạt kết nối siêu tốc:</strong> Thầy bấm vào biểu tượng <strong>🔒 (hoặc ⚙️)</strong> bên trái thanh địa chỉ trình duyệt ➜ Bật <strong>"Ứng dụng trên thiết bị" (Apps on device / Mạng cục bộ)</strong> ➜ Tải lại trang.<br>
-                ✨ Hệ thống đang hỗ trợ Thầy ký duyệt tự động qua cổng bảo mật đám mây Ban Cơ yếu.
-              </div>
-            `;
-          }
+              <span class="px-2 py-0.5 bg-amber-200 text-amber-900 rounded font-mono font-bold text-[10px]">Cloud SmartCA</span>
+            </div>
+            <div class="text-[11px] text-amber-800 leading-relaxed">
+              👉 Thầy hãy mở ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại và bấm <strong>[Xác nhận]</strong>.<br>
+              Hoặc sau khi đã bấm xác nhận trên điện thoại, Thầy nhấn nút màu xanh bên dưới để hoàn tất.
+            </div>
+          `;
+        }
 
-          if (desc) {
-            desc.innerHTML = '📲 <strong>XÁC THỰC KÝ SỐ BAN CƠ YẾU QUA ĐIỆN THOẠI</strong><br>Vui lòng mở ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại, kiểm tra và nhấn <strong>[ĐỒNG Ý]</strong> để xác nhận niêm phong hồ sơ.';
-          }
-
-          if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i> <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>';
-          }
-
-          // Kích hoạt bộ đếm Polling kiểm tra trạng thái xác thực từ điện thoại
-          if (vgcaPollTimer) clearInterval(vgcaPollTimer);
-          vgcaPollTimer = setInterval(async () => {
-            if (!activeVgcaTxId) return;
-            try {
-              const checkRes = await fetch(`/api/vgca/session-status/${activeVgcaTxId}`);
-              if (checkRes.ok) {
-                const checkData = await checkRes.json();
-                if (checkData && checkData.data && checkData.data.status === 'CONFIRMED') {
-                  clearInterval(vgcaPollTimer);
-                  handleUserConfirmedOnPhone();
-                }
-              }
-            } catch (e) {}
-          }, 2500);
-
-          return;
+        if (desc) {
+          desc.innerHTML = '📲 <strong>XÁC THỰC KÝ SỐ BAN CƠ YẾU QUA ĐIỆN THOẠI</strong><br>Vui lòng mở ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại, kiểm tra và nhấn <strong>[ĐỒNG Ý]</strong> để hoàn tất niêm phong hồ sơ.';
         }
 
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>Thử lại hoặc hoàn tất</span>';
+          btn.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i> <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>';
         }
-        if (desc) {
-          desc.innerHTML = `<span class="text-rose-600 font-semibold">⚠️ ${err.message || 'Chưa hoàn tất ký số'}</span>`;
-        }
+
+        // Kích hoạt bộ đếm Polling kiểm tra trạng thái xác thực từ điện thoại
+        if (vgcaPollTimer) clearInterval(vgcaPollTimer);
+        vgcaPollTimer = setInterval(async () => {
+          if (!activeVgcaTxId) return;
+          try {
+            const checkRes = await fetch(`/api/vgca/session-status/${activeVgcaTxId}`);
+            if (checkRes.ok) {
+              const checkData = await checkRes.json();
+              if (checkData && checkData.data && checkData.data.status === 'CONFIRMED') {
+                clearInterval(vgcaPollTimer);
+                handleUserConfirmedOnPhone();
+              }
+            }
+          } catch (e) {}
+        }, 2500);
+
+        return;
       } finally {
         isAgentSigningActive = false;
       }
@@ -3475,7 +3462,12 @@
       return { available: false };
     }
 
+    let isLocalSigningInProgress = false;
     async function signDocViaLocalAgent(docPayload, fileBase64, localHost = 'http://127.0.0.1:18888') {
+      if (isLocalSigningInProgress) {
+        throw new Error('Đang có một tiến trình ký số đang diễn ra. Vui lòng đợi trong giây lát.');
+      }
+      isLocalSigningInProgress = true;
       try {
         const fetchOpts = {
           method: 'POST',
@@ -3493,8 +3485,8 @@
           throw err;
         }
         return data;
-      } catch (e) {
-        throw e;
+      } finally {
+        isLocalSigningInProgress = false;
       }
     }
 
@@ -3647,9 +3639,10 @@
               realSignedPdfBase64 = signResult.signedPdfBase64;
             } catch (agentErr) {
               if (agentErr && agentErr.cancelled) throw agentErr;
-              console.warn('[EduSign] Không thể kết nối Local Agent (do chính sách Loopback của trình duyệt), chuyển sang niêm phong Cloud SmartCA:', agentErr);
+              console.warn('[EduSign] Không thể kết nối Local Agent, chuyển sang niêm phong Cloud SmartCA:', agentErr);
               realSignedPdfBase64 = null;
               cachedLocalSignerHost = null;
+              if (targetHost) throw agentErr;
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
@@ -3994,9 +3987,10 @@
               realSignedPdfBase64 = signResult.signedPdfBase64;
             } catch (agentErr) {
               if (agentErr && agentErr.cancelled) throw agentErr;
-              console.warn('[EduSign] Không thể ký qua Agent cục bộ (Loopback Block), chuyển sang niêm phong Cloud SmartCA:', agentErr);
+              console.warn('[EduSign] Không thể ký qua Agent cục bộ, chuyển sang niêm phong Cloud SmartCA:', agentErr);
               realSignedPdfBase64 = null;
               cachedLocalSignerHost = null;
+              if (targetHost) throw agentErr;
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
