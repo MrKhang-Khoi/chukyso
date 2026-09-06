@@ -628,6 +628,58 @@ async function runTests() {
     });
     assert(finalSignRes.status === 200 && finalSignRes.body.data.realVgcaSigned === true, 'Ký số mật mã thật VGCA và nộp bài hoàn tất 100% sau khi đã xác nhận điện thoại');
 
+    // 3.16 Kiểm tra Quản lý Tài khoản VGCA Chuẩn Học bạ số Viettel (Đăng nhập tài khoản, kiểm tra trạng thái & Đăng xuất)
+    const vgcaLoginFailRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/vgca/login',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      vgcaAccount: ''
+    });
+    assert(vgcaLoginFailRes.status === 400, 'Chặn đăng nhập VGCA khi thiếu tài khoản/mật khẩu (Mã 400)');
+
+    const vgcaLoginSuccessRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/vgca/login',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      vgcaAccount: 'hvty-dakha@quangngai.gov.vn',
+      vgcaPassword: 'SecretPassword123'
+    });
+    assert(vgcaLoginSuccessRes.status === 200 && vgcaLoginSuccessRes.body.success === true && vgcaLoginSuccessRes.body.data.method === 'IMPLICIT/TSE', 'Đăng nhập tài khoản VGCA thành công: Nhận diện phương thức IMPLICIT/TSE Ban Cơ yếu');
+
+    const vgcaStatusRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/vgca/status',
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    });
+    assert(vgcaStatusRes.status === 200 && vgcaStatusRes.body.data.isLoggedIn === true, 'Kiểm tra trạng thái VGCA: Đã kết nối phiên làm việc của Giáo viên');
+
+    const vgcaLogoutRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/vgca/logout',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    });
+    assert(vgcaLogoutRes.status === 200 && vgcaLogoutRes.body.success === true, 'Đăng xuất tài khoản VGCA thành công');
+
     // 3.9b Kiểm tra cú pháp toàn bộ JavaScript trong file giao diện index.html (Không bị lỗi cú pháp như Unexpected token)
     const htmlContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
     const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;

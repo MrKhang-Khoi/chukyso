@@ -155,6 +155,7 @@ function updateUser(id, updates) {
   if (updates.email) users[index].email = updates.email.trim();
   if (updates.phone !== undefined) users[index].phone = updates.phone.trim();
   if (updates.signatureImage !== undefined) users[index].signatureImage = updates.signatureImage;
+  if (updates.vgcaAuth !== undefined) users[index].vgcaAuth = updates.vgcaAuth;
 
   saveUsers(users);
   return users[index];
