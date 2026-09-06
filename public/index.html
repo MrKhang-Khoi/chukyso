@@ -2875,6 +2875,7 @@
       currentVgcaSigningOptions = options;
       currentVgcaFallbackAction = options.fallbackAction || null;
       activeVgcaTxId = null;
+      isAgentSigningActive = false;
       if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
       if (vgcaPollTimer) clearInterval(vgcaPollTimer);
 
@@ -2991,31 +2992,31 @@
         // Kiểm tra kết nối EduSign Agent trên máy tính Thầy (Cổng 18888 / 3000)
         let ping = { available: false };
         try {
-          ping = await pingLocalSigner(1500);
+          ping = await pingLocalSigner(800);
         } catch (e) {}
 
         updateAgentStatusBox(ping);
 
-        // NẾU ĐÃ KẾT NỐI EDUSIGN AGENT: Kích hoạt ngay lệnh ký cục bộ để gửi Push Notification tới điện thoại!
+        // NẾU ĐÃ KẾT NỐI EDUSIGN AGENT: Kích hoạt ngay lệnh ký cục bộ để gửi DUY NHẤT 1 thông báo xác thực tới điện thoại!
         if (ping.available) {
           startAgentSigningWorkflow(ping.host);
-        }
-
-        // Polling kiểm tra tự động xem Thầy đã bấm [Đồng ý] trên điện thoại chưa
-        if (vgcaPollTimer) clearInterval(vgcaPollTimer);
-        vgcaPollTimer = setInterval(async () => {
-          if (!activeVgcaTxId) return;
-          try {
-            const checkRes = await fetch(`/api/vgca/session-status/${activeVgcaTxId}`);
-            if (checkRes.ok) {
-              const checkData = await checkRes.json();
-              if (checkData && checkData.data && checkData.data.status === 'CONFIRMED') {
-                clearInterval(vgcaPollTimer);
-                handleUserConfirmedOnPhone();
+        } else {
+          // CHỈ bật polling kiểm tra trạng thái trên máy chủ khi KHÔNG có Agent cục bộ
+          if (vgcaPollTimer) clearInterval(vgcaPollTimer);
+          vgcaPollTimer = setInterval(async () => {
+            if (!activeVgcaTxId) return;
+            try {
+              const checkRes = await fetch(`/api/vgca/session-status/${activeVgcaTxId}`);
+              if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                if (checkData && checkData.data && checkData.data.status === 'CONFIRMED') {
+                  clearInterval(vgcaPollTimer);
+                  handleUserConfirmedOnPhone();
+                }
               }
-            }
-          } catch (e) {}
-        }, 2500);
+            } catch (e) {}
+          }, 2500);
+        }
 
       } catch (err) {
         alert('Lỗi khởi tạo phiên xác thực VGCA: ' + err.message);
@@ -3071,7 +3072,7 @@
       if (box) {
         box.innerHTML = '<div class="flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin text-blue-600"></i><span>Đang kiểm tra kết nối với EduSign Agent trên máy tính...</span></div>';
       }
-      const ping = await pingLocalSigner(1500);
+      const ping = await pingLocalSigner(800);
       updateAgentStatusBox(ping);
       if (ping.available) {
         startAgentSigningWorkflow(ping.host);
@@ -3091,6 +3092,7 @@
 
       const btn = document.getElementById('btnVgcaConfirmFromPhone');
       if (btn) {
+        btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang chờ Thầy nhấn [ĐỒNG Ý] trên điện thoại...</span>';
       }
 
@@ -3103,8 +3105,14 @@
           });
 
           // Đã nhận chữ ký và hoàn tất!
-          if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
-          if (vgcaPollTimer) clearInterval(vgcaPollTimer);
+          if (vgcaCountdownTimer) {
+            clearInterval(vgcaCountdownTimer);
+            vgcaCountdownTimer = null;
+          }
+          if (vgcaPollTimer) {
+            clearInterval(vgcaPollTimer);
+            vgcaPollTimer = null;
+          }
 
           try {
             await fetch('/api/vgca/confirm-session', {
@@ -3121,17 +3129,25 @@
           if (successAlert) successAlert.classList.remove('hidden');
 
           setTimeout(() => {
+            const savedOptions = currentVgcaSigningOptions;
             closeVgcaMobileAuthModal();
-            if (typeof currentVgcaSigningOptions.onSuccess === 'function') {
-              currentVgcaSigningOptions.onSuccess(signResult);
+            if (savedOptions && typeof savedOptions.onSuccess === 'function') {
+              savedOptions.onSuccess(signResult);
             }
           }, 1200);
         }
       } catch (err) {
         console.error('Lỗi trong tiến trình ký qua Agent:', err);
+        if (err && err.cancelled) {
+          // Người dùng hủy hoặc từ chối trên điện thoại -> TỰ ĐỘNG HỦY PHIÊN KÝ NGAY LẬP TỨC!
+          closeVgcaMobileAuthModal();
+          alert('🛑 ĐÃ HỦY PHIÊN KÝ SỐ!\n\nThầy đã từ chối hoặc hủy yêu cầu xác nhận trên điện thoại.\nHồ sơ chưa được ký duyệt.');
+          return;
+        }
+
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i> <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>';
+          btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>Thử lại hoặc hoàn tất</span>';
         }
         if (desc) {
           desc.innerHTML = `<span class="text-rose-600 font-semibold">⚠️ ${err.message || 'Chưa hoàn tất ký số'}</span>`;
@@ -3150,17 +3166,8 @@
         return;
       }
 
+      // Nếu đang trong tiến trình ký qua Agent thì đang chờ kết quả từ điện thoại, không gửi thêm yêu cầu!
       if (isAgentSigningActive) {
-        const btn = document.getElementById('btnVgcaConfirmFromPhone');
-        if (btn) {
-          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang tiếp nhận kết quả từ điện thoại...</span>';
-        }
-        return;
-      }
-
-      const ping = await pingLocalSigner(1500);
-      if (ping.available) {
-        startAgentSigningWorkflow(ping.host);
         return;
       }
 
@@ -3206,7 +3213,14 @@
           clearTimeout(safetyTimeout);
           if (timeoutFired) return;
 
-          if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+          if (vgcaCountdownTimer) {
+            clearInterval(vgcaCountdownTimer);
+            vgcaCountdownTimer = null;
+          }
+          if (vgcaPollTimer) {
+            clearInterval(vgcaPollTimer);
+            vgcaPollTimer = null;
+          }
 
           // 3. Hiển thị màn hình thành công xanh lá
           const step2 = document.getElementById('vgcaStep2Container');
@@ -3215,9 +3229,10 @@
           if (successAlert) successAlert.classList.remove('hidden');
 
           setTimeout(() => {
+            const savedOptions = currentVgcaSigningOptions;
             closeVgcaMobileAuthModal();
-            if (typeof currentVgcaSigningOptions.onSuccess === 'function') {
-              currentVgcaSigningOptions.onSuccess(signResult);
+            if (savedOptions && typeof savedOptions.onSuccess === 'function') {
+              savedOptions.onSuccess(signResult);
             }
           }, 1200);
         } else {
@@ -3269,9 +3284,10 @@
           if (successAlert) successAlert.classList.remove('hidden');
 
           setTimeout(() => {
+            const savedOptions = currentVgcaSigningOptions;
             closeVgcaMobileAuthModal();
-            if (typeof currentVgcaSigningOptions.onSuccess === 'function') {
-              currentVgcaSigningOptions.onSuccess(signResult);
+            if (savedOptions && typeof savedOptions.onSuccess === 'function') {
+              savedOptions.onSuccess(signResult);
             }
           }, 1200);
         }
@@ -3283,21 +3299,78 @@
     }
 
     function closeVgcaMobileAuthModal() {
-      if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+      if (vgcaCountdownTimer) {
+        clearInterval(vgcaCountdownTimer);
+        vgcaCountdownTimer = null;
+      }
+      if (vgcaPollTimer) {
+        clearInterval(vgcaPollTimer);
+        vgcaPollTimer = null;
+      }
       if (activeVgcaTxId) {
+        const txToCancel = activeVgcaTxId;
+        activeVgcaTxId = null;
         fetch('/api/vgca/cancel-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ txId: activeVgcaTxId })
+          body: JSON.stringify({ txId: txToCancel })
         }).catch(() => {});
-        activeVgcaTxId = null;
       }
+      activeVgcaTxId = null;
+      isAgentSigningActive = false;
+      currentVgcaSigningOptions = null;
+
+      // Reset các bước về trạng thái ban đầu cho lần ký tiếp theo (không cần F5)
+      const step1 = document.getElementById('vgcaStep1Container');
+      const step2 = document.getElementById('vgcaStep2Container');
+      const successAlert = document.getElementById('vgcaAuthSuccessAlert');
+      const ind1 = document.getElementById('vgcaStepIndicator1');
+      const ind2 = document.getElementById('vgcaStepIndicator2');
+      const btn = document.getElementById('btnVgcaConfirmFromPhone');
+      const desc = document.getElementById('vgcaModalStatusDesc');
+
+      if (step1) step1.classList.remove('hidden');
+      if (step2) step2.classList.add('hidden');
+      if (successAlert) successAlert.classList.add('hidden');
+      if (ind1) ind1.className = 'flex items-center gap-1.5 text-blue-700 font-bold';
+      if (ind2) ind2.className = 'flex items-center gap-1.5 text-slate-400 font-normal';
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i> <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>';
+      }
+      if (desc) {
+        desc.innerHTML = '📲 <strong>ĐÃ GỬI THÔNG BÁO XÁC THỰC TỚI ĐIỆN THOẠI CỦA THẦY!</strong><br>Vui lòng mở ứng dụng VGCA / EduSign trên điện thoại và nhấn <strong>[ĐỒNG Ý]</strong> để xác nhận ký số.';
+      }
+
       closeModal('modalVgcaMobileAuth');
     }
 
     // ==================== CẦU NỐI KÝ SỐ CỤC BỘ (LOCAL SIGNER BRIDGE) ====================
     // Phục vụ kết nối thiết bị ký số VGCA trên máy tính Thầy khi truy cập từ Render Cloud
-    async function pingLocalSigner(timeoutMs = 2500) {
+    let cachedLocalSignerHost = null;
+
+    async function pingLocalSigner(timeoutMs = 800) {
+      if (cachedLocalSignerHost) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 600);
+          const res = await fetch(`${cachedLocalSignerHost}/api/ping-local-signer`, {
+            method: 'GET',
+            mode: 'cors',
+            signal: controller.signal
+          });
+          clearTimeout(timer);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.success) {
+              return { available: true, host: cachedLocalSignerHost, data };
+            }
+          }
+        } catch (e) {
+          cachedLocalSignerHost = null;
+        }
+      }
+
       const candidates = [
         'http://127.0.0.1:18888',
         'http://localhost:18888',
@@ -3317,6 +3390,7 @@
           if (res.ok) {
             const data = await res.json();
             if (data && data.success) {
+              cachedLocalSignerHost = host;
               return { available: true, host, data };
             }
           }
@@ -3326,17 +3400,23 @@
     }
 
     async function signDocViaLocalAgent(docPayload, fileBase64, localHost = 'http://127.0.0.1:18888') {
-      const res = await fetch(`${localHost}/api/local-sign-doc`, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ doc: docPayload, fileBase64 })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Lỗi khi kết nối dịch vụ ký số trên máy tính');
+      try {
+        const res = await fetch(`${localHost}/api/local-sign-doc`, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ doc: docPayload, fileBase64 })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          const err = new Error(data.message || 'Lỗi khi kết nối dịch vụ ký số trên máy tính');
+          err.cancelled = !!data.cancelled;
+          throw err;
+        }
+        return data;
+      } catch (e) {
+        throw e;
       }
-      return data;
     }
 
     // Thử nghiệm gửi thông báo xác thực tới điện thoại của Thầy

@@ -532,13 +532,17 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
 
     if (txId) {
       const session = vgcaSessions.get(txId);
-      if (!session || session.status !== 'CONFIRMED') {
-        return res.status(400).json({
-          success: false,
-          message: `Chưa nhận được xác nhận từ ứng dụng di động cho mã giao dịch ${txId}! Thầy vui lòng mở SmartCA trên điện thoại và nhấn [Xác nhận Ký].`
-        });
+      if (realSignedPdfBase64) {
+        if (session) session.status = 'COMPLETED';
+      } else {
+        if (!session || session.status !== 'CONFIRMED') {
+          return res.status(400).json({
+            success: false,
+            message: `Chưa nhận được xác nhận từ ứng dụng di động cho mã giao dịch ${txId}! Thầy vui lòng mở SmartCA trên điện thoại và nhấn [Xác nhận Ký].`
+          });
+        }
+        if (session) session.status = 'COMPLETED';
       }
-      session.status = 'COMPLETED';
     }
 
     if (realSignedPdfBase64) {
@@ -1157,6 +1161,10 @@ app.post('/api/documents', requireAuth, async (req, res) => {
   if (realSignedPdfBase64) {
     // Nhận trực tiếp file PDF đã ký số mật mã thật VGCA từ Cầu nối Ký số Cục bộ (Local Signer Bridge)
     try {
+      if (txId) {
+        const session = vgcaSessions.get(txId);
+        if (session) session.status = 'COMPLETED';
+      }
       const uploadDir = path.join(__dirname, 'uploads', 'documents');
       if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
       const cleanSigned = realSignedPdfBase64.replace(/^data:[^;]+;base64,/, '');

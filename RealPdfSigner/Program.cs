@@ -721,7 +721,7 @@ namespace RealPdfSigner
             return outputStream.ToArray();
         }
 
-        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location)
+        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location, bool strict = false)
         {
             var cert = FindVgcaCertificate();
             try
@@ -752,7 +752,14 @@ namespace RealPdfSigner
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⚠️ Thử ký bytes qua Virtual CSP gặp sự cố ({ex.Message}), kích hoạt bộ ký số BouncyCastle...");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"⚠️ Ký số qua Virtual CSP bị hủy hoặc gặp sự cố ({ex.Message})");
+                Console.ResetColor();
+                if (strict)
+                {
+                    throw; // Ném lại ngoại lệ nếu người dùng từ chối trên điện thoại
+                }
+                Console.WriteLine("...kích hoạt bộ ký số BouncyCastle...");
             }
 
             return SignBytesWithBouncyCastle(inputPdfBytes, cert, reason, location);
@@ -938,20 +945,41 @@ namespace RealPdfSigner
                         }
                     }
 
-                    byte[] signedBytes = KySoPdfBytes(pdfBytes, $"{signerName} đã ký số VGCA", "Quảng Ngãi");
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎉 Niêm phong PAdES X.509 thành công! Dung lượng: {signedBytes.Length} bytes.");
-
-                    var resObj = new
+                    try
                     {
-                        success = true,
-                        message = "Ký số mật mã thật VGCA thành công 100%!",
-                        signedPdfBase64 = "data:application/pdf;base64," + Convert.ToBase64String(signedBytes),
-                        signer = signerName
-                    };
-                    byte[] resBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(resObj));
-                    res.OutputStream.Write(resBytes, 0, resBytes.Length);
-                    res.Close();
-                    return;
+                        byte[] signedBytes = KySoPdfBytes(pdfBytes, $"{signerName} đã ký số VGCA", "Quảng Ngãi", strict: true);
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎉 Niêm phong PAdES X.509 thành công! Dung lượng: {signedBytes.Length} bytes.");
+
+                        var resObj = new
+                        {
+                            success = true,
+                            message = "Ký số mật mã thật VGCA thành công 100%!",
+                            signedPdfBase64 = "data:application/pdf;base64," + Convert.ToBase64String(signedBytes),
+                            signer = signerName
+                        };
+                        byte[] resBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(resObj));
+                        res.OutputStream.Write(resBytes, 0, resBytes.Length);
+                        res.Close();
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🛑 Thao tác ký số bị hủy hoặc từ chối trên điện thoại: {ex.Message}");
+                        Console.ResetColor();
+
+                        res.StatusCode = 400;
+                        var errObj = new
+                        {
+                            success = false,
+                            cancelled = true,
+                            message = "Người dùng đã từ chối hoặc hủy xác nhận ký số trên điện thoại."
+                        };
+                        byte[] errBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(errObj));
+                        res.OutputStream.Write(errBytes, 0, errBytes.Length);
+                        res.Close();
+                        return;
+                    }
                 }
 
                 if (path == "/api/trigger-mobile-auth" && req.HttpMethod == "POST")
