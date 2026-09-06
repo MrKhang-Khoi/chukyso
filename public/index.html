@@ -3462,32 +3462,35 @@
       return { available: false };
     }
 
-    let isLocalSigningInProgress = false;
+    let activeLocalSignPromise = null;
     async function signDocViaLocalAgent(docPayload, fileBase64, localHost = 'http://127.0.0.1:18888') {
-      if (isLocalSigningInProgress) {
-        throw new Error('Đang có một tiến trình ký số đang diễn ra. Vui lòng đợi trong giây lát.');
+      if (activeLocalSignPromise) {
+        console.log('[EduSign] Đang có tiến trình ký số đang diễn ra, tái sử dụng kết quả phiên hiện tại...');
+        return await activeLocalSignPromise;
       }
-      isLocalSigningInProgress = true;
-      try {
-        const fetchOpts = {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ doc: docPayload, fileBase64 })
-        };
-        try { fetchOpts.targetAddressSpace = 'loopback'; } catch (e) {}
+      activeLocalSignPromise = (async () => {
+        try {
+          const fetchOpts = {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ doc: docPayload, fileBase64 })
+          };
+          try { fetchOpts.targetAddressSpace = 'loopback'; } catch (e) {}
 
-        const res = await fetch(`${localHost}/api/local-sign-doc`, fetchOpts);
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.success) {
-          const err = new Error(data.message || 'Lỗi khi kết nối dịch vụ ký số trên máy tính');
-          err.cancelled = !!data.cancelled;
-          throw err;
+          const res = await fetch(`${localHost}/api/local-sign-doc`, fetchOpts);
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.success) {
+            const err = new Error(data.message || 'Lỗi khi kết nối dịch vụ ký số trên máy tính');
+            err.cancelled = !!data.cancelled;
+            throw err;
+          }
+          return data;
+        } finally {
+          activeLocalSignPromise = null;
         }
-        return data;
-      } finally {
-        isLocalSigningInProgress = false;
-      }
+      })();
+      return await activeLocalSignPromise;
     }
 
     // Thử nghiệm gửi thông báo xác thực tới điện thoại của Thầy

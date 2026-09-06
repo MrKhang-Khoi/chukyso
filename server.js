@@ -478,8 +478,8 @@ app.get('/api/documents/:id/download-signed', async (req, res) => {
     const isInline = req.query.inline === '1' || req.query.inline === 'true';
     const disposition = isInline ? `inline; filename="${downloadFileName}"` : `attachment; filename="${downloadFileName}"`;
 
-    // Nếu đã có file ký số mật mã thật VGCA, phục vụ trực tiếp file này
-    if (doc.realSignedPath && fs.existsSync(doc.realSignedPath)) {
+    // Nếu đã có file ký số mật mã thật VGCA và dung lượng hợp lệ, phục vụ trực tiếp file này
+    if (doc.realSignedPath && fs.existsSync(doc.realSignedPath) && fs.statSync(doc.realSignedPath).size > 1000) {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', disposition);
       return res.sendFile(path.resolve(doc.realSignedPath));
@@ -1106,6 +1106,23 @@ app.post('/api/documents', requireAuth, async (req, res) => {
       success: false,
       message: 'Vui lòng thực hiện ký số vào kế hoạch bài dạy trước khi nộp!'
     });
+  }
+
+  // NGUYÊN TẮC VÀNG BAN CƠ YẾU CHÍNH PHỦ & HỌC BẠ SỐ: Chỉ được nộp hồ sơ khi ĐÃ KÝ SỐ THÀNH CÔNG!
+  if (realVgcaSign && !realSignedPdfBase64) {
+    if (!txId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nguyên tắc an toàn: Kế hoạch bài dạy bắt buộc phải được ký số mật mã thật trước khi nộp vào hệ thống!'
+      });
+    }
+    const session = vgcaSessions.get(txId);
+    if (!session || session.status !== 'CONFIRMED') {
+      return res.status(400).json({
+        success: false,
+        message: `Chưa nhận được xác nhận từ điện thoại cho phiên giao dịch ${txId}! Thầy vui lòng mở ứng dụng SmartCA và nhấn [Xác nhận Ký] trên điện thoại trước khi nộp bài.`
+      });
+    }
   }
 
   // Nếu người dùng ký trực tiếp trên modal và chưa lưu vào profile -> tự động lưu để tái sử dụng

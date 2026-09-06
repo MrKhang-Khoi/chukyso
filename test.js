@@ -739,6 +739,17 @@ async function runTests() {
   } catch (err) {
     assert(false, `Lỗi khi gọi API: ${err.message}`);
   } finally {
+    try {
+      const usersPath = path.join(__dirname, 'data', 'users.json');
+      if (fs.existsSync(usersPath)) {
+        const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+        const u = users.find(x => x.username === 'hvty');
+        if (u) {
+          u.signatureImage = '/uploads/signatures/sig_user_cvaty.png';
+          fs.writeFileSync(usersPath, JSON.stringify(users, null, 2), 'utf8');
+        }
+      }
+    } catch (e) {}
     serverProcess.kill();
   }
 

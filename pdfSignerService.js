@@ -193,8 +193,8 @@ async function generateSignedPdf(doc) {
 
     // Tìm buffer ảnh chữ ký giáo viên
     let teacherImgBuf = resolveImageBuffer(teacherSigImgData);
-    if (!teacherImgBuf) {
-      // Fallback chữ ký trong suốt mặc định của thầy Hà Văn Tý
+    if (!teacherImgBuf || teacherImgBuf.length < 300) {
+      // Fallback chữ ký trong suốt mặc định của thầy Hà Văn Tý (87 KB sắc nét)
       const fallbackSig = path.join(__dirname, 'uploads', 'signatures', 'sig_user_cvaty.png');
       if (fs.existsSync(fallbackSig)) {
         teacherImgBuf = fs.readFileSync(fallbackSig);
