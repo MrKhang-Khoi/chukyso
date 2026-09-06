@@ -346,6 +346,34 @@ app.post('/api/user/signature', requireAuth, (req, res) => {
   });
 });
 
+// Alias cho chữ ký người dùng hiện tại
+app.get('/api/signatures/mine', requireAuth, (req, res) => {
+  res.json({
+    success: true,
+    signatureImage: req.user.signatureImage || null
+  });
+});
+
+app.post('/api/signatures/mine', requireAuth, (req, res) => {
+  const { signatureImage } = req.body;
+  if (!signatureImage) {
+    return res.status(400).json({ success: false, message: 'Chưa có dữ liệu ảnh chữ ký!' });
+  }
+  const updatedUser = dataStore.updateUser(req.user.id, { signatureImage });
+  try {
+    const base64Data = signatureImage.replace(/^data:image\/\w+;base64,/, '');
+    const sigPath = path.join(__dirname, 'uploads', 'signatures', `sig_${req.user.id}.png`);
+    fs.writeFileSync(sigPath, Buffer.from(base64Data, 'base64'));
+  } catch (err) {
+    console.error('Lỗi lưu file chữ ký vật lý:', err.message);
+  }
+  res.json({
+    success: true,
+    message: 'Đã lưu mẫu chữ ký tay trong suốt thành công!',
+    signatureImage: updatedUser.signatureImage
+  });
+});
+
 // ==================== 5. QUẢN LÝ HỒ SƠ KẾ HOẠCH BÀI DẠY (TRÌNH KÝ 3 CẤP) ====================
 
 // Lấy danh sách hồ sơ (Tự động lọc theo Vai trò & Tổ chuyên môn)
