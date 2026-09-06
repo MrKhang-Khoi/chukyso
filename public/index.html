@@ -181,6 +181,13 @@
           </div>
 
           <div class="flex items-center gap-2.5">
+            <button type="button" onclick="openInstallGuideModal()"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition border border-slate-300 shadow-xs cursor-pointer"
+              title="Xem hướng dẫn cài đặt trên máy tính khác & cách ký số">
+              <i class="fa-solid fa-circle-question text-blue-600"></i>
+              <span>Hướng Dẫn</span>
+            </button>
+
             <a href="/downloads/Cai_Dat_EduSign_Agent.bat" download
               class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-sm transition"
               title="Cài đặt công cụ ký số tự động tạo icon Desktop và chạy ngầm khay hệ thống Windows">
@@ -1564,8 +1571,8 @@
     </div>
   </div>
 
-  <!-- MODAL THÔNG BÁO HỘP THOẠI ĐẸP MẮT (APP NOTICE DIALOG) -->
-  <div id="modalAppNotice" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModalOnBackdrop(event, 'modalAppNotice')">
+  <!-- MODAL THÔNG BÁO HỘP THOẠI ĐẸP MẮT (APP NOTICE DIALOG) - HIỂN THỊ TỨC THÌ -->
+  <div id="modalAppNotice" class="hidden fixed inset-0 z-[99999] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4" style="z-index: 99999;" onclick="closeModalOnBackdrop(event, 'modalAppNotice')">
     <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center border border-slate-200 transform transition-all" onclick="event.stopPropagation()">
       <div id="modalNoticeIconContainer" class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
         <i id="modalNoticeIcon" class="fa-solid fa-triangle-exclamation"></i>
@@ -1579,6 +1586,140 @@
         class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 transition cursor-pointer text-xs">
         Đã hiểu
       </button>
+    </div>
+  </div>
+
+  <!-- MODAL HƯỚNG DẪN CÀI ĐẶT & KÝ SỐ TRÊN MÁY TÍNH KHÁC (INSTALL GUIDE MODAL) -->
+  <div id="modalInstallGuide" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto" style="z-index: 50;" onclick="closeModalOnBackdrop(event, 'modalInstallGuide')">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden my-6" onclick="event.stopPropagation()">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-lg shadow-md shadow-blue-500/30">
+            <i class="fa-solid fa-book-open-reader"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold">HƯỚNG DẪN CÀI ĐẶT & KÝ SỐ TRÊN MÁY TÍNH KHÁC</h3>
+            <p class="text-xs text-slate-300">Giải đáp chi tiết cách sử dụng và cài đặt phần mềm ký số EduSign VGCA</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modalInstallGuide')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-6 space-y-5 text-xs text-slate-700 max-h-[75vh] overflow-y-auto">
+        
+        <!-- PHẦN 1: GIẢI THÍCH 3 MỤC TRONG HÌNH 3 -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center gap-2 text-slate-900 font-bold text-sm">
+            <i class="fa-solid fa-desktop text-blue-600"></i>
+            <span>1. Phân tích 3 thành phần trên màn hình máy tính (Hình 3):</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-1.5">
+              <div class="flex items-center gap-2 font-bold text-slate-900">
+                <i class="fa-solid fa-arrow-up-right-from-square text-blue-600"></i>
+                <span>EduSign Agent</span>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-normal">
+                <strong>Phím tắt (Shortcut):</strong> Biểu tượng lối tắt ngoài Desktop giúp mở nhanh ứng dụng chạy ngầm ở khay hệ thống Windows.
+              </p>
+            </div>
+
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-1.5">
+              <div class="flex items-center gap-2 font-bold text-slate-900">
+                <i class="fa-solid fa-gears text-emerald-600"></i>
+                <span>Cai_Dat_Ed... (.bat)</span>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-normal">
+                <strong>Bộ cài đặt một chạm:</strong> File kịch bản tự động sao chép chương trình, tạo biểu tượng Desktop và cho phép tự khởi động cùng Windows.
+              </p>
+            </div>
+
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-1.5">
+              <div class="flex items-center gap-2 font-bold text-slate-900">
+                <i class="fa-solid fa-window-maximize text-indigo-600"></i>
+                <span>EduSign_A... (.exe)</span>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-normal">
+                <strong>Chương trình thực thi chính:</strong> Ứng dụng cầu nối (Local Signer Bridge) nhận diện và kết nối trực tiếp với USB Token Ban Cơ yếu.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PHẦN 2: CHẠY TRÊN MÁY TÍNH KHÁC CẦN CÀI GÌ? -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 text-slate-900 font-bold text-sm">
+            <i class="fa-solid fa-circle-info text-emerald-600"></i>
+            <span>2. Để chạy trên máy tính khác thì cần cài những phần nào?</span>
+          </div>
+
+          <!-- LỰA CHỌN 1: SMARTCA DI ĐỘNG (KHÔNG CẦN CÀI GÌ) -->
+          <div class="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 font-bold text-emerald-900 text-xs">
+                <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] uppercase tracking-wider font-extrabold">Cách 1 - Khuyên dùng</span>
+                <span>KÝ SỐ QUA ĐIỆN THOẠI (SmartCA / VGCA Mobile)</span>
+              </div>
+              <span class="text-emerald-700 font-extrabold text-[11px]"><i class="fa-solid fa-check"></i> Không cần cài đặt</span>
+            </div>
+            <p class="text-[11.5px] text-emerald-800 leading-relaxed">
+              👉 <strong>Thầy/cô KHÔNG CẦN CÀI ĐẶT BẤT KỲ PHẦN MỀM NÀO lên máy tính!</strong><br>
+              Chỉ cần mở trình duyệt web trên bất kỳ máy tính hay điện thoại nào, đăng nhập hệ thống, nhấn <strong>[Ký duyệt]</strong> và mở ứng dụng <strong>VGCA / SmartCA trên điện thoại</strong> nhấn <strong>[Đồng ý]</strong> là ký thành công 100%!
+            </p>
+          </div>
+
+          <!-- LỰA CHỌN 2: CẮM USB TOKEN BAN CƠ YẾU -->
+          <div class="p-4 bg-blue-50/80 border border-blue-200 rounded-2xl space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 font-bold text-blue-900 text-xs">
+                <span class="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] uppercase tracking-wider font-extrabold">Cách 2</span>
+                <span>KÝ BẰNG USB TOKEN PHẦN CỨNG CẮM VÀO MÁY TÍNH KHÁC</span>
+              </div>
+            </div>
+            <p class="text-[11.5px] text-blue-800 leading-relaxed">
+              👉 Khi mang USB Token cắm vào máy tính khác, máy tính đó cần có công cụ <strong>EduSign Agent</strong> chạy ngầm để trình duyệt kết nối được với USB Token.
+            </p>
+
+            <div class="bg-white p-3.5 rounded-xl border border-blue-100 space-y-2.5">
+              <div class="font-bold text-slate-800 text-[11.5px]">Các bước thực hiện trên máy tính mới:</div>
+              <ol class="list-decimal list-inside space-y-1.5 text-[11px] text-slate-600">
+                <li>Bấm nút <strong>"Tải Cài đặt (.bat)"</strong> hoặc <strong>"Tải EduSign Agent (.exe)"</strong> ở bên dưới.</li>
+                <li>Nhấp đúp chuột vào file vừa tải về để cài đặt tự động (file <code>.bat</code> sẽ tự thiết lập và tạo biểu tượng ngoài Desktop như Hình 3).</li>
+                <li>Cắm USB Token Ban Cơ yếu vào cổng USB của máy tính và tiến hành ký duyệt trên web bình thường.</li>
+              </ol>
+
+              <!-- Các nút tải nhanh -->
+              <div class="pt-2 flex flex-wrap items-center gap-2.5">
+                <a href="/downloads/Cai_Dat_EduSign_Agent.bat" download
+                  class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition flex items-center gap-2 shadow-sm text-xs cursor-pointer">
+                  <i class="fa-solid fa-download"></i>
+                  <span>Tải Cài đặt tự động (.bat)</span>
+                </a>
+
+                <a href="/downloads/EduSign_Agent.exe" download
+                  class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition flex items-center gap-2 shadow-sm text-xs cursor-pointer">
+                  <i class="fa-solid fa-file-arrow-down"></i>
+                  <span>Tải trực tiếp EduSign Agent (.exe)</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+        <button type="button" onclick="closeModal('modalInstallGuide')"
+          class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs transition cursor-pointer">
+          Đóng Hướng Dẫn
+        </button>
+      </div>
     </div>
   </div>
 
@@ -3582,6 +3723,11 @@
     }
 
     function showAppNotice(message, title = 'Thông Báo', type = 'warning') {
+      const modal = document.getElementById('modalAppNotice');
+      if (!modal) {
+        alert(message);
+        return;
+      }
       const titleEl = document.getElementById('modalNoticeTitle');
       const contentEl = document.getElementById('modalNoticeContent');
       const iconContainer = document.getElementById('modalNoticeIconContainer');
@@ -3603,7 +3749,13 @@
         }
       }
 
-      openModal('modalAppNotice');
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      modal.style.zIndex = '99999';
+    }
+
+    function openInstallGuideModal() {
+      openModal('modalInstallGuide');
     }
 
     async function handleVgcaLoginSubmit(e) {
@@ -5973,9 +6125,20 @@
       }
     }
 
-    // ==================== TIỆN ÍCH MODAL ====================
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function openModal(id) { 
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('hidden');
+        el.style.display = 'flex';
+      }
+    }
+    function closeModal(id) { 
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('hidden');
+        el.style.display = 'none';
+      }
+    }
     function closeModalOnBackdrop(event, modalId) {
       if (event.target === event.currentTarget) {
         closeModal(modalId);
@@ -5985,7 +6148,7 @@
     // Lắng nghe phím Escape để đóng nhanh bất kỳ modal nào đang mở
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        const modals = ['modalAppNotice', 'modalVgcaLogin', 'modalVgcaAccountInfo', 'modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalChangePass'];
+        const modals = ['modalInstallGuide', 'modalAppNotice', 'modalVgcaLogin', 'modalVgcaAccountInfo', 'modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalChangePass'];
         for (const id of modals) {
           const el = document.getElementById(id);
           if (el && !el.classList.contains('hidden')) {

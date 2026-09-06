@@ -836,7 +836,7 @@ function checkVgcaSystemStatus(forceRefresh = false) {
     }
 
     try {
-      const certData = scanLocalCertificates();
+      const certData = detectedInfo || { all: [], detectedVgca: null };
       if (certData.detectedVgca) {
         result.tokenConnected = true;
         result.certInfo = {
