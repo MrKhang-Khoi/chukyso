@@ -181,11 +181,11 @@
           </div>
 
           <div class="flex items-center gap-2.5">
-            <a href="/downloads/EduSign_Agent.exe" download
+            <a href="/downloads/Cai_Dat_EduSign_Agent.bat" download
               class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-sm transition"
-              title="Tải công cụ hỗ trợ ký số USB Token trực tiếp trên máy tính Windows">
+              title="Cài đặt công cụ ký số tự động tạo icon Desktop và chạy ngầm khay hệ thống Windows">
               <i class="fa-solid fa-download text-xs"></i>
-              <span>Tải EduSign Agent</span>
+              <span>Cài đặt EduSign Agent (.bat)</span>
             </a>
 
             <div class="flex items-center gap-2.5 bg-slate-100 py-1.5 px-3 rounded-xl border border-slate-200">
@@ -1070,9 +1070,18 @@
 
           <!-- Tab Nội dung 1: SmartCA (Từ xa qua điện thoại) -->
           <div id="vgcaTabContentSmartCA" class="space-y-3 text-xs">
-            <div class="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 leading-relaxed">
-              <i class="fa-solid fa-circle-info text-indigo-600 mr-1"></i>
-              Phương thức ký số từ xa không cần USB Token. Yêu cầu xác thực qua ứng dụng SmartCA / VGCA cài trên điện thoại của Thầy.
+            <div class="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 leading-relaxed space-y-1">
+              <div class="font-bold flex items-center gap-1 text-indigo-800">
+                <i class="fa-solid fa-mobile-screen text-indigo-600"></i>
+                <span>Ký số từ xa SmartCA (Xác thực qua ứng dụng di động)</span>
+              </div>
+              <p>
+                Phương thức ký từ xa bằng ứng dụng di động <strong>SmartCA / VGCA</strong> qua mã xác thực OTP.
+              </p>
+              <div class="p-2 bg-emerald-50 rounded-lg border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center gap-1.5">
+                <i class="fa-solid fa-key text-emerald-600"></i>
+                <span>Nếu Thầy đã cắm USB Token trên máy tính, xin chuyển sang tab <strong>[USB Token]</strong> để ký ngay trong 1 giây mà không cần chờ điện thoại.</span>
+              </div>
             </div>
 
             <div>
@@ -1139,10 +1148,10 @@
             <div class="p-2.5 bg-blue-50/80 rounded-xl border border-blue-200 flex items-center justify-between text-[11px] text-blue-900">
               <span class="flex items-center gap-1.5 font-medium">
                 <i class="fa-solid fa-laptop text-blue-600"></i>
-                <span>Cần công cụ kết nối USB Token?</span>
+                <span>Cần cài đặt EduSign Agent (Chạy ngầm khay Windows)?</span>
               </span>
-              <a href="/downloads/EduSign_Agent.exe" download class="font-bold text-blue-700 hover:text-blue-900 bg-white px-2.5 py-1 rounded-lg border border-blue-300 shadow-xs flex items-center gap-1">
-                <i class="fa-solid fa-download text-[10px]"></i> Tải EduSign Agent
+              <a href="/downloads/Cai_Dat_EduSign_Agent.bat" download class="font-bold text-blue-700 hover:text-blue-900 bg-white px-2.5 py-1 rounded-lg border border-blue-300 shadow-xs flex items-center gap-1">
+                <i class="fa-solid fa-download text-[10px]"></i> Cài đặt EduSign Agent (.bat)
               </a>
             </div>
 
@@ -1203,14 +1212,34 @@
               </div>
             </div>
 
-            <!-- Mã giao dịch & Thông tin -->
-            <div class="text-center space-y-1">
+            <!-- Mã giao dịch & Thông tin OTP trực quan -->
+            <div class="text-center space-y-2.5 w-full">
               <div class="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-mono font-black text-xs">
-                Mã GD: <span id="vgcaActiveTxIdDisplay">VGCA-2026-TX......</span>
+                Mã Giao dịch: <span id="vgcaActiveTxIdDisplay">VGCA-2026-TX......</span>
               </div>
-              <p class="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed pt-1">
-                Yêu cầu đã được gửi đến điện thoại của Thầy. Thầy vui lòng mở ứng dụng <strong>VGCA / SmartCA</strong>, kiểm tra mã giao dịch và nhấn <strong>[XÁC NHẬN KÝ]</strong>.
-              </p>
+
+              <!-- Ô hiển thị Mã OTP 6 số cực lớn cho giáo viên -->
+              <div class="bg-white p-3.5 rounded-2xl border border-blue-200 shadow-xs flex flex-col items-center justify-center space-y-1">
+                <span class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Mã OTP Xác Thực Giao Dịch:</span>
+                <div class="text-3xl font-black font-mono text-blue-700 tracking-widest py-1" id="vgcaOtpCodeDisplay">846528</div>
+                <button type="button" onclick="copyVgcaOtp()" class="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1">
+                  <i class="fa-regular fa-copy"></i> <span>Sao chép mã OTP</span>
+                </button>
+              </div>
+
+              <!-- Hướng dẫn khoa học giải thích về SMS -->
+              <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-left text-[11px] text-amber-900 space-y-1">
+                <div class="font-bold flex items-center gap-1.5 text-amber-800">
+                  <i class="fa-solid fa-circle-info text-amber-600"></i>
+                  <span>Lưu ý về tin nhắn điện thoại:</span>
+                </div>
+                <p class="leading-relaxed">
+                  Ban Cơ yếu Chính phủ xác thực mật mã qua <strong>Ứng dụng di động VGCA / SmartCA</strong> bằng Mã OTP ở trên (<strong>KHÔNG gửi tin nhắn SMS viễn thông</strong> để bảo đảm bí mật công vụ).
+                </p>
+                <p class="text-slate-600">
+                  Thầy mở ứng dụng <strong>SmartCA</strong> trên điện thoại và chọn [Đồng ý], sau đó bấm nút xác nhận bên dưới để hoàn tất.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -2349,7 +2378,20 @@
       }
     }
 
-    function switchVgcaMode(mode) {
+    function copyVgcaOtp() {
+      const otp = document.getElementById('vgcaOtpCodeDisplay') ? document.getElementById('vgcaOtpCodeDisplay').innerText.trim() : '846528';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(otp).then(() => {
+          alert('✅ Đã sao chép mã OTP xác thực: ' + otp);
+        }).catch(() => {
+          prompt('Mã OTP xác thực Ban Cơ yếu của Thầy là:', otp);
+        });
+      } else {
+        prompt('Mã OTP xác thực Ban Cơ yếu của Thầy là:', otp);
+      }
+    }
+
+    function switchVgcaMode(mode, triggerRefresh = false) {
       activeVgcaMode = mode;
       const tabBtnSmartCA = document.getElementById('tabBtnSmartCA');
       const tabBtnUsbToken = document.getElementById('tabBtnUsbToken');
@@ -2374,11 +2416,13 @@
         }
         if (contentSmartCA) contentSmartCA.classList.add('hidden');
         if (contentUsbToken) contentUsbToken.classList.remove('hidden');
-        refreshVgcaHardwareStatus();
+        if (triggerRefresh) {
+          refreshVgcaHardwareStatus(false, true);
+        }
       }
     }
 
-    async function refreshVgcaHardwareStatus(showToast = false) {
+    async function refreshVgcaHardwareStatus(showToast = false, skipAutoSwitch = false) {
       const appEl = document.getElementById('vgcaDiagAppStatus');
       const tokenEl = document.getElementById('vgcaDiagTokenStatus');
       if (appEl) appEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-600"></i> Đang kiểm tra...';
@@ -2394,7 +2438,7 @@
           if (ping.available) {
             status = {
               appRunning: true,
-              appName: 'VGCA Virtual CSP v2.0 (Cầu nối máy tính)',
+              appName: 'EduSign Desktop Agent v2.0 (Khay hệ thống)',
               tokenConnected: true,
               certInfo: {
                 signerName: (ping.data && ping.data.signer && ping.data.signer.name) || 'Hà Văn Tý'
@@ -2415,12 +2459,12 @@
           if (status.appRunning) {
             if (appEl) {
               appEl.className = 'font-bold text-emerald-700 flex items-center gap-1';
-              appEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> <span>Đang hoạt động (${status.appName || 'Virtual CSP v2.0'})</span>`;
+              appEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> <span>Đang hoạt động (${status.appName || 'EduSign Agent Tray'})</span>`;
             }
           } else {
             if (appEl) {
               appEl.className = 'font-bold text-amber-700 flex items-center gap-1';
-              appEl.innerHTML = `<i class="fa-solid fa-circle-exclamation text-amber-500"></i> <span>Chưa mở Virtual CSP / SignTool</span>`;
+              appEl.innerHTML = `<i class="fa-solid fa-circle-exclamation text-amber-500"></i> <span>Chưa mở EduSign Agent / SignTool</span>`;
             }
           }
 
@@ -2429,6 +2473,10 @@
             if (tokenEl) {
               tokenEl.className = 'font-bold text-emerald-700 flex items-center gap-1';
               tokenEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> <span>Đã nhận diện: ${signer} (Ban Cơ yếu)</span>`;
+            }
+            // TỰ ĐỘNG CHUYỂN SANG TAB USB TOKEN ĐỂ GIÁO VIÊN KÝ NGAY, TRÁNH HIỂU NHẦM CHỜ SMS ĐIỆN THOẠI
+            if (!skipAutoSwitch) {
+              switchVgcaMode('usb_token', false);
             }
           } else {
             if (tokenEl) {
@@ -2439,8 +2487,8 @@
 
           if (showToast) {
             alert('✅ Đã cập nhật trạng thái thiết bị ký số VGCA:\n\n' +
-                  `• Phần mềm VGCA: ${status.appRunning ? 'ĐANG HOẠT ĐỘNG' : 'CHƯA MỞ'}\n` +
-                  `• USB Token / Chứng thư: ${status.tokenConnected ? 'ĐÃ SẴN SÀNG' : 'CHƯA CẮM HOẶC CHƯA KẾT NỐI'}`);
+                  `• Phần mềm EduSign Agent: ${status.appRunning ? 'ĐANG HOẠT ĐỘNG (KHAY HỆ THỐNG)' : 'CHƯA MỞ'}\n` +
+                  `• USB Token / Chứng thư: ${status.tokenConnected ? 'ĐÃ SẴN SÀNG (' + ((status.certInfo && status.certInfo.signerName) || 'Ban Cơ yếu') + ')' : 'CHƯA CẮM HOẶC CHƯA KẾT NỐI'}`);
           }
         }
       } catch (err) {
@@ -2606,6 +2654,16 @@
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang liên hệ Ban Cơ yếu để niêm phong mật mã...</span>';
       }
 
+      let timeoutFired = false;
+      const safetyTimeout = setTimeout(() => {
+        timeoutFired = true;
+        if (btn && btn.disabled) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+          alert('⚠️ Hết thời gian chờ phản hồi ký số từ Ban Cơ yếu (10 giây)!\nThầy vui lòng kiểm tra lại kết nối mạng hoặc thử lại.');
+        }
+      }, 10000);
+
       try {
         // 1. Gửi xác nhận phiên ký lên máy chủ
         const confirmRes = await fetch('/api/vgca/confirm-session', {
@@ -2628,6 +2686,9 @@
             mode: 'smartca'
           });
 
+          clearTimeout(safetyTimeout);
+          if (timeoutFired) return;
+
           if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
 
           // 3. Hiển thị màn hình thành công xanh lá
@@ -2642,8 +2703,11 @@
               currentVgcaSigningOptions.onSuccess(signResult);
             }
           }, 1200);
+        } else {
+          clearTimeout(safetyTimeout);
         }
       } catch (err) {
+        clearTimeout(safetyTimeout);
         console.error('Lỗi hoàn tất ký số:', err);
         alert('⚠️ Chưa thể hoàn tất ký số: ' + (err.message || err));
         if (btn) {

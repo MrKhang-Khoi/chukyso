@@ -18,6 +18,8 @@ using iText.Signatures;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Runtime.InteropServices;
+using Microsoft.Win32;
 
 namespace RealPdfSigner
 {
@@ -80,8 +82,44 @@ namespace RealPdfSigner
 
     class Program
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool AttachConsole(int dwProcessId);
+        private const int ATTACH_PARENT_PROCESS = -1;
+
+        [STAThread]
         static void Main(string[] args)
         {
+            // Nếu chạy ứng dụng mà không truyền tham số CLI, hoặc có cờ --tray/--agent:
+            // TỰ ĐỘNG CHẠY NGẦM KHAY HỆ THỐNG (SYSTEM TRAY) - KHÔNG MỞ MÀN HÌNH ĐEN
+            if (args.Length == 0 || (args.Length == 1 && (args[0].Equals("--tray", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--agent", StringComparison.OrdinalIgnoreCase))))
+            {
+                RunTrayAgent();
+                return;
+            }
+
+            if (args.Length == 1 && args[0].Equals("--console", StringComparison.OrdinalIgnoreCase))
+            {
+                AttachConsole(ATTACH_PARENT_PROCESS);
+                RunConsoleAgent();
+                return;
+            }
+
+            // Gắn vào cửa sổ dòng lệnh gọi đến (nếu gọi từ cmd/powershell/node child_process)
+            AttachConsole(ATTACH_PARENT_PROCESS);
+            try
+            {
+                var stdOutStream = Console.OpenStandardOutput();
+                if (stdOutStream != null && stdOutStream != Stream.Null)
+                {
+                    Console.SetOut(new StreamWriter(stdOutStream, System.Text.Encoding.UTF8) { AutoFlush = true });
+                }
+                var stdErrStream = Console.OpenStandardError();
+                if (stdErrStream != null && stdErrStream != Stream.Null)
+                {
+                    Console.SetError(new StreamWriter(stdErrStream, System.Text.Encoding.UTF8) { AutoFlush = true });
+                }
+            }
+            catch { }
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.WriteLine("╔══════════════════════════════════════════════════════════════╗");
             Console.WriteLine("║   HỆ THỐNG KÝ SỐ THẬT CHUYÊN DÙNG BAN CƠ YẾU CHÍNH PHỦ (VGCA)║");
@@ -101,12 +139,6 @@ namespace RealPdfSigner
                 string signerName = args.Length > 2 ? args[2] : "Hà Văn Tý";
                 string role = args.Length > 3 ? args[3] : "teacher";
                 FindAnchor(pdfFile, signerName, role);
-                return;
-            }
-
-            if (args.Length == 0 || (args.Length == 1 && args[0].Equals("--agent", StringComparison.OrdinalIgnoreCase)))
-            {
-                RunDesktopAgent();
                 return;
             }
 
@@ -584,6 +616,17 @@ namespace RealPdfSigner
 
         public static void RunDesktopAgent()
         {
+            RunTrayAgent();
+        }
+
+        public static void RunTrayAgent()
+        {
+            var tray = new EduSignWin32Tray();
+            tray.Run();
+        }
+
+        public static void RunConsoleAgent()
+        {
             Console.Clear();
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("╔══════════════════════════════════════════════════════════════════════╗");
@@ -656,7 +699,7 @@ namespace RealPdfSigner
             }
         }
 
-        private static void HandleAgentRequest(HttpListenerContext context)
+        public static void HandleAgentRequest(HttpListenerContext context)
         {
             var req = context.Request;
             var res = context.Response;
@@ -786,25 +829,380 @@ namespace RealPdfSigner
             }
         }
 
-        private static string ExtractCn(string? subject)
+        public static string ExtractCn(string? subject)
         {
             if (string.IsNullOrEmpty(subject)) return "Giáo viên";
             var m = Regex.Match(subject, @"CN=([^,]+)");
             return m.Success ? m.Groups[1].Value.Trim() : subject;
         }
 
-        private static string ExtractEmail(string? subject)
+        public static string ExtractEmail(string? subject)
         {
             if (string.IsNullOrEmpty(subject)) return "";
             var m = Regex.Match(subject, @"E=([^,]+)");
             return m.Success ? m.Groups[1].Value.Trim() : "";
         }
 
-        private static string ExtractOu(string? subject)
+        public static string ExtractOu(string? subject)
         {
             if (string.IsNullOrEmpty(subject)) return "THCS Chu Văn An";
             var m = Regex.Match(subject, @"OU=([^,]+)");
             return m.Success ? m.Groups[1].Value.Trim() : "THCS Chu Văn An";
+        }
+    }
+
+    public class EduSignWin32Tray
+    {
+        private const int NIM_ADD = 0x00000000;
+        private const int NIM_MODIFY = 0x00000001;
+        private const int NIM_DELETE = 0x00000002;
+        private const int NIF_MESSAGE = 0x00000001;
+        private const int NIF_ICON = 0x00000002;
+        private const int NIF_TIP = 0x00000004;
+        private const int NIF_INFO = 0x00000010;
+        private const int NIIF_INFO = 0x00000001;
+        private const int NIIF_WARNING = 0x00000002;
+        private const int WM_USER = 0x0400;
+        private const int WM_TRAYICON = WM_USER + 1;
+        private const int WM_RBUTTONUP = 0x0205;
+        private const int WM_LBUTTONDBLCLK = 0x0203;
+        private const int TPM_RIGHTBUTTON = 0x0002;
+        private const int TPM_RETURNCMD = 0x0100;
+        private const int MF_STRING = 0x0000;
+        private const int MF_SEPARATOR = 0x0800;
+        private const int MF_GRAYED = 0x0001;
+        private const int MF_CHECKED = 0x0008;
+        private const string AppName = "EduSignAgent";
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct NOTIFYICONDATA
+        {
+            public int cbSize;
+            public IntPtr hWnd;
+            public int uID;
+            public int uFlags;
+            public int uCallbackMessage;
+            public IntPtr hIcon;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            public string szTip;
+            public int dwState;
+            public int dwStateMask;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+            public string szInfo;
+            public int uTimeoutOrVersion;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+            public string szInfoTitle;
+            public int dwInfoFlags;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT { public int X; public int Y; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MSG { public IntPtr hwnd; public uint message; public IntPtr wParam; public IntPtr lParam; public uint time; public POINT pt; }
+
+        public delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct WNDCLASSEX
+        {
+            public uint cbSize;
+            public uint style;
+            public WndProcDelegate lpfnWndProc;
+            public int cbClsExtra;
+            public int cbWndExtra;
+            public IntPtr hInstance;
+            public IntPtr hIcon;
+            public IntPtr hCursor;
+            public IntPtr hbrBackground;
+            public string lpszMenuName;
+            public string lpszClassName;
+            public IntPtr hIconSm;
+        }
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateWindowEx(int dwExStyle, string lpClassName, string lpWindowName, int dwStyle, int x, int y, int nWidth, int nHeight, IntPtr hWndParent, IntPtr hMenu, IntPtr hInstance, IntPtr lpParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern ushort RegisterClassEx([In] ref WNDCLASSEX lpwcx);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr DefWindowProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetMessage(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
+
+        [DllImport("user32.dll")]
+        private static extern bool TranslateMessage([In] ref MSG lpMsg);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr DispatchMessage([In] ref MSG lpmsg);
+
+        [DllImport("user32.dll")]
+        private static extern void PostQuitMessage(int nExitCode);
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        private static extern bool Shell_NotifyIcon(int dwMessage, ref NOTIFYICONDATA lpData);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr CreatePopupMenu();
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern bool AppendMenu(IntPtr hMenu, int uFlags, int uIDNewItem, string lpNewItem);
+
+        [DllImport("user32.dll")]
+        private static extern int TrackPopupMenu(IntPtr hMenu, int uFlags, int x, int y, int nReserved, IntPtr hWnd, IntPtr prcRect);
+
+        [DllImport("user32.dll")]
+        private static extern bool DestroyMenu(IntPtr hMenu);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out POINT lpPoint);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr GetModuleHandle(string? lpModuleName);
+
+        private IntPtr _hWnd;
+        private NOTIFYICONDATA _nid;
+        private WndProcDelegate? _wndProc;
+        private HttpListener? _listener;
+        private Thread? _listenerThread;
+        private static readonly IntPtr IDI_SHIELD = (IntPtr)32518;
+        private static readonly IntPtr IDI_APPLICATION = (IntPtr)32512;
+
+        public void Run()
+        {
+            string className = "EduSignAgentTrayWin_" + Guid.NewGuid().ToString("N");
+            IntPtr hInstance = GetModuleHandle(null);
+
+            _wndProc = CustomWndProc;
+            var wndClass = new WNDCLASSEX
+            {
+                cbSize = (uint)Marshal.SizeOf<WNDCLASSEX>(),
+                style = 0,
+                lpfnWndProc = _wndProc,
+                cbClsExtra = 0,
+                cbWndExtra = 0,
+                hInstance = hInstance,
+                hIcon = IntPtr.Zero,
+                hCursor = IntPtr.Zero,
+                hbrBackground = IntPtr.Zero,
+                lpszMenuName = "",
+                lpszClassName = className,
+                hIconSm = IntPtr.Zero
+            };
+
+            RegisterClassEx(ref wndClass);
+
+            _hWnd = CreateWindowEx(0, className, "EduSignAgentHiddenWindow", 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
+
+            IntPtr hIcon = LoadIcon(IntPtr.Zero, IDI_SHIELD);
+            if (hIcon == IntPtr.Zero) hIcon = LoadIcon(IntPtr.Zero, IDI_APPLICATION);
+
+            _nid = new NOTIFYICONDATA
+            {
+                cbSize = Marshal.SizeOf<NOTIFYICONDATA>(),
+                hWnd = _hWnd,
+                uID = 1,
+                uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
+                uCallbackMessage = WM_TRAYICON,
+                hIcon = hIcon,
+                szTip = "EduSign Agent v2.0 - Ban Cơ yếu CP"
+            };
+
+            Shell_NotifyIcon(NIM_ADD, ref _nid);
+
+            ShowBalloon("EduSign Desktop Agent", "Dịch vụ ký số Ban Cơ yếu đang chạy ngầm an toàn tại khay hệ thống.", NIIF_INFO);
+
+            StartHttpServer();
+
+            while (GetMessage(out MSG msg, IntPtr.Zero, 0, 0))
+            {
+                TranslateMessage(ref msg);
+                DispatchMessage(ref msg);
+            }
+
+            Shell_NotifyIcon(NIM_DELETE, ref _nid);
+            try { _listener?.Stop(); _listener?.Close(); } catch { }
+        }
+
+        private IntPtr CustomWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+        {
+            if (msg == WM_TRAYICON)
+            {
+                int lp = lParam.ToInt32();
+                if (lp == WM_RBUTTONUP || lp == WM_LBUTTONDBLCLK)
+                {
+                    ShowTrayMenu();
+                }
+                return IntPtr.Zero;
+            }
+            return DefWindowProc(hWnd, msg, wParam, lParam);
+        }
+
+        private void ShowTrayMenu()
+        {
+            SetForegroundWindow(_hWnd);
+            GetCursorPos(out POINT pt);
+
+            IntPtr hMenu = CreatePopupMenu();
+
+            AppendMenu(hMenu, MF_STRING | MF_GRAYED, 101, "🛡️ EduSign Desktop Agent v2.0");
+            AppendMenu(hMenu, MF_STRING | MF_GRAYED, 102, "Trường THCS Chu Văn An - Tỉnh Quảng Ngãi");
+            AppendMenu(hMenu, MF_SEPARATOR, 0, "");
+
+            AppendMenu(hMenu, MF_STRING | MF_GRAYED, 103, "🟢 Cổng ký số cục bộ: Hoạt động (18888)");
+
+            var cert = Program.FindVgcaCertificate();
+            if (cert != null && cert.HasPrivateKey)
+            {
+                string cn = Program.ExtractCn(cert.Subject);
+                AppendMenu(hMenu, MF_STRING, 104, $"🔑 USB Token: {cn} (Ban Cơ yếu) - ĐÃ CẮM");
+            }
+            else
+            {
+                AppendMenu(hMenu, MF_STRING, 104, "🔑 Chưa nhận diện USB Token (Bấm để quét lại)");
+            }
+
+            AppendMenu(hMenu, MF_SEPARATOR, 0, "");
+            AppendMenu(hMenu, MF_STRING, 105, "🌐 Mở Cổng Ký số Giáo dục THCS Chu Văn An");
+
+            int startupFlags = MF_STRING;
+            if (IsStartupEnabled()) startupFlags |= MF_CHECKED;
+            AppendMenu(hMenu, startupFlags, 106, "🚀 Tự động khởi động cùng Windows");
+
+            AppendMenu(hMenu, MF_SEPARATOR, 0, "");
+            AppendMenu(hMenu, MF_STRING, 107, "❌ Thoát ứng dụng");
+
+            int cmd = TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.X, pt.Y, 0, _hWnd, IntPtr.Zero);
+            DestroyMenu(hMenu);
+
+            if (cmd == 104)
+            {
+                var refreshed = Program.FindVgcaCertificate();
+                if (refreshed != null && refreshed.HasPrivateKey)
+                {
+                    string cn = Program.ExtractCn(refreshed.Subject);
+                    ShowBalloon("USB Token Ban Cơ yếu", $"Đã nhận diện chữ ký số của {cn} (Ban Cơ yếu Chính phủ).", NIIF_INFO);
+                }
+                else
+                {
+                    ShowBalloon("EduSign Agent", "Chưa phát hiện USB Token. Xin vui lòng cắm USB Token vào cổng USB máy tính.", NIIF_WARNING);
+                }
+            }
+            else if (cmd == 105)
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("http://localhost:3000") { UseShellExecute = true });
+                }
+                catch { }
+            }
+            else if (cmd == 106)
+            {
+                ToggleStartup();
+            }
+            else if (cmd == 107)
+            {
+                PostQuitMessage(0);
+            }
+        }
+
+        private void ShowBalloon(string title, string text, int iconFlags)
+        {
+            try
+            {
+                var nid = _nid;
+                nid.uFlags = NIF_INFO;
+                nid.szInfoTitle = title;
+                nid.szInfo = text;
+                nid.dwInfoFlags = iconFlags;
+                nid.uTimeoutOrVersion = 3000;
+                Shell_NotifyIcon(NIM_MODIFY, ref nid);
+            }
+            catch { }
+        }
+
+        private bool IsStartupEnabled()
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", false);
+                return key?.GetValue(AppName) != null;
+            }
+            catch { return false; }
+        }
+
+        private void ToggleStartup()
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
+                if (key != null)
+                {
+                    if (IsStartupEnabled())
+                    {
+                        key.DeleteValue(AppName, false);
+                        ShowBalloon("EduSign Agent", "Đã tắt tự động khởi động cùng Windows.", NIIF_INFO);
+                    }
+                    else
+                    {
+                        string exePath = Environment.ProcessPath ?? AppDomain.CurrentDomain.BaseDirectory;
+                        key.SetValue(AppName, $"\"{exePath}\" --tray");
+                        ShowBalloon("EduSign Agent", "Đã bật tự động khởi động cùng Windows.", NIIF_INFO);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void StartHttpServer()
+        {
+            _listenerThread = new Thread(() =>
+            {
+                var prefixes = new List<string> { "http://127.0.0.1:18888/", "http://localhost:18888/" };
+                try
+                {
+                    var testListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 3000);
+                    testListener.Start();
+                    testListener.Stop();
+                    prefixes.Add("http://127.0.0.1:3000/");
+                    prefixes.Add("http://localhost:3000/");
+                }
+                catch { }
+
+                try
+                {
+                    _listener = new HttpListener();
+                    foreach (var prefix in prefixes)
+                    {
+                        try { _listener.Prefixes.Add(prefix); } catch { }
+                    }
+                    _listener.Start();
+
+                    while (_listener.IsListening)
+                    {
+                        try
+                        {
+                            var context = _listener.GetContext();
+                            ThreadPool.QueueUserWorkItem(_ => Program.HandleAgentRequest(context));
+                        }
+                        catch { break; }
+                    }
+                }
+                catch { }
+            })
+            {
+                IsBackground = true,
+                Name = "EduSignAgentHttpListener"
+            };
+            _listenerThread.Start();
         }
     }
 

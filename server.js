@@ -817,6 +817,26 @@ app.get('/downloads/Chay_EduSign_Agent.bat', (req, res) => {
   res.status(404).send('Not found');
 });
 
+app.get(['/downloads/Cai_Dat_EduSign_Agent.bat', '/downloads/setup.bat'], (req, res) => {
+  const batPath = path.join(__dirname, 'public', 'downloads', 'Cai_Dat_EduSign_Agent.bat');
+  if (fs.existsSync(batPath)) {
+    res.setHeader('Content-Disposition', 'attachment; filename="Cai_Dat_EduSign_Agent.bat"');
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.sendFile(path.resolve(batPath));
+  }
+  res.status(404).send('Not found');
+});
+
+app.get('/downloads/Cai_Dat_EduSign.ps1', (req, res) => {
+  const ps1Path = path.join(__dirname, 'public', 'downloads', 'Cai_Dat_EduSign.ps1');
+  if (fs.existsSync(ps1Path)) {
+    res.setHeader('Content-Disposition', 'attachment; filename="Cai_Dat_EduSign.ps1"');
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.sendFile(path.resolve(ps1Path));
+  }
+  res.status(404).send('Not found');
+});
+
 // Cầu nối Ký số Cục bộ (Local Signer Bridge) phục vụ khi truy cập từ Cloud Render
 app.get('/api/ping-local-signer', (req, res) => {
   res.json({
@@ -1564,9 +1584,24 @@ app.get('/api/verify-real-pdf', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`===========================================================`);
   console.log(`🚀 EduSign VGCA - Trường THCS Chu Văn An đang chạy tại port ${PORT}`);
   console.log(`🌐 Local URL: http://localhost:${PORT}`);
   console.log(`===========================================================`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EACCES' || err.code === 'EADDRINUSE') {
+    const fallbackPort = PORT === 3000 ? 3001 : PORT + 1;
+    console.warn(`⚠️ Cổng ${PORT} không khả dụng (${err.code}). Đang tự động chuyển sang cổng ${fallbackPort}...`);
+    app.listen(fallbackPort, () => {
+      console.log(`===========================================================`);
+      console.log(`🚀 EduSign VGCA - Trường THCS Chu Văn An đang chạy tại port ${fallbackPort}`);
+      console.log(`🌐 Local URL: http://localhost:${fallbackPort}`);
+      console.log(`===========================================================`);
+    });
+  } else {
+    throw err;
+  }
 });

@@ -64,8 +64,22 @@ function getUsers() {
   }
 }
 
+function saveJsonSafe(filePath, data) {
+  const content = JSON.stringify(data, null, 2);
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      fs.writeFileSync(filePath, content, 'utf8');
+      return;
+    } catch (err) {
+      if (attempt === 4) throw err;
+      const start = Date.now();
+      while (Date.now() - start < 60) {}
+    }
+  }
+}
+
 function saveUsers(users) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
+  saveJsonSafe(USERS_FILE, users);
 }
 
 function getUserById(id) {
@@ -174,7 +188,7 @@ function getDocuments() {
 }
 
 function saveDocuments(docs) {
-  fs.writeFileSync(DOCS_FILE, JSON.stringify(docs, null, 2), 'utf8');
+  saveJsonSafe(DOCS_FILE, docs);
 }
 
 function getDocumentById(id) {

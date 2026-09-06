@@ -16,6 +16,7 @@ console.log('══════════════════════�
 
 let passedTests = 0;
 let totalTests = 0;
+const TEST_PORT = parseInt(process.env.TEST_PORT || process.env.PORT || "3001", 10);
 
 function assert(condition, message) {
   totalTests++;
@@ -82,7 +83,8 @@ async function runTests() {
   // --- TEST 2: C# RealPdfSigner ---
   console.log('📌 2. Kiểm tra Xác thực Mật mã Chữ ký số Ban Cơ yếu (VGCA):');
   await new Promise((resolve) => {
-    const dotnet = spawn('dotnet', ['run', '--project', path.join(__dirname, 'RealPdfSigner'), '--', '--verify', testPdf]);
+    const agentExe = path.join(__dirname, 'public', 'downloads', 'EduSign_Agent.exe');
+    const dotnet = fs.existsSync(agentExe) ? spawn(agentExe, ['--verify', testPdf]) : spawn('dotnet', ['run', '--project', path.join(__dirname, 'RealPdfSigner'), '--', '--verify', testPdf]);
     let output = '';
     dotnet.stdout.on('data', (d) => output += d.toString('utf8'));
     dotnet.stderr.on('data', (d) => output += d.toString('utf8'));
@@ -98,12 +100,12 @@ async function runTests() {
 
   // --- TEST 3: Khởi chạy Express Server & Kiểm thử Phân quyền 3 cấp ---
   console.log('📌 3. Khởi chạy Server & Kiểm thử Đăng nhập & Phân quyền RBAC:');
-  const serverProcess = spawn('node', ['server.js'], { cwd: __dirname });
+  const serverProcess = spawn('node', ['server.js'], { cwd: __dirname, env: { ...process.env, PORT: String(TEST_PORT) } });
   
   let serverReady = false;
   serverProcess.stdout.on('data', (chunk) => {
     const text = chunk.toString('utf8');
-    if (text.includes('EduSign VGCA') || text.includes('3000')) {
+    if (text.includes('EduSign VGCA') || text.includes(String(TEST_PORT))) {
       serverReady = true;
     }
   });
@@ -120,7 +122,7 @@ async function runTests() {
     // 3.1 Đăng nhập Admin
     const adminLoginRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/auth/login',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
@@ -133,7 +135,7 @@ async function runTests() {
     // 3.2 Admin tạo Tổ trưởng chuyên môn
     const createLeaderRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/admin/users',
       method: 'POST',
       headers: {
@@ -152,7 +154,7 @@ async function runTests() {
     // 3.3 Admin tạo Giáo viên bộ môn
     const createTeacherRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/admin/users',
       method: 'POST',
       headers: {
@@ -171,7 +173,7 @@ async function runTests() {
     // 3.4 Giáo viên đăng nhập độc lập bằng tài khoản của mình
     const teacherLoginRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/auth/login',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
@@ -184,7 +186,7 @@ async function runTests() {
     const dummySignature = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     const saveSigRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/user/signature',
       method: 'POST',
       headers: {
@@ -196,7 +198,7 @@ async function runTests() {
 
     const getSigRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/user/signature',
       method: 'GET',
       headers: { 'Authorization': `Bearer ${teacherToken}` }
@@ -206,7 +208,7 @@ async function runTests() {
     // 3.4c Kiểm tra BẢO MẬT: Chặn không cho nộp bài nếu chưa ký số
     await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/admin/users',
       method: 'POST',
       headers: {
@@ -223,7 +225,7 @@ async function runTests() {
 
     const nosigLoginRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/auth/login',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
@@ -232,7 +234,7 @@ async function runTests() {
 
     const failSubmitRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/documents',
       method: 'POST',
       headers: {
@@ -252,7 +254,7 @@ async function runTests() {
 
     const submitDocRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/documents',
       method: 'POST',
       headers: {
@@ -280,7 +282,7 @@ async function runTests() {
     // 3.5b Tải / Xem trước tệp đính kèm từ API
     const getFileRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: `/api/documents/${createdDocId}/file`,
       method: 'GET',
       headers: { 'Authorization': `Bearer ${teacherToken}` }
@@ -290,7 +292,7 @@ async function runTests() {
     // 3.6 Tổ trưởng đăng nhập & Duyệt cấp 2
     const leaderLoginRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/auth/login',
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
@@ -301,7 +303,7 @@ async function runTests() {
 
     const leaderApproveRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: `/api/documents/${createdDocId}/approve-leader`,
       method: 'POST',
       headers: {
@@ -319,7 +321,7 @@ async function runTests() {
     // 3.7 Ban Giám hiệu Phê duyệt & Đóng dấu cấp 3
     const principalApproveRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: `/api/documents/${createdDocId}/approve-principal`,
       method: 'POST',
       headers: {
@@ -337,7 +339,7 @@ async function runTests() {
     // 3.7b Kiểm tra Tải Văn Bản Đã Ký Về Máy Tính (.PDF đầy đủ 3 cấp ký & dấu đỏ)
     const downloadSignedRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: `/api/documents/${createdDocId}/download-signed`,
       method: 'GET'
     }, null, true);
@@ -353,7 +355,7 @@ async function runTests() {
     // 3.7d Kiểm tra tính năng Lưu trữ và đồng bộ Google Drive của giáo viên
     const driveUploadRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: `/api/documents/${createdDocId}/upload-drive`,
       method: 'POST',
       headers: {
@@ -367,7 +369,7 @@ async function runTests() {
     // 3.8 Kiểm tra API Xác thực chữ ký số
     const verifyHttpRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/verify-real-pdf',
       method: 'GET'
     });
@@ -376,7 +378,7 @@ async function runTests() {
     // 3.9a Kiểm tra tài nguyên tĩnh: Con dấu đỏ nhà trường (/school_seal.png và /uploads/signatures/school_seal.png)
     const sealDirectRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/school_seal.png',
       method: 'GET'
     });
@@ -384,7 +386,7 @@ async function runTests() {
 
     const sealUploadRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/uploads/signatures/school_seal.png',
       method: 'GET'
     });
@@ -393,7 +395,7 @@ async function runTests() {
     // 3.10 Kiểm tra tính năng THU HỒI BÀI NỘP (Recall) khi tổ trưởng chưa ký duyệt
     const docToRecallRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/documents',
       method: 'POST',
       headers: {
@@ -421,7 +423,7 @@ async function runTests() {
 
     const recallActionRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: `/api/documents/${recallDocId}/recall`,
       method: 'POST',
       headers: {
@@ -435,7 +437,7 @@ async function runTests() {
     const editedHtmlContent = '<div class="word-preview-page"><p style="font-family: Times New Roman; font-size: 14pt;"><strong>KẾ HOẠCH BÀI DẠY ĐÃ ĐƯỢC GIÁO VIÊN CHỈNH SỬA TRỰC TIẾP TRÊN WEB</strong></p></div>';
     const updateContentRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: `/api/documents/${recallDocId}/update-content`,
       method: 'POST',
       headers: {
@@ -450,7 +452,7 @@ async function runTests() {
     // 3.12 Kiểm tra tính năng XÓA HỒ SƠ / TỆP ĐÍNH KÈM
     const deleteDocRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: `/api/documents/${recallDocId}`,
       method: 'DELETE',
       headers: {
@@ -463,7 +465,7 @@ async function runTests() {
     const pdfSignerService = require('./pdfSignerService');
     const origFsExists = fs.existsSync;
     fs.existsSync = function(p) {
-      if (typeof p === 'string' && p.includes('RealPdfSigner')) return false;
+      if (typeof p === 'string' && (p.includes('RealPdfSigner') || p.includes('EduSign_Agent'))) return false;
       return origFsExists.apply(this, arguments);
     };
 
@@ -487,7 +489,7 @@ async function runTests() {
     // Kiểm tra API Ping Local Signer
     const pingLocalRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/ping-local-signer',
       method: 'GET'
     });
@@ -496,7 +498,7 @@ async function runTests() {
     // Kiểm tra nộp bài qua Local Signer Bridge (realSignedPdfBase64)
     const bridgeSubmitRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/documents',
       method: 'POST',
       headers: {
@@ -515,7 +517,7 @@ async function runTests() {
     // 3.14 Kiểm tra API Chẩn đoán phần mềm VGCA & USB Token (/api/check-vgca-status)
     const checkVgcaRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/check-vgca-status',
       method: 'GET'
     });
@@ -526,7 +528,7 @@ async function runTests() {
     // 3.14b Kiểm tra Tải về EduSign Desktop Agent cho máy tính
     const downloadAgentRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/downloads/EduSign_Agent.exe',
       method: 'GET'
     }, null, true);
@@ -534,10 +536,28 @@ async function runTests() {
     assert(downloadAgentRes.headers['content-type'].includes('msdownload') || downloadAgentRes.headers['content-type'].includes('octet-stream') || downloadAgentRes.headers['content-type'].includes('executable'), 'Đúng định dạng phần mềm thực thi Windows (.exe)');
     assert(downloadAgentRes.body.length > 1000000, 'Dung lượng EduSign_Agent.exe hợp lệ (>1MB, Self-Contained)');
 
+    // 3.14c Kiểm tra Bộ cài đặt Windows 10 & 11 (Tạo Shortcut Desktop + Chạy ngầm Khay hệ thống)
+    const downloadBatRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/downloads/Cai_Dat_EduSign_Agent.bat',
+      method: 'GET'
+    }, null, true);
+    assert(downloadBatRes.status === 200, 'Tải thành công bộ cài đặt một chạm Cai_Dat_EduSign_Agent.bat (Mã 200)');
+    assert(downloadBatRes.body.toString('utf8').includes('EduSign Agent') && downloadBatRes.body.toString('utf8').includes('Desktop'), 'Nội dung bộ cài đặt chuẩn Windows: Khởi tạo Desktop Shortcut và khay hệ thống');
+
+    const downloadPs1Res = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/downloads/Cai_Dat_EduSign.ps1',
+      method: 'GET'
+    }, null, true);
+    assert(downloadPs1Res.status === 200, 'Tải thành công kịch bản cấu hình Windows Cai_Dat_EduSign.ps1 (Mã 200)');
+
     // 3.15 Kiểm tra Quy trình Ký số 2 Bước SmartCA: Khởi tạo phiên & Chặn báo thành công giả định
     const initSessionRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/vgca/initiate-session',
       method: 'POST',
       headers: {
@@ -556,7 +576,7 @@ async function runTests() {
     // Chặn tuyệt đối: Không cho phép ký khi Thầy CHƯA bấm xác nhận trên điện thoại (Session status: WAITING_CONFIRMATION)
     const prematureSignRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/documents',
       method: 'POST',
       headers: {
@@ -576,7 +596,7 @@ async function runTests() {
     // Bước 2: Người dùng mở điện thoại và bấm xác nhận
     const confirmSessionRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/vgca/confirm-session',
       method: 'POST',
       headers: {
@@ -591,7 +611,7 @@ async function runTests() {
     // Hoàn tất niêm phong chữ ký sau khi đã xác nhận
     const finalSignRes = await httpRequest({
       hostname: '127.0.0.1',
-      port: 3000,
+      port: TEST_PORT,
       path: '/api/documents',
       method: 'POST',
       headers: {
