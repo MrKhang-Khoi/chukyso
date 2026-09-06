@@ -219,9 +219,17 @@ async function generateSignedPdf(doc) {
     page.drawText(`Phan phoi chuong trinh: ${docWeekAscii} - ${docGradeAscii}`, { x: 50, y: 670, size: 11, font: helvetica, color: rgb(0.3, 0.3, 0.3) });
     page.drawText(`Ngay khoi tao: ${doc.createdAt || new Date().toISOString().substring(0, 10)}`, { x: 50, y: 650, size: 10, font: helvetica, color: rgb(0.4, 0.4, 0.4) });
 
-    page.drawText('XAC NHAN KY DUYET GIAO AN DIEN TU', { x: 50, y: 320, size: 11, font: helveticaBold, color: rgb(0.1, 0.3, 0.6) });
-    page.drawText('GIAO VIEN SOAN THAO', { x: 400, y: 290, size: 10, font: helveticaBold, color: rgb(0.2, 0.2, 0.2) });
-    page.drawText(docAuthorAscii, { x: 400, y: 190, size: 10, font: helveticaBold, color: rgb(0.1, 0.1, 0.1) });
+    const isCopyForPlaceholder = (doc.signType === 'COPY' || doc.isCopySign === true);
+    if (isCopyForPlaceholder) {
+      page.drawText('HO SO CHUNG THUC BAN SAO DIEN TU', { x: 50, y: 320, size: 11, font: helveticaBold, color: rgb(0.1, 0.3, 0.6) });
+      page.drawText(`Hinh thuc: ${safeAscii(doc.copyType || 'SAO Y')} (Nghi dinh 30/2020/ND-CP)`, { x: 50, y: 295, size: 10, font: helvetica, color: rgb(0.2, 0.2, 0.2) });
+      page.drawText('Don vi chung thuc: TRUONG THCS CHU VAN AN', { x: 50, y: 275, size: 10, font: helvetica, color: rgb(0.3, 0.3, 0.3) });
+      page.drawText('Ghi chu: Ban sao dien tu duoc chung thuc bang chu ky so o goc tren ben phai theo quy dinh.', { x: 50, y: 255, size: 9, font: helvetica, color: rgb(0.4, 0.4, 0.4) });
+    } else {
+      page.drawText('XAC NHAN KY DUYET GIAO AN DIEN TU', { x: 50, y: 320, size: 11, font: helveticaBold, color: rgb(0.1, 0.3, 0.6) });
+      page.drawText('GIAO VIEN SOAN THAO', { x: 400, y: 290, size: 10, font: helveticaBold, color: rgb(0.2, 0.2, 0.2) });
+      page.drawText(docAuthorAscii, { x: 400, y: 190, size: 10, font: helveticaBold, color: rgb(0.1, 0.1, 0.1) });
+    }
 
     sourcePdfBuffer = await newEmptyDoc.save();
   }

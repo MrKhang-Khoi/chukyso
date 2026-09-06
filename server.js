@@ -1126,6 +1126,7 @@ app.post('/api/local-sign-doc', async (req, res) => {
       fs.writeFileSync(tempFilePath, Buffer.from(fileBase64.replace(/^data:[^;]+;base64,/, ''), 'base64'));
     }
 
+    const isCopy = (docData.signType === 'COPY' || docData.isCopySign === true || req.body.signType === 'COPY' || req.body.isCopySign === true);
     const tempDoc = {
       id: docData.id || 'DOC_' + Date.now(),
       title: docData.title || 'Kế hoạch bài dạy',
@@ -1133,14 +1134,22 @@ app.post('/api/local-sign-doc', async (req, res) => {
       department: docData.department || 'Tổ Toán - Tin',
       filePath: tempFilePath,
       isPreStamped: !!docData.isPreStamped,
-      signPlacement: docData.signPlacement || 'bottom-right',
+      signPlacement: isCopy ? 'top-right' : (docData.signPlacement || 'bottom-right'),
       signCoordinates: docData.signCoordinates || null,
-      signatures: docData.signatures || [{
+      signType: isCopy ? 'COPY' : (docData.signType || 'STANDARD'),
+      isCopySign: isCopy,
+      copyType: isCopy ? (docData.copyType || req.body.copyType || 'SAO Y') : null,
+      copyText: isCopy ? (docData.copyText || req.body.copyText || null) : null,
+      copySignBannerBase64: isCopy ? (docData.copySignBannerBase64 || req.body.copySignBannerBase64 || null) : null,
+      copySignBannerWidthPt: isCopy ? (docData.copySignBannerWidthPt || req.body.copySignBannerWidthPt || null) : null,
+      copySignBannerHeightPt: isCopy ? (docData.copySignBannerHeightPt || req.body.copySignBannerHeightPt || null) : null,
+      signatureImage: isCopy ? null : (docData.signatureImage || null),
+      signatures: isCopy ? [] : (docData.signatures || [{
         step: 1,
         role: 'Giáo viên',
-        signerName: 'Hà Văn Tý',
+        signerName: docData.author || 'Hà Văn Tý',
         visualSignImage: docData.signatureImage || '/uploads/signatures/sig_user_cvaty.png'
-      }]
+      }])
     };
 
     const signResult = await pdfSignerService.signWithRealVgca(tempDoc);

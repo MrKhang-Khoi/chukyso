@@ -660,8 +660,34 @@
           </div>
         </div>
 
-        <!-- BƯỚC 2: CHỮ KÝ CỦA GIÁO VIÊN (KÉO THẢ VÀO VĂN BẢN) -->
-        <div class="p-3.5 bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-slate-50 border-2 border-blue-200 rounded-xl space-y-3">
+        <!-- HÌNH THỨC KÝ SỐ HỒ SƠ -->
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <label class="block font-bold text-slate-800 text-xs">Hình thức ký số hồ sơ *</label>
+          <div class="grid grid-cols-2 gap-2.5">
+            <label id="labelSignModeStandard" class="flex items-center gap-2.5 p-3 bg-white border-2 border-blue-600 rounded-xl cursor-pointer shadow-sm transition">
+              <input type="radio" name="newDocSignMode" value="STANDARD" checked onchange="toggleNewDocSignMode('STANDARD')" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+              <div class="leading-tight">
+                <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                  <i class="fa-solid fa-signature text-blue-600"></i> Ký Phê Duyệt Văn Bản
+                </div>
+                <div class="text-[10px] text-slate-500 mt-0.5">Chữ ký cá nhân (Giáo viên / Lãnh đạo)</div>
+              </div>
+            </label>
+
+            <label id="labelSignModeCopy" class="flex items-center gap-2.5 p-3 bg-white border-2 border-slate-200 hover:border-amber-400 rounded-xl cursor-pointer shadow-sm transition">
+              <input type="radio" name="newDocSignMode" value="COPY" onchange="toggleNewDocSignMode('COPY')" class="w-4 h-4 text-amber-600 focus:ring-amber-500">
+              <div class="leading-tight">
+                <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                  <i class="fa-solid fa-copy text-amber-600"></i> Ký Sao Y Bản Chính
+                </div>
+                <div class="text-[10px] text-slate-500 mt-0.5">Chuẩn NĐ 30/2020/NĐ-CP & VGCA</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- BƯỚC 2A: CHỮ KÝ CỦA GIÁO VIÊN (KHI CHỌN KÝ PHÊ DUYỆT VĂN BẢN THÔNG THƯỜNG) -->
+        <div id="sectionNewDocTeacherSign" class="p-3.5 bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-slate-50 border-2 border-blue-200 rounded-xl space-y-3">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <div class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">2</div>
@@ -710,8 +736,61 @@
           </div>
         </div>
 
+        <!-- BƯỚC 2B: KÝ SAO Y VĂN BẢN ĐIỆN TỬ (KHI CHỌN KÝ SAO Y - NĐ 30/2020/NĐ-CP & BAN CƠ YẾU) -->
+        <div id="sectionNewDocCopySign" class="hidden p-3.5 bg-gradient-to-r from-amber-50/90 via-yellow-50/70 to-slate-50 border-2 border-amber-300 rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                <i class="fa-solid fa-copy text-[10px]"></i>
+              </div>
+              <span class="font-bold text-slate-900 text-xs sm:text-sm">Chứng Thực Bản Sao Điện Tử (Nghị Định 30/2020/NĐ-CP)</span>
+            </div>
+            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+              KHÔNG DÙNG CHỮ KÝ TAY
+            </span>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Hình thức sao:</label>
+              <div class="grid grid-cols-3 gap-2">
+                <label class="flex items-center gap-1.5 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-amber-50/50">
+                  <input type="radio" name="newDocCopyTypeRadio" value="SAO Y" checked onchange="updateNewDocCopyPreviewText()" class="w-3.5 h-3.5 text-amber-600">
+                  <span class="font-bold text-slate-800 text-[11px]">SAO Y</span>
+                </label>
+                <label class="flex items-center gap-1.5 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-amber-50/50">
+                  <input type="radio" name="newDocCopyTypeRadio" value="SAO LỤC" onchange="updateNewDocCopyPreviewText()" class="w-3.5 h-3.5 text-amber-600">
+                  <span class="font-bold text-slate-800 text-[11px]">SAO LỤC</span>
+                </label>
+                <label class="flex items-center gap-1.5 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-amber-50/50">
+                  <input type="radio" name="newDocCopyTypeRadio" value="TRÍCH SAO" onchange="updateNewDocCopyPreviewText()" class="w-3.5 h-3.5 text-amber-600">
+                  <span class="font-bold text-slate-800 text-[11px]">TRÍCH SAO</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Cơ quan / Đơn vị thực hiện sao:</label>
+              <input type="text" id="newDocCopySignerOrg" value="TRƯỜNG THCS CHU VĂN AN" oninput="updateNewDocCopyPreviewText()"
+                class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 bg-white outline-none focus:ring-2 focus:ring-amber-500">
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Dòng chữ ký sao y chuẩn VGCA (Góc trên bên phải Trang 1):</label>
+              <div id="newDocCopyBannerPreview" class="p-2.5 bg-white border border-slate-300 rounded-lg font-serif text-slate-900 text-xs font-bold tracking-tight shadow-sm flex items-center justify-end text-right">
+                SAO Y; TRƯỜNG THCS CHU VĂN AN; Thời gian ký: 2026-09-06T17:00:00+07:00
+              </div>
+            </div>
+
+            <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900 leading-relaxed flex items-start gap-2">
+              <i class="fa-solid fa-circle-info text-amber-600 mt-0.5 shrink-0"></i>
+              <span>Quy định pháp lý: Hồ sơ sao y không có người thực hiện ký họ tên ở chân trang. Toàn bộ chữ ký số trước đó (nếu có) được giữ nguyên vẹn 100%. Dòng chữ ký sao y sẽ được niêm phong mật mã vào góc trên cùng bên phải trang đầu tiên theo Nghị định 30/2020/NĐ-CP & Ban Cơ yếu Chính phủ.</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Vị trí đóng dấu chữ ký số -->
-        <div>
+        <div id="sectionNewDocPlacement">
           <label class="block font-bold text-slate-700 mb-1">Vị trí đóng dấu chữ ký số của bạn</label>
           <select id="newDocSignPlacement" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none bg-white font-medium text-slate-800">
             <option value="bottom-right" selected>Cột Giáo viên soạn thảo (Bên phải trang cuối - Chuẩn Nghị định 30)</option>
@@ -2705,6 +2784,57 @@
       if (txtEl) txtEl.value = copyText;
     }
 
+    function toggleNewDocSignMode(mode) {
+      const isCopy = mode === 'COPY';
+      const labelStd = document.getElementById('labelSignModeStandard');
+      const labelCopy = document.getElementById('labelSignModeCopy');
+      const secTeacher = document.getElementById('sectionNewDocTeacherSign');
+      const secCopy = document.getElementById('sectionNewDocCopySign');
+      const secPlacement = document.getElementById('sectionNewDocPlacement');
+      const btnSubmit = document.getElementById('btnSubmitNewDoc');
+      const chkSign = document.getElementById('chkConfirmSign');
+
+      if (isCopy) {
+        if (labelStd) { labelStd.classList.remove('border-blue-600'); labelStd.classList.add('border-slate-200'); }
+        if (labelCopy) { labelCopy.classList.remove('border-slate-200'); labelCopy.classList.add('border-amber-500'); }
+        if (secTeacher) secTeacher.classList.add('hidden');
+        if (secCopy) secCopy.classList.remove('hidden');
+        if (secPlacement) secPlacement.classList.add('hidden');
+        if (chkSign) chkSign.required = false;
+        if (btnSubmit) {
+          btnSubmit.className = "px-5 py-2 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white font-bold rounded-xl shadow-md flex items-center gap-2 cursor-pointer";
+          btnSubmit.innerHTML = '<i class="fa-solid fa-copy"></i><span>Ký Sao Y & Nộp Hồ Sơ</span>';
+        }
+        updateNewDocCopyPreviewText();
+      } else {
+        if (labelStd) { labelStd.classList.add('border-blue-600'); labelStd.classList.remove('border-slate-200'); }
+        if (labelCopy) { labelCopy.classList.add('border-slate-200'); labelCopy.classList.remove('border-amber-500'); }
+        if (secTeacher) secTeacher.classList.remove('hidden');
+        if (secCopy) secCopy.classList.add('hidden');
+        if (secPlacement) secPlacement.classList.remove('hidden');
+        if (chkSign) chkSign.required = true;
+        if (btnSubmit) {
+          btnSubmit.className = "px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md flex items-center gap-2 cursor-pointer";
+          btnSubmit.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i><span>Ký Số & Nộp Trình Duyệt</span>';
+        }
+      }
+    }
+
+    function updateNewDocCopyPreviewText() {
+      const copyType = document.querySelector('input[name="newDocCopyTypeRadio"]:checked')?.value || 'SAO Y';
+      const orgInput = document.getElementById('newDocCopySignerOrg');
+      const orgName = (orgInput && orgInput.value.trim()) || 'TRƯỜNG THCS CHU VĂN AN';
+      if (!currentCopySignTimestamp) {
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        currentCopySignTimestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}+07:00`;
+      }
+      const copyText = `${copyType}; ${orgName}; Thời gian ký: ${currentCopySignTimestamp}`;
+      const previewEl = document.getElementById('newDocCopyBannerPreview');
+      if (previewEl) previewEl.innerText = copyText;
+      return copyText;
+    }
+
     async function handleExecuteCopySign() {
       const selectedType = document.querySelector('input[name="copySignTypeRadio"]:checked')?.value || 'SAO Y';
       const txtEl = document.getElementById('copySignPreviewText');
@@ -2841,8 +2971,28 @@
               targetPage: 1
             };
 
+            let preparedPdfBase64 = payload.fileBase64;
             try {
-              const signResult = await signDocViaLocalAgent(signPayload, payload.fileBase64, targetHost || 'http://127.0.0.1:18888');
+              const prepRes = await fetch('/api/documents/prepare-signing-pdf', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify(signPayload)
+              });
+              if (prepRes.ok) {
+                const prepData = await prepRes.json();
+                if (prepData && prepData.pdfBase64) {
+                  preparedPdfBase64 = prepData.pdfBase64;
+                }
+              }
+            } catch (errPrep) {
+              console.warn('Không thể chuẩn bị file đóng dấu sao y trước:', errPrep);
+            }
+
+            try {
+              const signResult = await signDocViaLocalAgent(signPayload, preparedPdfBase64, targetHost || 'http://127.0.0.1:18888');
               realSignedPdfBase64 = signResult.signedPdfBase64;
             } catch (agentErr) {
               if (agentErr && agentErr.cancelled) throw agentErr;
@@ -2932,21 +3082,6 @@
 
           const targetHost = (authInfo && authInfo.localHost) || ping.host;
           if (ping.available || targetHost) {
-            let fileBase64 = null;
-            try {
-              let fileRes = await fetch(`/api/documents/${docId}/file`);
-              if (fileRes.ok) {
-                const blob = await fileRes.blob();
-                fileBase64 = await new Promise((resolve) => {
-                  const reader = new FileReader();
-                  reader.onloadend = () => resolve(reader.result);
-                  reader.readAsDataURL(blob);
-                });
-              }
-            } catch (e) {
-              console.warn('Không lấy được tệp chuẩn bị ký sao y:', e);
-            }
-
             const signPayload = {
               ...doc,
               signType: 'COPY',
@@ -2958,6 +3093,42 @@
               copySignBannerHeightPt: banner.heightPt,
               targetPage: 1
             };
+
+            let fileBase64 = null;
+            try {
+              let prepRes = await fetch('/api/documents/prepare-signing-pdf', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify(signPayload)
+              });
+              if (prepRes.ok) {
+                const prepData = await prepRes.json();
+                if (prepData && prepData.pdfBase64) {
+                  fileBase64 = prepData.pdfBase64;
+                }
+              }
+            } catch (e) {
+              console.warn('Không thể chuẩn bị file đóng dấu sao y trước:', e);
+            }
+
+            if (!fileBase64) {
+              try {
+                let fileRes = await fetch(`/api/documents/${docId}/file`);
+                if (fileRes.ok) {
+                  const blob = await fileRes.blob();
+                  fileBase64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                  });
+                }
+              } catch (e) {
+                console.warn('Không lấy được tệp chuẩn bị ký sao y:', e);
+              }
+            }
 
             try {
               const signResult = await signDocViaLocalAgent(signPayload, fileBase64, targetHost || 'http://127.0.0.1:18888');
@@ -4089,6 +4260,18 @@
       if (!title) {
         alert('Vui lòng nhập tên bài dạy hoặc chuyên đề!');
         document.getElementById('newDocTitle').focus();
+        return;
+      }
+
+      const signMode = document.querySelector('input[name="newDocSignMode"]:checked')?.value || 'STANDARD';
+      if (signMode === 'COPY') {
+        const copyType = document.querySelector('input[name="newDocCopyTypeRadio"]:checked')?.value || 'SAO Y';
+        const copyText = updateNewDocCopyPreviewText();
+        closeModal('modalNewDoc');
+        await submitNewDocWithCopySign({
+          copyType: copyType,
+          copyText: copyText
+        });
         return;
       }
 

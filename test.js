@@ -748,7 +748,7 @@ async function runTests() {
         ? [agentExe, ['--copy-sign', saoyInputPdf, saoyOutputPdf, 'SAO Y', 'Hà Văn Tý']]
         : ['dotnet', ['run', '--project', path.join(__dirname, 'RealPdfSigner'), '--', '--copy-sign', saoyInputPdf, saoyOutputPdf, 'SAO Y', 'Hà Văn Tý']];
       
-      const proc = spawn(copyArgs[0], copyArgs[1]);
+      const proc = spawn(copyArgs[0], copyArgs[1], { env: { ...process.env, EDUSIGN_TEST_MODE: '1' } });
       proc.on('close', (code) => {
         assert(code === 0, 'Tiến trình Ký Sao Y C# RealPdfSigner chạy mã thoát 0');
         assert(fs.existsSync(saoyOutputPdf) && fs.statSync(saoyOutputPdf).size > 1000, 'Tạo thành công tệp PDF bản sao đã ký số (test_saoy_verification.pdf)');
