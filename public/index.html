@@ -681,9 +681,17 @@
             class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-medium text-slate-900">
         </div>
 
-        <div class="pt-4 flex justify-end gap-2 border-t border-slate-100 sticky bottom-0 bg-white z-10 pb-1">
-          <button type="button" onclick="closeModal('modalNewDoc')" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition">Hủy</button>
-          <button type="submit" id="btnSubmitNewDoc" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md flex items-center gap-2 transition cursor-pointer">
+        <div class="pt-4 flex items-center justify-end gap-2.5 border-t border-slate-100 sticky bottom-0 bg-white z-10 pb-1">
+          <button type="button" onclick="closeModal('modalNewDoc')" class="px-4 py-2.5 border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-100 transition text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            Hủy
+          </button>
+          <button type="button" id="btnConvertToPdf" onclick="handleConvertWordToPdf()" disabled
+            class="px-4 py-2.5 rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200">
+            <i class="fa-solid fa-file-pdf"></i>
+            <span id="btnConvertToPdfText">Chuyển sang PDF</span>
+          </button>
+          <button type="submit" id="btnSubmitNewDoc" disabled
+            class="px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition text-xs cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200">
             <i class="fa-solid fa-cloud-arrow-up"></i>
             <span>Tải Lên & Xem Ký</span>
           </button>
@@ -1341,21 +1349,8 @@
             </div>
           </div>
 
-          <!-- Thẻ tóm tắt thông tin xác thực -->
-          <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-3.5 rounded-2xl border border-blue-200 text-center space-y-1.5 shadow-xs">
-            <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs mx-auto shadow-2xs">
-              <i class="fa-solid fa-mobile-screen-button"></i>
-            </div>
-            <h4 class="font-extrabold text-xs text-blue-900 uppercase tracking-tight">XÁC THỰC KÝ SỐ BAN CƠ YẾU CHÍNH PHỦ (VIRTUAL CSP)</h4>
-            <p id="vgcaModalStatusDesc" class="text-[11px] text-slate-700 leading-relaxed max-w-sm mx-auto">
-              Hệ thống đang kết nối với <strong>Virtual CSP (TSE / Di động)</strong> của Ban Cơ yếu Chính phủ.<br>
-              Mở ứng dụng trên điện thoại nhấn <strong>[ĐỒNG Ý]</strong> để hoàn tất niêm phong chữ ký số ngay!
-            </p>
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100/90 text-emerald-800 font-semibold text-[10px]">
-              <i class="fa-solid fa-shield-halved text-emerald-600"></i>
-              <span>Người ký: Hà Văn Tý (Ban Cơ yếu Chính phủ - Virtual CSP)</span>
-            </div>
-          </div>
+          <!-- Phần giữ ID tương thích JS -->
+          <span id="vgcaModalStatusDesc" class="hidden"></span>
 
           <!-- Trạng thái kết nối EduSign: Chỉ hiển thị Đã kết nối EduSign hoặc Chưa kết nối EduSign -->
           <div id="vgcaAgentConnectionStatus" class="py-2 px-3 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-xs text-slate-600 transition">
@@ -1852,6 +1847,7 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         selectedUploadFileBase64 = e.target.result;
+        updateNewDocButtonStates();
       };
       reader.readAsDataURL(file);
 
@@ -1875,6 +1871,8 @@
         const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[_\-]/g, ' ');
         titleInput.value = cleanName;
       }
+
+      updateNewDocButtonStates();
     }
 
     function removeSelectedFile() {
@@ -1883,6 +1881,121 @@
       document.getElementById('newDocFileInput').value = '';
       document.getElementById('fileUploadPrompt').classList.remove('hidden');
       document.getElementById('fileSelectedCard').classList.add('hidden');
+      updateNewDocButtonStates();
+    }
+
+    // Cập nhật trạng thái đồng bộ 3 nút ở form nộp kế hoạch bài dạy mới:
+    // - Nút Chuyển sang PDF chỉ sáng khi file tải lên là Word (.docx, .doc)
+    // - Nút Tải Lên & Xem Ký chỉ sáng khi file đã là PDF (.pdf)
+    function updateNewDocButtonStates() {
+      const btnConvert = document.getElementById('btnConvertToPdf');
+      const btnConvertText = document.getElementById('btnConvertToPdfText');
+      const btnSubmit = document.getElementById('btnSubmitNewDoc');
+      if (!btnConvert || !btnSubmit) return;
+
+      if (!selectedUploadFile) {
+        // Chưa chọn file: Cả 2 nút đều mờ
+        btnConvert.disabled = true;
+        btnConvert.className = 'px-4 py-2.5 rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200';
+        btnConvert.innerHTML = '<i class="fa-solid fa-file-pdf"></i> <span id="btnConvertToPdfText">Chuyển sang PDF</span>';
+
+        btnSubmit.disabled = true;
+        btnSubmit.className = 'px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition text-xs cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200';
+        return;
+      }
+
+      const ext = selectedUploadFile.name.split('.').pop().toLowerCase();
+      const isWord = (ext === 'doc' || ext === 'docx');
+      const isPdf = (ext === 'pdf');
+
+      if (isWord) {
+        // Nút Chuyển sang PDF SÁNG LÊN
+        btnConvert.disabled = false;
+        btnConvert.className = 'px-4 py-2.5 rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 cursor-pointer bg-amber-500 hover:bg-amber-600 text-white shadow-sm border border-amber-600 active:scale-95';
+        btnConvert.innerHTML = '<i class="fa-solid fa-file-pdf"></i> <span id="btnConvertToPdfText">Chuyển sang PDF</span>';
+
+        // Nút Tải Lên & Xem Ký MỜ ĐI (chưa cho nộp khi chưa thành PDF)
+        btnSubmit.disabled = true;
+        btnSubmit.className = 'px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition text-xs cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200';
+      } else if (isPdf) {
+        // Nút Chuyển sang PDF MỜ ĐI
+        btnConvert.disabled = true;
+        btnConvert.className = 'px-4 py-2.5 rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 cursor-not-allowed bg-slate-100 text-emerald-700 border border-emerald-300';
+        btnConvert.innerHTML = '<i class="fa-solid fa-check text-emerald-600"></i> <span id="btnConvertToPdfText">Đã là PDF</span>';
+
+        // Nút Tải Lên & Xem Ký SÁNG LÊN
+        btnSubmit.disabled = false;
+        btnSubmit.className = 'px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition cursor-pointer text-xs active:scale-95';
+      }
+    }
+
+    // Xử lý chuyển đổi Word sang PDF khi người dùng nhấn nút Chuyển sang PDF (có loading)
+    async function handleConvertWordToPdf() {
+      if (!selectedUploadFile || !selectedUploadFileBase64) return;
+      const btnConvert = document.getElementById('btnConvertToPdf');
+      const origHtml = btnConvert ? btnConvert.innerHTML : '';
+
+      if (btnConvert) {
+        btnConvert.disabled = true;
+        btnConvert.className = 'px-4 py-2.5 rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 bg-amber-600 text-white shadow-sm cursor-wait';
+        btnConvert.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang chuyển sang PDF...</span>';
+      }
+
+      try {
+        const docTitle = document.getElementById('newDocTitle')?.value || selectedUploadFile.name.replace(/\.[^/.]+$/, '');
+        const res = await fetch('/api/documents/prepare-signing-pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            fileBase64: selectedUploadFileBase64,
+            fileName: selectedUploadFile.name,
+            title: docTitle
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.pdfBase64) {
+          throw new Error(data.message || 'Không thể chuyển đổi tệp Word sang PDF');
+        }
+
+        // Cập nhật dữ liệu file thành PDF
+        selectedUploadFileBase64 = data.pdfBase64;
+        const newPdfName = selectedUploadFile.name.replace(/\.(docx|doc)$/i, '.pdf');
+        
+        // Chuyển base64 sang Blob và File object
+        const byteCharacters = atob(data.pdfBase64.replace(/^data:[^;]+;base64,/, ''));
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
+        selectedUploadFile = new File([pdfBlob], newPdfName, { type: 'application/pdf' });
+
+        // Cập nhật giao diện thẻ file
+        const fileNameEl = document.getElementById('fileNameDisplay');
+        const fileSizeEl = document.getElementById('fileSizeDisplay');
+        const icon = document.getElementById('fileTypeIcon');
+        if (fileNameEl) fileNameEl.innerText = newPdfName;
+        if (fileSizeEl) fileSizeEl.innerText = formatFileSize(pdfBlob.size);
+        if (icon) icon.className = 'fa-solid fa-file-pdf text-red-600 text-2xl';
+
+        // Cập nhật trạng thái nút: nút PDF mờ, nút Tải Lên & Xem Ký sáng lên
+        updateNewDocButtonStates();
+      } catch (err) {
+        console.error('Lỗi chuyển đổi Word sang PDF:', err);
+        if (typeof showAppNotice === 'function') {
+          showAppNotice('Chưa thể chuyển đổi sang PDF: ' + err.message, 'Lỗi Chuyển Đổi', 'error');
+        }
+        if (btnConvert) {
+          btnConvert.disabled = false;
+          btnConvert.className = 'px-4 py-2.5 rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 cursor-pointer bg-amber-500 hover:bg-amber-600 text-white shadow-sm border border-amber-600';
+          btnConvert.innerHTML = origHtml;
+        }
+      }
     }
 
     function formatFileSize(bytes) {
@@ -5884,6 +5997,7 @@
     function openNewDocModal() {
       openModal('modalNewDoc');
       initSubmitModalSignature();
+      updateNewDocButtonStates();
     }
     function openCreateUserModal() { openModal('modalCreateUser'); }
     function openChangePasswordModal() { openModal('modalChangePass'); }

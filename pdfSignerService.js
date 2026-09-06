@@ -131,6 +131,24 @@ async function generateSignedPdf(doc) {
       const buf = Buffer.from(cleanB64, 'base64');
       if (buf.length > 50 && buf.toString('ascii', 0, 5).startsWith('%PDF')) {
         sourcePdfBuffer = buf;
+      } else if (buf.length > 50 && (doc.fileName || '').match(/\.(docx|doc)$/i)) {
+        try {
+          const uploadsDir = path.join(__dirname, 'uploads', 'documents');
+          if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+          const isDoc = (doc.fileName || '').toLowerCase().endsWith('.doc');
+          const ext = isDoc ? '.doc' : '.docx';
+          const tempDocx = path.join(uploadsDir, `temp_conv_${Date.now()}_${Math.floor(Math.random()*1000)}${ext}`);
+          const tempPdf = tempDocx.replace(/\.[^.]+$/, '.pdf');
+          fs.writeFileSync(tempDocx, buf);
+          await convertDocxToPdf(tempDocx, tempPdf);
+          if (fs.existsSync(tempPdf) && fs.statSync(tempPdf).size > 100) {
+            sourcePdfBuffer = fs.readFileSync(tempPdf);
+          }
+          try { if (fs.existsSync(tempDocx)) fs.unlinkSync(tempDocx); } catch (e) {}
+          try { if (fs.existsSync(tempPdf)) fs.unlinkSync(tempPdf); } catch (e) {}
+        } catch (convErr) {
+          console.warn('Word COM conversion note:', convErr.message);
+        }
       }
     } catch (err) {
       console.error('Lỗi đọc fileBase64 trong generateSignedPdf:', err.message);
