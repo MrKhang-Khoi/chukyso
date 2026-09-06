@@ -14,6 +14,8 @@ using iText.Kernel.Pdf.Canvas.Parser.Data;
 using iText.Layout;
 using iText.Layout.Element;
 using iText.Signatures;
+using iText.IO.Image;
+using iText.Forms.Form.Element;
 
 using System.Net;
 using System.Text.RegularExpressions;
@@ -225,6 +227,10 @@ namespace RealPdfSigner
             if (args.Length > argOffset + 7) reason = args[argOffset + 7];
             if (args.Length > argOffset + 8) location = args[argOffset + 8];
 
+            string sigImagePath = "";
+            if (args.Length > argOffset + 9) sigImagePath = args[argOffset + 9];
+            byte[]? cliSigImgBytes = ResolveSignatureImage(sigImagePath);
+
             if (string.IsNullOrWhiteSpace(inputPdf))
                 inputPdf = System.IO.Path.Combine(currentDir, "GiaoAn_CanKy.pdf");
             if (string.IsNullOrWhiteSpace(outputPdf))
@@ -260,17 +266,12 @@ namespace RealPdfSigner
             // Tự động tính tọa độ nếu chưa được chỉ định
             if (rectX < 0 || rectY < 0)
             {
-                bool isLandscape = pageWidth > pageHeight;
-                if (isLandscape)
-                {
-                    rectX = 627f;
-                    rectY = 275f;
-                }
-                else
-                {
-                    rectX = 440f;
-                    rectY = 120f;
-                }
+                var autoCoords = DetermineCoordinates(File.ReadAllBytes(inputPdf), "Hà Văn Tý", "teacher", null, null, rectW, rectH, targetPage);
+                targetPage = autoCoords.page;
+                rectX = autoCoords.x;
+                rectY = autoCoords.y;
+                rectW = autoCoords.w;
+                rectH = autoCoords.h;
             }
 
             Console.WriteLine($"📍 Thông số vị trí chữ ký số: Trang {targetPage}/{totalPages} (Kích thước: {pageWidth:F0}x{pageHeight:F0}), X={rectX:F1}, Y={rectY:F1}, W={rectW:F1}, H={rectH:F1}");
@@ -289,14 +290,33 @@ namespace RealPdfSigner
 
                     PdfSigner signer = new PdfSigner(reader, outputStream, stampingProperties);
 
-                    // Thiết lập thông tin chữ ký số qua SignerProperties trong iText 9
-                    // KHÔNG gọi SetPageRect để tránh iText tự sinh các dòng chữ (Digitally signed by, Reason, Location...)
-                    // che mất chữ ký và nội dung văn bản, giữ văn bản luôn trang nhã và đẹp mắt theo chuẩn Hình 2.
-                    // Toàn bộ chứng thư số X.509 v3 và thông tin ký vẫn được bảo vệ nguyên vẹn 100% trong từ điển PDF.
+                    string fieldName = "SignatureVGCA_" + DateTime.Now.Ticks;
                     SignerProperties signerProperties = new SignerProperties()
-                        .SetFieldName("SignatureVGCA_" + DateTime.Now.Ticks)
+                        .SetFieldName(fieldName)
                         .SetReason(reason)
                         .SetLocation(location);
+
+                    bool hasExisting = File.Exists(inputPdf) && HasExistingSignature(File.ReadAllBytes(inputPdf));
+                    if ((hasExisting || cliSigImgBytes != null) && targetPage > 0 && rectX >= 0 && rectY >= 0)
+                    {
+                        signerProperties.SetPageNumber(targetPage);
+                        signerProperties.SetPageRect(new Rectangle(rectX, rectY, rectW, rectH));
+
+                        if (cliSigImgBytes != null && cliSigImgBytes.Length > 0)
+                        {
+                            try
+                            {
+                                var appearance = new SignatureFieldAppearance(fieldName)
+                                    .SetContent(ImageDataFactory.Create(cliSigImgBytes));
+                                signerProperties.SetSignatureAppearance(appearance);
+                                Console.WriteLine($"[PAdES Visual Appearance] Đã nhúng hình ảnh chữ ký số trực quan tại Trang {targetPage}, ({rectX:F1}, {rectY:F1})...");
+                            }
+                            catch (Exception appEx)
+                            {
+                                Console.WriteLine($"⚠️ Gặp sự cố khi thiết lập hình ảnh chữ ký: {appEx.Message}");
+                            }
+                        }
+                    }
 
                     signer.SetSignerProperties(signerProperties);
 
@@ -314,7 +334,7 @@ namespace RealPdfSigner
                     catch (Exception cngEx)
                     {
                         Console.WriteLine($"⚠️ Thử ký qua Virtual CSP gặp sự cố ({cngEx.Message}), tự động kích hoạt bộ ký số BouncyCastle Cryptography...");
-                        SignWithBouncyCastle(inputPdf, outputPdf, realCert, reason, location);
+                        SignWithBouncyCastle(inputPdf, outputPdf, realCert, reason, location, targetPage, rectX, rectY, rectW, rectH, cliSigImgBytes);
                         return;
                     }
                 }
@@ -333,7 +353,7 @@ namespace RealPdfSigner
                 Console.WriteLine($"⚠️ Kích hoạt bộ niêm phong số BouncyCastle VGCA PAdES chuẩn: {ex.Message}");
                 try
                 {
-                    SignWithBouncyCastle(inputPdf, outputPdf, realCert, reason, location);
+                    SignWithBouncyCastle(inputPdf, outputPdf, realCert, reason, location, targetPage, rectX, rectY, rectW, rectH, cliSigImgBytes);
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("\n🎉🎉🎉 KÝ SỐ THÀNH CÔNG 100% (BOUNCYCASTLE ENGINE)! 🎉🎉🎉");
                     Console.WriteLine($"📁 File PDF kết quả đã được tạo tại: {outputPdf}");
@@ -603,6 +623,221 @@ namespace RealPdfSigner
             }
         }
 
+        public static bool HasExistingSignature(byte[] pdfBytes)
+        {
+            if (pdfBytes == null || pdfBytes.Length < 50) return false;
+            try
+            {
+                using var reader = new PdfReader(new MemoryStream(pdfBytes));
+                using var doc = new PdfDocument(reader);
+                var sigUtil = new SignatureUtil(doc);
+                return sigUtil.GetSignatureNames().Count > 0;
+            }
+            catch
+            {
+                string s = System.Text.Encoding.ASCII.GetString(pdfBytes);
+                return s.Contains("/ByteRange") || s.Contains("/Type /Sig") || s.Contains("/Type/Sig");
+            }
+        }
+
+        public static byte[]? ResolveSignatureImage(string? imageSource)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(imageSource))
+                {
+                    if (imageSource.StartsWith("data:image", StringComparison.OrdinalIgnoreCase) || imageSource.Contains(";base64,"))
+                    {
+                        string cleanBase64 = Regex.Replace(imageSource, @"^data:[^;]+;base64,", "");
+                        byte[] decoded = Convert.FromBase64String(cleanBase64);
+                        if (decoded.Length > 100) return decoded;
+                    }
+                    else
+                    {
+                        string cleanPath = imageSource.TrimStart('/', '\\');
+                        var candidates = new List<string>
+                        {
+                            imageSource,
+                            cleanPath,
+                            System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, imageSource),
+                            System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, cleanPath),
+                            System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", cleanPath),
+                            System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", cleanPath),
+                            System.IO.Path.Combine(Directory.GetCurrentDirectory(), imageSource),
+                            System.IO.Path.Combine(Directory.GetCurrentDirectory(), cleanPath),
+                            System.IO.Path.Combine(Directory.GetCurrentDirectory(), "..", cleanPath)
+                        };
+                        foreach (var p in candidates)
+                        {
+                            if (File.Exists(p) && new FileInfo(p).Length > 100)
+                            {
+                                return File.ReadAllBytes(p);
+                            }
+                        }
+                    }
+                }
+
+                // Fallback: Tìm file ảnh chữ ký chuẩn của Thầy Hà Văn Tý
+                var fallbackCandidates = new List<string>
+                {
+                    System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uploads", "signatures", "sig_user_cvaty.png"),
+                    System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "uploads", "signatures", "sig_user_cvaty.png"),
+                    System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "uploads", "signatures", "sig_user_cvaty.png"),
+                    System.IO.Path.Combine(Directory.GetCurrentDirectory(), "uploads", "signatures", "sig_user_cvaty.png"),
+                    System.IO.Path.Combine(Directory.GetCurrentDirectory(), "..", "uploads", "signatures", "sig_user_cvaty.png"),
+                    System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sig_user_cvaty.png"),
+                    System.IO.Path.Combine(Directory.GetCurrentDirectory(), "sig_user_cvaty.png")
+                };
+                foreach (var p in fallbackCandidates)
+                {
+                    if (File.Exists(p) && new FileInfo(p).Length > 100)
+                    {
+                        return File.ReadAllBytes(p);
+                    }
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
+        public static (int page, float x, float y, float w, float h) DetermineCoordinates(byte[] pdfBytes, string signerName, string role, float? reqX = null, float? reqY = null, float? reqW = null, float? reqH = null, int? reqPage = null)
+        {
+            int targetPage = 1;
+            float pW = 595.28f, pH = 841.89f;
+            bool isLandscape = false;
+
+            try
+            {
+                using var pdfReader = new PdfReader(new MemoryStream(pdfBytes));
+                using var pdfDoc = new PdfDocument(pdfReader);
+                int pageCount = pdfDoc.GetNumberOfPages();
+                targetPage = (reqPage.HasValue && reqPage.Value > 0 && reqPage.Value <= pageCount) ? reqPage.Value : pageCount;
+                var page = pdfDoc.GetPage(targetPage);
+                var pageSize = page.GetPageSize();
+                pW = pageSize.GetWidth();
+                pH = pageSize.GetHeight();
+                isLandscape = pW > pH;
+
+                float w = reqW.HasValue && reqW.Value > 0 ? reqW.Value : 95f;
+                float h = reqH.HasValue && reqH.Value > 0 ? reqH.Value : 60f;
+
+                if (reqX.HasValue && reqX.Value > 0 && reqY.HasValue && reqY.Value > 0)
+                {
+                    float safeX = Math.Max(10f, Math.Min(pW - w - 10f, reqX.Value));
+                    float safeY = Math.Max(10f, Math.Min(pH - h - 10f, reqY.Value));
+                    return (targetPage, safeX, safeY, w, h);
+                }
+
+                // Dò tìm vị trí neo trên trang văn bản
+                var listener = new TextCollectorListener();
+                var processor = new PdfCanvasProcessor(listener);
+                processor.ProcessPageContent(page);
+
+                var lines = new List<(float Y, List<TextChunk> Chunks, string Text)>();
+                listener.Chunks.Sort((a, b) => b.Y.CompareTo(a.Y));
+
+                var curLineChunks = new List<TextChunk>();
+                foreach (var chunk in listener.Chunks)
+                {
+                    if (curLineChunks.Count == 0) curLineChunks.Add(chunk);
+                    else
+                    {
+                        if (Math.Abs(curLineChunks[0].Y - chunk.Y) <= 4.0f) curLineChunks.Add(chunk);
+                        else
+                        {
+                            curLineChunks.Sort((a, b) => a.X.CompareTo(b.X));
+                            lines.Add((curLineChunks[0].Y, new List<TextChunk>(curLineChunks), string.Join("", curLineChunks.ConvertAll(c => c.Text))));
+                            curLineChunks.Clear();
+                            curLineChunks.Add(chunk);
+                        }
+                    }
+                }
+                if (curLineChunks.Count > 0)
+                {
+                    curLineChunks.Sort((a, b) => a.X.CompareTo(b.X));
+                    lines.Add((curLineChunks[0].Y, new List<TextChunk>(curLineChunks), string.Join("", curLineChunks.ConvertAll(c => c.Text))));
+                }
+
+                bool isTeacher = role.ToLower().Contains("teacher") || role.Contains("1") || (!role.ToLower().Contains("leader") && !role.ToLower().Contains("principal"));
+                bool isLeader = role.ToLower().Contains("leader") || role.Contains("2");
+
+                float minColX = isTeacher ? (pW * 0.55f) : (isLeader ? (pW * 0.30f) : 0f);
+                float maxColX = isTeacher ? pW : (isLeader ? (pW * 0.65f) : (pW * 0.35f));
+
+                float? targetNameY = null;
+                float? targetNameX = null;
+                float? targetRoleY = null;
+                float? targetRoleX = null;
+
+                foreach (var line in lines)
+                {
+                    string lt = line.Text;
+                    if (lt.Contains("GIÁO VIÊN", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("TỔ TRƯỞNG", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("HIỆU TRƯỞNG", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("PHÓ HIỆU", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("Người lập", StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetRoleY = line.Y;
+                        var colChunks = line.Chunks.FindAll(c => c.X >= minColX && c.X <= maxColX);
+                        if (colChunks.Count > 0) targetRoleX = colChunks[0].X;
+                    }
+
+                    if (lt.Contains("Hà Văn Tý", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("Phan Thị", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("Ngô Thị", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("Trần Văn", StringComparison.OrdinalIgnoreCase) ||
+                        lt.Contains("Trần Khắc", StringComparison.OrdinalIgnoreCase) ||
+                        (!string.IsNullOrWhiteSpace(signerName) && lt.Contains(signerName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        targetNameY = line.Y;
+                        var colChunks = line.Chunks.FindAll(c => c.X >= minColX && c.X <= maxColX);
+                        if (colChunks.Count > 0) targetNameX = colChunks[0].X;
+                    }
+                }
+
+                float defaultX = isTeacher ? (isLandscape ? pW * 0.745f : pW * 0.74f)
+                               : isLeader ? (isLandscape ? pW * 0.46f : pW * 0.46f)
+                               : (isLandscape ? pW * 0.18f : pW * 0.18f);
+                float defaultY = isLandscape ? 275f : 120f;
+
+                float stampX = defaultX;
+                float stampY = defaultY;
+
+                if (targetNameY.HasValue && targetRoleY.HasValue)
+                {
+                    float midY = (targetRoleY.Value + targetNameY.Value) / 2f;
+                    stampY = midY - (h / 2f);
+                    float anchorX = targetNameX ?? targetRoleX ?? defaultX;
+                    stampX = anchorX - (w * 0.15f);
+                }
+                else if (targetNameY.HasValue)
+                {
+                    stampY = targetNameY.Value + 15f;
+                    float anchorX = targetNameX ?? defaultX;
+                    stampX = anchorX - (w * 0.15f);
+                }
+                else if (targetRoleY.HasValue)
+                {
+                    stampY = targetRoleY.Value - h - 15f;
+                    float anchorX = targetRoleX ?? defaultX;
+                    stampX = anchorX - (w * 0.15f);
+                }
+
+                stampX = Math.Max(10f, Math.Min(pW - w - 10f, stampX));
+                stampY = Math.Max(10f, Math.Min(pH - h - 10f, stampY));
+
+                return (targetPage, stampX, stampY, w, h);
+            }
+            catch
+            {
+                float defaultX = isLandscape ? 627f : 440f;
+                float defaultY = isLandscape ? 275f : 120f;
+                return (targetPage, defaultX, defaultY, 95f, 60f);
+            }
+        }
+
         public static X509Certificate2? FindVgcaCertificate()
         {
             try
@@ -642,7 +877,7 @@ namespace RealPdfSigner
             return null;
         }
 
-        public static void SignWithBouncyCastle(string inputPdf, string outputPdf, X509Certificate2? realCert, string reason, string location)
+        public static void SignWithBouncyCastle(string inputPdf, string outputPdf, X509Certificate2? realCert, string reason, string location, int targetPage = 0, float rectX = -1f, float rectY = -1f, float rectW = 90f, float rectH = 60f, byte[]? visualSignImageBytes = null)
         {
             var ecParams = Org.BouncyCastle.Asn1.Sec.SecNamedCurves.GetByName("secp384r1");
             var keyGen = new Org.BouncyCastle.Crypto.Generators.ECKeyPairGenerator();
@@ -676,10 +911,28 @@ namespace RealPdfSigner
                 stampingProperties.UseAppendMode();
 
                 PdfSigner signer = new PdfSigner(reader, outputStream, stampingProperties);
+                string fieldName = "SignatureVGCA_" + DateTime.Now.Ticks;
                 SignerProperties signerProperties = new SignerProperties()
-                    .SetFieldName("SignatureVGCA_" + DateTime.Now.Ticks)
+                    .SetFieldName(fieldName)
                     .SetReason(reason)
                     .SetLocation(location);
+
+                if (targetPage > 0 && rectX >= 0 && rectY >= 0)
+                {
+                    signerProperties.SetPageNumber(targetPage);
+                    signerProperties.SetPageRect(new Rectangle(rectX, rectY, rectW, rectH));
+                }
+
+                if (visualSignImageBytes != null && visualSignImageBytes.Length > 0 && rectX >= 0 && rectY >= 0)
+                {
+                    try
+                    {
+                        var appearance = new SignatureFieldAppearance(fieldName)
+                            .SetContent(ImageDataFactory.Create(visualSignImageBytes));
+                        signerProperties.SetSignatureAppearance(appearance);
+                    }
+                    catch { }
+                }
 
                 signer.SetSignerProperties(signerProperties);
 
@@ -691,7 +944,7 @@ namespace RealPdfSigner
             }
         }
 
-        public static byte[] SignBytesWithBouncyCastle(byte[] inputPdfBytes, X509Certificate2? realCert, string reason, string location)
+        public static byte[] SignBytesWithBouncyCastle(byte[] inputPdfBytes, X509Certificate2? realCert, string reason, string location, byte[]? visualSignImageBytes = null, Rectangle? signRect = null, int targetPage = 0)
         {
             var ecParams = Org.BouncyCastle.Asn1.Sec.SecNamedCurves.GetByName("secp384r1");
             var keyGen = new Org.BouncyCastle.Crypto.Generators.ECKeyPairGenerator();
@@ -725,10 +978,33 @@ namespace RealPdfSigner
             stampingProps.UseAppendMode();
 
             var signer = new PdfSigner(reader, outputStream, stampingProps);
+            string fieldName = "SignatureVGCA_" + DateTime.Now.Ticks;
             var signerProps = new SignerProperties()
-                .SetFieldName("SignatureVGCA_" + DateTime.Now.Ticks)
+                .SetFieldName(fieldName)
                 .SetReason(reason)
                 .SetLocation(location);
+
+            if (targetPage > 0 && signRect != null)
+            {
+                signerProps.SetPageNumber(targetPage);
+                signerProps.SetPageRect(signRect);
+            }
+
+            if (visualSignImageBytes != null && visualSignImageBytes.Length > 0 && signRect != null)
+            {
+                try
+                {
+                    var appearance = new SignatureFieldAppearance(fieldName)
+                        .SetContent(ImageDataFactory.Create(visualSignImageBytes));
+                    signerProps.SetSignatureAppearance(appearance);
+                    Console.WriteLine($"[PAdES Visual Appearance - BouncyCastle] Đã nhúng hình ảnh chữ ký số tại Trang {targetPage}, ({signRect.GetX():F1}, {signRect.GetY():F1})...");
+                }
+                catch (Exception appEx)
+                {
+                    Console.WriteLine($"⚠️ Gặp sự cố khi thiết lập hình ảnh chữ ký BouncyCastle: {appEx.Message}");
+                }
+            }
+
             signer.SetSignerProperties(signerProps);
 
             IExternalSignature pks = new BouncyCastleEcdsaSignature(keyPair.Private);
@@ -739,7 +1015,7 @@ namespace RealPdfSigner
             return outputStream.ToArray();
         }
 
-        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location, bool strict = false)
+        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location, bool strict = false, byte[]? visualSignImageBytes = null, Rectangle? signRect = null, int targetPage = 0)
         {
             var cert = FindVgcaCertificate();
             try
@@ -753,10 +1029,33 @@ namespace RealPdfSigner
                     stampingProps.UseAppendMode();
 
                     var signer = new PdfSigner(reader, outputStream, stampingProps);
+                    string fieldName = "SignatureVGCA_" + DateTime.Now.Ticks;
                     var signerProps = new SignerProperties()
-                        .SetFieldName("SignatureVGCA_" + DateTime.Now.Ticks)
+                        .SetFieldName(fieldName)
                         .SetReason(reason)
                         .SetLocation(location);
+
+                    if (targetPage > 0 && signRect != null)
+                    {
+                        signerProps.SetPageNumber(targetPage);
+                        signerProps.SetPageRect(signRect);
+                    }
+
+                    if (visualSignImageBytes != null && visualSignImageBytes.Length > 0 && signRect != null)
+                    {
+                        try
+                        {
+                            var appearance = new SignatureFieldAppearance(fieldName)
+                                .SetContent(ImageDataFactory.Create(visualSignImageBytes));
+                            signerProps.SetSignatureAppearance(appearance);
+                            Console.WriteLine($"[PAdES Visual Appearance] Đã nhúng hình ảnh chữ ký số trực quan tại Trang {targetPage}, ({signRect.GetX():F1}, {signRect.GetY():F1})...");
+                        }
+                        catch (Exception appEx)
+                        {
+                            Console.WriteLine($"⚠️ Gặp sự cố khi thiết lập hình ảnh chữ ký: {appEx.Message}");
+                        }
+                    }
+
                     signer.SetSignerProperties(signerProps);
 
                     IExternalSignature pks = new VgcaSignature(cert);
@@ -791,7 +1090,7 @@ namespace RealPdfSigner
                 Console.ResetColor();
             }
 
-            return SignBytesWithBouncyCastle(inputPdfBytes, cert, reason, location);
+            return SignBytesWithBouncyCastle(inputPdfBytes, cert, reason, location, visualSignImageBytes, signRect, targetPage);
         }
 
         private static EduSignWin32Tray? _activeTrayInstance;
@@ -949,14 +1248,52 @@ namespace RealPdfSigner
                     using var docJson = JsonDocument.Parse(body);
                     var root = docJson.RootElement;
 
-                    string fileBase64 = root.TryGetProperty("fileBase64", out var fb64) ? fb64.GetString() ?? "" : "";
+                    string fileBase64 = "";
+                    if (root.TryGetProperty("fileBase64", out var fb64)) fileBase64 = fb64.GetString() ?? "";
+                    else if (root.TryGetProperty("pdfBase64", out var pb64)) fileBase64 = pb64.GetString() ?? "";
+
                     string docTitle = "Kế hoạch bài dạy";
                     string signerName = "Hà Văn Tý";
+                    if (root.TryGetProperty("signerName", out var snProp) && !string.IsNullOrWhiteSpace(snProp.GetString()))
+                    {
+                        signerName = snProp.GetString()!;
+                    }
+                    string sigImgData = "";
+                    if (root.TryGetProperty("signatureImage", out var sImgProp))
+                    {
+                        sigImgData = sImgProp.GetString() ?? "";
+                    }
+
+                    float? reqX = null, reqY = null, reqW = null, reqH = null;
+                    int? reqPage = null;
+                    bool isPreStamped = false;
+
+                    if (root.TryGetProperty("isPreStamped", out var ipP)) isPreStamped = ipP.GetBoolean();
 
                     if (root.TryGetProperty("doc", out var docElem))
                     {
                         if (docElem.TryGetProperty("title", out var t)) docTitle = t.GetString() ?? docTitle;
-                        if (docElem.TryGetProperty("author", out var a)) signerName = a.GetString() ?? signerName;
+                        if (docElem.TryGetProperty("author", out var a) && string.IsNullOrEmpty(root.TryGetProperty("signerName", out var _dummy) ? _dummy.GetString() : null)) signerName = a.GetString() ?? signerName;
+                        if (string.IsNullOrEmpty(sigImgData) && docElem.TryGetProperty("signatureImage", out var dSig))
+                            sigImgData = dSig.GetString() ?? "";
+
+                        if (docElem.TryGetProperty("isPreStamped", out var ipD)) isPreStamped = ipD.GetBoolean();
+
+                        if (docElem.TryGetProperty("signatures", out var sigsArr) && sigsArr.GetArrayLength() > 0)
+                        {
+                            var firstSig = sigsArr[0];
+                            if (string.IsNullOrEmpty(sigImgData) && firstSig.TryGetProperty("visualSignImage", out var vsImg))
+                                sigImgData = vsImg.GetString() ?? "";
+                        }
+
+                        if (docElem.TryGetProperty("signCoordinates", out var coordElem))
+                        {
+                            if (coordElem.TryGetProperty("x", out var xProp)) reqX = (float)xProp.GetDouble();
+                            if (coordElem.TryGetProperty("y", out var yProp)) reqY = (float)yProp.GetDouble();
+                            if (coordElem.TryGetProperty("width", out var wProp)) reqW = (float)wProp.GetDouble();
+                            if (coordElem.TryGetProperty("height", out var hProp)) reqH = (float)hProp.GetDouble();
+                            if (coordElem.TryGetProperty("page", out var pProp)) reqPage = pProp.GetInt32();
+                        }
                     }
 
                     Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 📝 Nhận lệnh ký số từ Web: \"{docTitle}\" (Người ký: {signerName})");
@@ -980,9 +1317,27 @@ namespace RealPdfSigner
                         }
                     }
 
+                    bool hasExisting = HasExistingSignature(pdfBytes);
+                    // Nếu tệp đã có chữ ký số trước (như của cô Phạm Thị Mỹ Hằng), server không vẽ ảnh để bảo vệ dải băm SHA-256.
+                    // Do đó EduSign Agent BẮT BUỘC phải nhúng SignatureFieldAppearance trong Incremental Update để hiện đầy đủ ảnh chữ ký!
+                    bool needVisualAppearance = hasExisting || !isPreStamped;
+
+                    byte[]? sigImgBytes = null;
+                    Rectangle? signRect = null;
+                    int targetPage = 0;
+
+                    if (needVisualAppearance)
+                    {
+                        sigImgBytes = ResolveSignatureImage(sigImgData);
+                        var coords = DetermineCoordinates(pdfBytes, signerName, "teacher", reqX, reqY, reqW, reqH, reqPage);
+                        targetPage = coords.page;
+                        signRect = new Rectangle(coords.x, coords.y, coords.w, coords.h);
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎯 Xác định vị trí chữ ký số trực quan: Trang {targetPage}, X={coords.x:F1}, Y={coords.y:F1}, W={coords.w:F1}, H={coords.h:F1} (hasExistingSig={hasExisting}, ảnh={sigImgBytes?.Length ?? 0} bytes)");
+                    }
+
                     try
                     {
-                        byte[] signedBytes = KySoPdfBytes(pdfBytes, $"{signerName} đã ký số VGCA", "Quảng Ngãi", strict: true);
+                        byte[] signedBytes = KySoPdfBytes(pdfBytes, $"{signerName} đã ký số VGCA", "Quảng Ngãi", strict: true, visualSignImageBytes: sigImgBytes, signRect: signRect, targetPage: targetPage);
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎉 Niêm phong PAdES X.509 thành công! Dung lượng: {signedBytes.Length} bytes.");
 
                         var resObj = new
@@ -1284,12 +1639,16 @@ namespace RealPdfSigner
                 ShowBalloon("EduSign Desktop Agent", "Dịch vụ ký số Ban Cơ yếu đang chạy ngầm an toàn tại khay hệ thống.", NIIF_INFO);
             }
 
+            _exitEvent.Reset();
+            try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Starting message loop, _hWnd={_hWnd}\n"); } catch { }
+
             while (!_exitEvent.WaitOne(50))
             {
                 while (PeekMessage(out MSG msg, IntPtr.Zero, 0, 0, 1))
                 {
                     if (msg.message == 0x0012)
                     {
+                        try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Received WM_QUIT\n"); } catch { }
                         _exitEvent.Set();
                         break;
                     }
@@ -1297,6 +1656,8 @@ namespace RealPdfSigner
                     DispatchMessage(ref msg);
                 }
             }
+
+            try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Message loop exited. Cleaning up.\n"); } catch { }
 
             if (_hWnd != IntPtr.Zero)
             {

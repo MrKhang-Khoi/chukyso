@@ -477,13 +477,29 @@ async function signWithRealVgca(doc) {
     const w = Math.round(90 * scale);
     const h = Math.round(60 * scale);
 
+    const signerName = (doc.signatures && doc.signatures[0] && doc.signatures[0].signerName) || doc.author || 'Hà Văn Tý';
+    const sigImgPath = path.join(__dirname, 'uploads', 'signatures', 'sig_user_cvaty.png');
+
     try {
       const isTestEnv = !!(process.env.NODE_ENV === 'test' || process.env.TEST_PORT);
       const signTimeout = isTestEnv ? 4000 : 35000;
 
       const result = await new Promise((resolve, reject) => {
         const { execFile } = require('child_process');
-        execFile(runner.command, [...runner.argsPrefix, '--sign', tempInput, tempOutput, '0', '-1', '-1', String(w), String(h)], { timeout: signTimeout }, (error, stdout, stderr) => {
+        execFile(runner.command, [
+          ...runner.argsPrefix,
+          '--sign',
+          tempInput,
+          tempOutput,
+          '0',
+          '-1',
+          '-1',
+          String(w),
+          String(h),
+          `${signerName} đã ký số VGCA`,
+          'Quảng Ngãi',
+          sigImgPath
+        ], { timeout: signTimeout }, (error, stdout, stderr) => {
           if (error) {
             console.warn('[VGCA Signer] C# Runner gặp lỗi hoặc môi trường không có CSP:', stderr || error.message);
             return reject(error);
