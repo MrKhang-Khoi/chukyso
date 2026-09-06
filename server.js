@@ -475,11 +475,13 @@ app.get('/api/documents/:id/download-signed', async (req, res) => {
 
     const safeTitle = (doc.title || doc.id).replace(/[^a-zA-Z0-9_\-]/g, '_').substring(0, 35);
     const downloadFileName = `KHBD_DaKy_${doc.id}_${safeTitle}.pdf`;
+    const isInline = req.query.inline === '1' || req.query.inline === 'true';
+    const disposition = isInline ? `inline; filename="${downloadFileName}"` : `attachment; filename="${downloadFileName}"`;
 
     // Nếu đã có file ký số mật mã thật VGCA, phục vụ trực tiếp file này
     if (doc.realSignedPath && fs.existsSync(doc.realSignedPath)) {
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${downloadFileName}"`);
+      res.setHeader('Content-Disposition', disposition);
       return res.sendFile(path.resolve(doc.realSignedPath));
     }
 
@@ -500,7 +502,7 @@ app.get('/api/documents/:id/download-signed', async (req, res) => {
           }
         });
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${downloadFileName}"`);
+        res.setHeader('Content-Disposition', disposition);
         return res.sendFile(path.resolve(signResult.signedFilePath));
       }
     } catch (signErr) {
@@ -510,7 +512,7 @@ app.get('/api/documents/:id/download-signed', async (req, res) => {
     const signedPdfBuffer = await pdfSignerService.generateSignedPdf(doc);
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${downloadFileName}"`);
+    res.setHeader('Content-Disposition', disposition);
     res.setHeader('Content-Length', signedPdfBuffer.length);
     return res.send(Buffer.from(signedPdfBuffer));
   } catch (err) {

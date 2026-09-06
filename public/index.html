@@ -1987,18 +1987,25 @@
           ext = fileObject.name.split('.').pop().toLowerCase();
           arrayBuffer = await fileObject.arrayBuffer();
         } else if (docId) {
-          if (existingDoc && (existingDoc.fileName || '').match(/\.(docx|doc)$/i)) {
-            ext = 'docx';
-          }
-          const res = await fetch(`/api/documents/${docId}/file`);
+          const isSigned = existingDoc && (existingDoc.realSignedPath || existingDoc.realVgcaSigned || (existingDoc.signatures && existingDoc.signatures.length > 0));
+          const targetUrl = isSigned ? `/api/documents/${docId}/download-signed?inline=1` : `/api/documents/${docId}/file`;
+
+          const res = await fetch(targetUrl);
           if (!res.ok) throw new Error('Không thể tải file từ máy chủ');
           const contentType = res.headers.get('Content-Type') || '';
-          if (contentType.includes('word') || contentType.includes('officedocument')) {
-            ext = 'docx';
-          } else if (contentType.includes('pdf')) {
+          if (contentType.includes('pdf')) {
             ext = 'pdf';
+          } else if (contentType.includes('word') || contentType.includes('officedocument')) {
+            ext = 'docx';
+          } else {
+            ext = isSigned ? 'pdf' : ((existingDoc && (existingDoc.fileName || '').match(/\.(docx|doc)$/i)) ? 'docx' : 'pdf');
           }
           arrayBuffer = await res.arrayBuffer();
+
+          if (isSigned) {
+            titleEl.innerHTML = `<span class="text-slate-900">${existingDoc.title}</span> <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[11px] font-extrabold ml-2">ĐÃ KÝ SỐ VGCA</span>`;
+            metaEl.innerHTML = `Chủ thể: <strong>${(existingDoc.vgcaInfo && existingDoc.vgcaInfo.signer) || existingDoc.author || 'Hà Văn Tý'}</strong> • Chuẩn PAdES X.509 Ban Cơ yếu Chính phủ • Định dạng: PDF ĐÃ NIÊM PHONG`;
+          }
         }
 
         metaEl.innerText = `Định dạng: ${ext.toUpperCase()}`;
@@ -2093,10 +2100,13 @@
         const isAdmin = currentUser && currentUser.role === 'ADMIN';
 
         let actionBtns = `
-          <button onclick="openDocDetails('${d.id}')" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold transition text-xs">
+          <button onclick="viewSignedDocument('${d.id}')" title="Xem văn bản đã ký số trực tiếp trên trình duyệt" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer">
+            <i class="fa-solid fa-eye text-emerald-600"></i> Xem
+          </button>
+          <button onclick="openDocDetails('${d.id}')" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold transition text-xs cursor-pointer">
             Chi tiết
           </button>
-          <a href="/api/documents/${d.id}/download-signed" download title="Lưu / Tải văn bản đã ký về máy (.PDF)" class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition text-xs">
+          <a href="/api/documents/${d.id}/download-signed" download title="Lưu / Tải văn bản đã ký về máy (.PDF)" class="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-xs">
             <i class="fa-solid fa-file-arrow-down"></i>
           </a>
         `;
@@ -2126,11 +2136,15 @@
             <input type="checkbox" value="${d.id}" onchange="updateSelectedDocsCount()" class="doc-row-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
           </td>
           <td class="py-3 px-4 font-mono font-bold text-slate-600">${d.id}</td>
-          <td class="py-3 px-4 font-bold text-slate-900 max-w-xs truncate" title="${d.title}">${d.title}</td>
+          <td class="py-3 px-4 font-bold text-slate-900 max-w-xs truncate" title="Nhấn để xem văn bản: ${d.title}">
+            <button type="button" onclick="viewSignedDocument('${d.id}')" class="text-left font-bold text-slate-900 hover:text-blue-600 transition truncate max-w-xs block cursor-pointer">
+              ${d.title}
+            </button>
+          </td>
           <td class="py-3 px-4 text-slate-700">
-            <span class="inline-flex items-center gap-1 font-medium text-[11px]">
-              ${fileIcon} <span class="truncate max-w-[120px]">${d.fileName || 'GiaoAn.pdf'}</span>
-            </span>
+            <button type="button" onclick="viewSignedDocument('${d.id}')" class="inline-flex items-center gap-1 font-medium text-[11px] text-slate-700 hover:text-blue-600 transition cursor-pointer" title="Nhấn để xem tệp: ${d.fileName || 'GiaoAn.pdf'}">
+              ${fileIcon} <span class="truncate max-w-[120px] underline decoration-slate-300 underline-offset-2">${d.fileName || 'GiaoAn.pdf'}</span>
+            </button>
           </td>
           <td class="py-3 px-4 text-slate-700">${d.author}</td>
           <td class="py-3 px-4 text-slate-600">${d.department}</td>
@@ -2144,6 +2158,12 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function viewSignedDocument(docId) {
+      const doc = currentDocList.find(d => d.id === docId);
+      if (!doc) return;
+      openDocumentViewer(doc.title, null, doc.id, false);
     }
 
     // ==================== CẤU HÌNH & TẠO CON DẤU CHỮ KÝ SỐ VGCA ====================
@@ -3834,10 +3854,18 @@
         `;
       }
 
+      // NÚT XEM FILE ĐÃ KÝ TRỰC TIẾP TRÊN TRÌNH DUYỆT
+      actionsContainer.innerHTML += `
+        <button onclick="viewSignedDocument('${doc.id}')" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 transition flex items-center gap-2">
+          <i class="fa-solid fa-eye text-sm"></i>
+          <span>Xem Văn Bản Đã Ký Số (.PDF)</span>
+        </button>
+      `;
+
       // NÚT LƯU FILE ĐÃ KÝ VỀ MÁY TÍNH (NỔI BẬT)
       actionsContainer.innerHTML += `
         <a href="/api/documents/${doc.id}/download-signed" download
-           class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 transition flex items-center gap-2">
+           class="px-4 py-2.5 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition flex items-center gap-2">
           <i class="fa-solid fa-file-arrow-down text-sm"></i>
           <span>Lưu Văn Bản Đã Ký Về Máy (.PDF)</span>
         </a>

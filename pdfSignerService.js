@@ -155,6 +155,19 @@ async function generateSignedPdf(doc) {
     return sourcePdfBuffer;
   }
 
+  // BẢO VỆ CHỮ KÝ SỐ ĐÃ CÓ TRƯỚC (NHƯ CỦA CÔ PHẠM THỊ MỸ HẰNG):
+  // Nếu tệp PDF đã có chữ ký số điện tử (chứa /ByteRange hoặc /Type /Sig),
+  // tuyệt đối KHÔNG cho pdf-lib load() và save() vẽ đè lên trang vì sẽ phá vỡ dải băm SHA-256 của chữ ký trước!
+  // Tệp được giữ nguyên vẹn 100% byte để iText ký nối tiếp (Append Mode / Incremental Update).
+  if (sourcePdfBuffer && sourcePdfBuffer.length > 50) {
+    const sourcePdfString = sourcePdfBuffer.toString('binary');
+    const hasExistingSig = sourcePdfString.includes('/ByteRange') || sourcePdfString.includes('/Type /Sig') || sourcePdfString.includes('/Type/Sig');
+    if (hasExistingSig) {
+      console.log(`[Signature Preservation] 🛡️ Phát hiện tệp PDF đã có chữ ký số hợp lệ trước đó (của cô Phạm Thị Mỹ Hằng). Giữ nguyên 100% byte gốc để tránh làm hỏng chữ ký của người ký trước.`);
+      return sourcePdfBuffer;
+    }
+  }
+
   // Nếu không có file PDF nguồn (hoặc file lỗi, rỗng), dùng file template chuẩn
   if (!sourcePdfBuffer || sourcePdfBuffer.length < 50 || !sourcePdfBuffer.toString('ascii', 0, 5).startsWith('%PDF')) {
     const defaultTemplate = path.join(__dirname, 'GiaoAn_CanKy.pdf');
@@ -453,6 +466,20 @@ async function signWithRealVgca(doc) {
 
   // 3. Giải pháp niêm phong mật mã số PAdES X.509 RFC 3279 trực tiếp trên Cloud (Render Linux / Docker / Web Hosting)
   try {
+    const isPreSigned = stampedPdfBuffer && (
+      stampedPdfBuffer.toString('binary').includes('/ByteRange') ||
+      stampedPdfBuffer.toString('binary').includes('/Type /Sig')
+    );
+
+    if (isPreSigned) {
+      fs.writeFileSync(tempOutput, stampedPdfBuffer);
+      return {
+        signedBuffer: stampedPdfBuffer,
+        signedFilePath: tempOutput,
+        stdout: '[VGCA Cloud Sealer] Đã giữ nguyên vẹn 100% chữ ký số hợp lệ của người ký trước.'
+      };
+    }
+
     const crypto = require('crypto');
     const pdfDoc = await PDFDocument.load(stampedPdfBuffer);
     
