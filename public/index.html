@@ -825,6 +825,18 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <!-- Nút Tải / Mở bằng Word trên máy tính (Offline chuẩn 100% định dạng) -->
+          <a id="btnOpenWordOffline" href="#" download class="hidden px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Tải file Word về máy để mở bằng Microsoft Word offline chuẩn 100% định dạng">
+            <i class="fa-solid fa-file-word text-blue-600"></i>
+            <span>Mở Word Máy Tính</span>
+          </a>
+
+          <!-- Nút Chuyển đổi Xem Bản In PDF chuẩn vs Xem Nội Dung Word -->
+          <button type="button" id="btnToggleDocViewMode" onclick="toggleDocxViewMode()" class="hidden px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Xem trước bản in PDF chuẩn A4 sau khi chuyển đổi từ Word">
+            <i class="fa-solid fa-file-pdf text-red-600"></i>
+            <span id="btnToggleDocViewModeText">Xem Bản In PDF</span>
+          </button>
+
           <!-- Nút kích hoạt chỉnh sửa văn bản Word -->
           <button type="button" id="btnToggleWordEdit" onclick="toggleWordEditMode()" class="hidden px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
             <i class="fa-solid fa-pen-to-square"></i>
@@ -1988,6 +2000,53 @@
 
     let isWordEditMode = false;
     let currentViewerDocId = null;
+    let currentDocxViewMode = 'word';
+
+    // Chuyển đổi giữa chế độ xem nội dung Word và xem trước trang in PDF chuẩn A4
+    async function toggleDocxViewMode() {
+      const pdfFrame = document.getElementById('viewerPdfFrame');
+      const wordContainer = document.getElementById('viewerWordContainer');
+      const modeBtnText = document.getElementById('btnToggleDocViewModeText');
+      const spinner = document.getElementById('viewerLoadingSpinner');
+      const editBar = document.getElementById('viewerWordEditorBar');
+
+      if (currentDocxViewMode === 'word') {
+        currentDocxViewMode = 'pdf';
+        wordContainer.style.display = 'none';
+        if (editBar) editBar.classList.add('hidden');
+        if (spinner) spinner.classList.remove('hidden');
+
+        try {
+          if (!window._currentConvertedPdfUrl && currentViewerDocId) {
+            const res = await fetch(`/api/documents/${currentViewerDocId}/prepare-signing-pdf`);
+            if (res.ok) {
+              const blob = await res.blob();
+              window._currentConvertedPdfUrl = URL.createObjectURL(blob);
+            }
+          }
+          if (window._currentConvertedPdfUrl) {
+            pdfFrame.src = window._currentConvertedPdfUrl + '#toolbar=1&navpanes=0';
+            pdfFrame.style.display = 'block';
+            if (modeBtnText) modeBtnText.innerText = 'Xem Nội Dung Word';
+          } else {
+            alert('Chưa tạo được bản xem trước PDF từ tệp Word này.');
+            currentDocxViewMode = 'word';
+            wordContainer.style.display = 'block';
+          }
+        } catch (e) {
+          console.error('Lỗi nạp PDF xem trước:', e);
+          currentDocxViewMode = 'word';
+          wordContainer.style.display = 'block';
+        } finally {
+          if (spinner) spinner.classList.add('hidden');
+        }
+      } else {
+        currentDocxViewMode = 'word';
+        pdfFrame.style.display = 'none';
+        wordContainer.style.display = 'block';
+        if (modeBtnText) modeBtnText.innerText = 'Xem Bản In PDF';
+      }
+    }
 
     // Bật / Tắt chế độ chỉnh sửa trực tiếp nội dung Word
     function toggleWordEditMode() {
@@ -2213,9 +2272,19 @@
           }
         }
 
+        const btnOpenWord = document.getElementById('btnOpenWordOffline');
+        const btnToggleViewMode = document.getElementById('btnToggleDocViewMode');
+        const modeBtnText = document.getElementById('btnToggleDocViewModeText');
+
+        window._currentConvertedPdfUrl = null;
+        currentDocxViewMode = 'word';
+        if (modeBtnText) modeBtnText.innerText = 'Xem Bản In PDF';
+
         metaEl.innerText = `Định dạng: ${ext.toUpperCase()}`;
         if (ext === 'pdf') {
           if (btnEdit) btnEdit.classList.add('hidden');
+          if (btnOpenWord) btnOpenWord.classList.add('hidden');
+          if (btnToggleViewMode) btnToggleViewMode.classList.add('hidden');
           iconEl.className = 'fa-solid fa-file-pdf text-red-600 text-xl';
           const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
           const blobUrl = URL.createObjectURL(blob);
@@ -2225,6 +2294,17 @@
         } else {
           // Hiển thị tài liệu Word .docx chuẩn A4 và hỗ trợ chỉnh sửa
           if (btnEdit) btnEdit.classList.remove('hidden');
+          if (btnOpenWord && docId) {
+            btnOpenWord.href = `/api/documents/${docId}/file`;
+            btnOpenWord.classList.remove('hidden');
+          } else if (btnOpenWord) {
+            btnOpenWord.classList.add('hidden');
+          }
+          if (btnToggleViewMode && docId) {
+            btnToggleViewMode.classList.remove('hidden');
+          } else if (btnToggleViewMode) {
+            btnToggleViewMode.classList.add('hidden');
+          }
           iconEl.className = 'fa-solid fa-file-word text-blue-600 text-xl';
 
           if (existingDoc && existingDoc.customContentHtml) {
