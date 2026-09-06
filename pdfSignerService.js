@@ -17,6 +17,8 @@ function safeAscii(str) {
 
 /**
  * Chuyển đổi tệp Microsoft Word (.docx / .doc) sang PDF bằng Word COM Automation
+ * Xử lý an toàn: sao chép tạm vào os.tmpdir() (ASCII path) và dùng UTF-8 BOM cho PowerShell
+ * để tránh lỗi mã hóa đường dẫn tiếng Việt (như thư mục 'KÝ SỐ')
  */
 function convertDocxToPdf(docxPath, outputPath) {
   return new Promise((resolve, reject) => {
@@ -24,14 +26,32 @@ function convertDocxToPdf(docxPath, outputPath) {
       return reject(new Error('Word COM Automation chỉ khả dụng trên Windows'));
     }
     const absDocx = path.resolve(docxPath);
-    const absPdf = path.resolve(outputPath);
-    const script = [
+    if (!fs.existsSync(absDocx)) {
+      return reject(new Error(`Tệp Word nguồn không tồn tại: ${absDocx}`));
+    }
+
+    const os = require('os');
+    const tmpDir = os.tmpdir();
+    const uniqueId = `conv_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+    const ext = path.extname(absDocx).toLowerCase() === '.doc' ? '.doc' : '.docx';
+    const stagedDocx = path.join(tmpDir, `${uniqueId}${ext}`);
+    const stagedPdf = path.join(tmpDir, `${uniqueId}.pdf`);
+    const tempPs1 = path.join(tmpDir, `${uniqueId}.ps1`);
+
+    try {
+      fs.copyFileSync(absDocx, stagedDocx);
+    } catch (copyInErr) {
+      return reject(new Error(`Không thể sao chép tệp Word sang thư mục tạm: ${copyInErr.message}`));
+    }
+
+    const script = '\uFEFF' + [
       `$w = New-Object -ComObject Word.Application`,
       `$w.Visible = $false`,
+      `$w.DisplayAlerts = 0`,
       `try {`,
-      `  $doc = $w.Documents.Open('${absDocx.replace(/'/g, "''")}')`,
-      `  $doc.SaveAs([ref]'${absPdf.replace(/'/g, "''")}', [ref]17)`,
-      `  $doc.Close()`,
+      `  $doc = $w.Documents.Open('${stagedDocx.replace(/'/g, "''")}')`,
+      `  $doc.SaveAs([ref]'${stagedPdf.replace(/'/g, "''")}', [ref]17)`,
+      `  $doc.Close([ref]0)`,
       `  Write-Output "SUCCESS"`,
       `} catch {`,
       `  Write-Error $_.Exception.Message`,
@@ -40,17 +60,28 @@ function convertDocxToPdf(docxPath, outputPath) {
       `}`
     ].join('\r\n');
 
-    const tempPs1 = path.join(__dirname, `temp_conv_${Date.now()}_${Math.floor(Math.random()*1000)}.ps1`);
     fs.writeFileSync(tempPs1, script, 'utf8');
 
     const { execFile } = require('child_process');
-    execFile('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', tempPs1], { timeout: 35000 }, (error, stdout, stderr) => {
+    execFile('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', tempPs1], { timeout: 45000 }, (error, stdout, stderr) => {
       try { if (fs.existsSync(tempPs1)) fs.unlinkSync(tempPs1); } catch (e) {}
+      try { if (fs.existsSync(stagedDocx)) fs.unlinkSync(stagedDocx); } catch (e) {}
 
-      if (fs.existsSync(absPdf) && fs.statSync(absPdf).size > 100) {
-        resolve(absPdf);
+      const absPdf = path.resolve(outputPath);
+      if (fs.existsSync(stagedPdf) && fs.statSync(stagedPdf).size > 100) {
+        try {
+          const outDir = path.dirname(absPdf);
+          if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+          fs.copyFileSync(stagedPdf, absPdf);
+          try { fs.unlinkSync(stagedPdf); } catch (e) {}
+          resolve(absPdf);
+        } catch (copyOutErr) {
+          try { if (fs.existsSync(stagedPdf)) fs.unlinkSync(stagedPdf); } catch (e) {}
+          reject(new Error(`Không thể lưu file PDF sau chuyển đổi: ${copyOutErr.message}`));
+        }
       } else {
-        reject(new Error('Chuyển đổi Word sang PDF không thành công: ' + (stderr || error?.message || 'File không tồn tại')));
+        try { if (fs.existsSync(stagedPdf)) fs.unlinkSync(stagedPdf); } catch (e) {}
+        reject(new Error('Chuyển đổi Word sang PDF không thành công: ' + (stderr || error?.message || 'File PDF đầu ra rỗng hoặc không tạo được')));
       }
     });
   });
@@ -133,11 +164,10 @@ async function generateSignedPdf(doc) {
         sourcePdfBuffer = buf;
       } else if (buf.length > 50 && (doc.fileName || '').match(/\.(docx|doc)$/i)) {
         try {
-          const uploadsDir = path.join(__dirname, 'uploads', 'documents');
-          if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+          const os = require('os');
           const isDoc = (doc.fileName || '').toLowerCase().endsWith('.doc');
           const ext = isDoc ? '.doc' : '.docx';
-          const tempDocx = path.join(uploadsDir, `temp_conv_${Date.now()}_${Math.floor(Math.random()*1000)}${ext}`);
+          const tempDocx = path.join(os.tmpdir(), `temp_conv_${Date.now()}_${Math.floor(Math.random()*1000)}${ext}`);
           const tempPdf = tempDocx.replace(/\.[^.]+$/, '.pdf');
           fs.writeFileSync(tempDocx, buf);
           await convertDocxToPdf(tempDocx, tempPdf);
@@ -148,10 +178,16 @@ async function generateSignedPdf(doc) {
           try { if (fs.existsSync(tempPdf)) fs.unlinkSync(tempPdf); } catch (e) {}
         } catch (convErr) {
           console.warn('Word COM conversion note:', convErr.message);
+          if (doc.onlyConvert) {
+            throw convErr;
+          }
         }
       }
     } catch (err) {
       console.error('Lỗi đọc fileBase64 trong generateSignedPdf:', err.message);
+      if (doc.onlyConvert) {
+        throw err;
+      }
     }
   }
 
@@ -189,9 +225,20 @@ async function generateSignedPdf(doc) {
           }
         } catch (e) {
           console.error('Lỗi chuyển đổi Word sang PDF khi ký:', e.message);
+          if (doc.onlyConvert) {
+            throw e;
+          }
         }
       }
     }
+  }
+
+  // Nếu chỉ yêu cầu chuyển đổi định dạng (chưa ký, chưa đóng dấu ảnh), trả về trực tiếp file PDF
+  if (doc.onlyConvert) {
+    if (sourcePdfBuffer && sourcePdfBuffer.length > 50) {
+      return sourcePdfBuffer;
+    }
+    throw new Error('Chuyển đổi Word sang PDF không thành công, vui lòng kiểm tra tệp Word.');
   }
 
   // Nếu tài liệu đã được đóng dấu ảnh từ trước (isPreStamped), không đóng dấu lặp lại

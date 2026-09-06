@@ -502,6 +502,7 @@ app.post('/api/documents/prepare-signing-pdf', async (req, res) => {
       signCoordinates: docData.signCoordinates || null,
       signType: isCopy ? 'COPY' : (docData.signType || 'STANDARD'),
       isCopySign: isCopy,
+      onlyConvert: docData.onlyConvert === true,
       copyType: isCopy ? (docData.copyType || 'SAO Y') : null,
       copyText: isCopy ? (docData.copyText || null) : null,
       copySignBannerBase64: isCopy ? (docData.copySignBannerBase64 || null) : null,

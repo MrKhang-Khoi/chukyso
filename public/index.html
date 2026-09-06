@@ -1952,7 +1952,8 @@
           body: JSON.stringify({
             fileBase64: selectedUploadFileBase64,
             fileName: selectedUploadFile.name,
-            title: docTitle
+            title: docTitle,
+            onlyConvert: true
           })
         });
 
@@ -2068,7 +2069,8 @@
                 body: JSON.stringify({
                   fileBase64: selectedUploadFileBase64,
                   fileName: selectedUploadFile ? selectedUploadFile.name : 'GiaoAn.docx',
-                  title: (document.getElementById('newDocTitle')?.value) || 'Kế hoạch bài dạy'
+                  title: (document.getElementById('newDocTitle')?.value) || 'Kế hoạch bài dạy',
+                  onlyConvert: true
                 })
               });
               const data = await res.json();
