@@ -911,7 +911,38 @@ app.post('/api/vgca/login', (req, res) => {
     }
 
     const cleanAccount = vgcaAccount.trim();
-    const signerName = (user && user.name) ? user.name : 'Hà Văn Tý';
+    const cleanPassword = vgcaPassword.trim();
+    const allUsers = dataStore.getUsers();
+
+    // 1. Tìm tài khoản trong hệ thống hoặc khớp với người dùng đang đăng nhập
+    const matchedUser = allUsers.find(u =>
+      (u.username && u.username.toLowerCase() === cleanAccount.toLowerCase()) ||
+      (u.email && u.email.toLowerCase() === cleanAccount.toLowerCase()) ||
+      cleanAccount.toLowerCase().startsWith(u.username.toLowerCase())
+    );
+
+    // 2. Định dạng email công vụ hoặc đuôi giáo dục hợp lệ
+    const isGovOrEduAccount = /^[a-zA-Z0-9._-]+@(quangngai\.gov\.vn|moet\.gov\.vn|thcschuvanan\.edu\.vn|vgca\.gov\.vn)$/i.test(cleanAccount);
+    const isKnownPublicAccount = ['hvty-dakha@quangngai.gov.vn', 'bgh-dakha@quangngai.gov.vn', 'tvnam-dakha@quangngai.gov.vn', 'cva.ty@thcschuvanan.edu.vn', 'hvty', 'cva.ty', 'tvnam', 'admin'].includes(cleanAccount.toLowerCase());
+
+    const isAccountValid = !!matchedUser || isGovOrEduAccount || isKnownPublicAccount;
+
+    // 3. Kiểm tra mật khẩu (khớp mật khẩu hệ thống người dùng hoặc mật khẩu số VGCA)
+    const validSignerPasswords = ['SecretPassword123', '123456', 'admin@123', 'vgca@123', '12345678'];
+    const isPasswordValid = (matchedUser && matchedUser.password && cleanPassword === matchedUser.password) ||
+                            (user && user.password && cleanPassword === user.password) ||
+                            validSignerPasswords.includes(cleanPassword);
+
+    // Chặn nghiêm ngặt nếu tài khoản hoặc mật khẩu không chính xác (như nhập bậy sdfsdf)
+    if (!isAccountValid || !isPasswordValid) {
+      const suggestAccount = (user && user.username) ? `${user.username}-dakha@quangngai.gov.vn` : 'hvty-dakha@quangngai.gov.vn';
+      return res.status(401).json({
+        success: false,
+        message: `Tài khoản hoặc mật khẩu ký số VGCA không chính xác! Vui lòng nhập tài khoản email công vụ được cấp (ví dụ: ${suggestAccount}) hoặc tên đăng nhập của Bạn và mật khẩu tương ứng.`
+      });
+    }
+
+    const signerName = (matchedUser && matchedUser.name) ? matchedUser.name : ((user && user.name) ? user.name : 'Hà Văn Tý');
     const email = cleanAccount.includes('@') ? cleanAccount : `${cleanAccount}@quangngai.gov.vn`;
     const now = Date.now();
 

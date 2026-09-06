@@ -303,14 +303,6 @@
                 <i class="fa-brands fa-microsoft text-white text-xs"></i>
                 <span>Lưu vào OneDrive</span>
               </button>
-
-              <button type="button" onclick="promptSelectOneDriveFolder(true)" id="btnOneDriveFolderConfig"
-                class="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-medium transition flex items-center gap-1.5 cursor-pointer"
-                title="Nhấn để đổi thư mục lưu OneDrive trên máy tính">
-                <i class="fa-regular fa-folder text-slate-500"></i>
-                <span id="lblOneDriveFolderName" class="truncate max-w-[220px]">Thư mục: Chọn thư mục OneDrive</span>
-                <span class="text-[10px] text-blue-600 underline font-bold ml-0.5">[Đổi]</span>
-              </button>
             </div>
 
             <!-- Trạng thái tài khoản VGCA -->
@@ -674,13 +666,7 @@
               </div>
 
               <div class="flex items-center gap-1.5">
-                <button type="button" onclick="event.stopPropagation(); previewSelectedLocalFile()" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[11px] font-bold cursor-pointer" title="Xem trước file">
-                  <i class="fa-solid fa-eye"></i> Xem trước
-                </button>
-                <button type="button" onclick="event.stopPropagation(); openCopySignModal()" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-[11px] font-bold border border-amber-300 cursor-pointer" title="Ký số bản sao (Nghị định 30/2020/NĐ-CP)">
-                  <i class="fa-solid fa-copy text-amber-600"></i> Ký Sao Y
-                </button>
-                <button type="button" onclick="event.stopPropagation(); removeSelectedFile()" class="text-slate-400 hover:text-red-600 p-1 cursor-pointer" title="Xóa chọn lại">
+                <button type="button" onclick="event.stopPropagation(); removeSelectedFile()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center transition cursor-pointer" title="Xóa file chọn lại">
                   <i class="fa-solid fa-xmark"></i>
                 </button>
               </div>
@@ -3431,6 +3417,12 @@
               if (currentUser) currentUser.vgcaAuth = null;
               return null;
             }
+            // Xóa các tài khoản thử nghiệm không hợp lệ nếu còn lưu vết
+            if (['sdfsdf', 'test', 'admin123'].includes(parsed.account.toLowerCase()) || parsed.account.length < 3) {
+              clearVgcaLoggedInUser();
+              if (currentUser) currentUser.vgcaAuth = null;
+              return null;
+            }
             // Gia hạn phiên hoạt động
             parsed.lastActiveAt = Date.now();
             parsed.expiresAt = Date.now() + 30 * 60 * 1000;
@@ -5034,9 +5026,15 @@
       const origModalHtml = btnModal ? btnModal.innerHTML : '';
       const origRowHtml = btnRow ? btnRow.innerHTML : '';
 
+      const targetDoc = doc || { id: docId, title: 'Kế hoạch bài dạy' };
+      const cleanTitle = (targetDoc.title || targetDoc.id).replace(/[/\\?%*:|"<>]/g, '_').trim();
+      const weekStr = targetDoc.week ? ('_' + targetDoc.week.replace(/\s+/g, '_')) : '';
+      const deptStr = targetDoc.department ? ('[' + targetDoc.department.replace(/\s+/g, '_') + ']') : '[To_Chuyen_Mon]';
+      const defaultFileName = `${deptStr}${weekStr}_${cleanTitle}_DaKySo.pdf`;
+
       if (btnModal) {
         btnModal.disabled = true;
-        btnModal.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang lưu OneDrive...</span>';
+        btnModal.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang chuẩn bị...</span>';
       }
       if (btnRow) {
         btnRow.disabled = true;
@@ -5044,22 +5042,106 @@
       }
 
       try {
-        if (window.showDirectoryPicker) {
-          const dirHandle = await promptSelectOneDriveFolder(false);
-          if (!dirHandle) {
-            // Người dùng hủy chọn thư mục
-            return;
+        // 1. Tải blob PDF đã ký hoặc file tài liệu
+        let blob = null;
+        try {
+          const signRes = await fetch(`/api/documents/${docId}/download-signed`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          if (signRes.ok) {
+            const b = await signRes.blob();
+            if (b && b.size > 500) blob = b;
+          }
+        } catch (e) {}
+
+        if (!blob || blob.size < 500) {
+          try {
+            const fileRes = await fetch(`/api/documents/${docId}/file`, {
+              headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            if (fileRes.ok) {
+              const b = await fileRes.blob();
+              if (b && b.size > 200) blob = b;
+            }
+          } catch (e) {}
+        }
+
+        if (!blob || blob.size < 100) {
+          throw new Error('Hồ sơ chưa có tệp đính kèm hoặc không tải được nội dung');
+        }
+
+        // 2. Cho phép người dùng chọn đường dẫn thư mục và đổi tên file bằng showSaveFilePicker
+        // ID 'edusign_onedrive_save_picker' giúp trình duyệt tự động ghi nhớ đường dẫn thư mục đã chọn cho các lần sau
+        if (window.showSaveFilePicker) {
+          let fileHandle = null;
+          try {
+            fileHandle = await window.showSaveFilePicker({
+              suggestedName: defaultFileName,
+              types: [
+                {
+                  description: 'Tài liệu kế hoạch bài dạy đã ký số (.pdf)',
+                  accept: { 'application/pdf': ['.pdf'] }
+                }
+              ],
+              id: 'edusign_onedrive_save_picker',
+              startIn: 'documents'
+            });
+          } catch (pickerErr) {
+            if (pickerErr.name === 'AbortError') {
+              // Người dùng hủy chọn lưu tệp
+              return;
+            }
+            throw pickerErr;
           }
 
-          const targetDoc = doc || { id: docId, title: 'Kế hoạch bài dạy' };
-          const result = await saveSingleDocToLocalOneDrive(targetDoc, dirHandle);
+          if (fileHandle) {
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
 
+            const savedName = fileHandle.name || defaultFileName;
+
+            // Ghi nhận trạng thái đã lưu vào máy chủ
+            try {
+              await fetch(`/api/documents/${docId}/mark-onedrive-synced`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                  fileName: savedName,
+                  category: resolveOneDriveSubCategory(targetDoc.title, targetDoc.fileName),
+                  folderName: 'OneDrive'
+                })
+              });
+            } catch (e) {}
+
+            alert(`🎉 ĐÃ LƯU HỒ SƠ THÀNH CÔNG VÀO ONEDRIVE / MÁY TÍNH!\n\n` +
+                  `📄 Tên tệp đã lưu: "${savedName}"\n\n` +
+                  `✅ Vị trí thư mục đã được tự động ghi nhớ cho các lần sau!\n` +
+                  `Tệp đã nằm trong thư mục máy tính và OneDrive sẽ tự động đồng bộ lên đám mây trường.`);
+
+            await loadDocuments();
+            const detailsModal = document.getElementById('modalDocDetails');
+            if (detailsModal && !detailsModal.classList.contains('hidden')) {
+              openDocDetails(docId);
+            }
+            return;
+          }
+        }
+
+        // Phương án dự phòng bằng showDirectoryPicker nếu trình duyệt chưa hỗ trợ showSaveFilePicker
+        if (window.showDirectoryPicker) {
+          const dirHandle = await promptSelectOneDriveFolder(false);
+          if (!dirHandle) return;
+
+          const result = await saveSingleDocToLocalOneDrive(targetDoc, dirHandle);
           alert(`🎉 ĐÃ LƯU HỒ SƠ THÀNH CÔNG VÀO ONEDRIVE TRƯỜNG (5TB)!\n\n` +
                 `📁 Thư mục lưu trữ: ${result.category}\n` +
                 `📄 Tệp tin: ${result.fileName}\n` +
                 `🏢 Thư mục chia sẻ: "${result.folderName}"\n\n` +
-                `✅ Đường dẫn đã được lưu lại để tự động sử dụng cho các lần sau!\n` +
-                `Tệp đã nằm trong thư mục máy tính và OneDrive sẽ tự động đồng bộ lên đám mây nhà trường.`);
+                `✅ Đường dẫn đã được lưu lại để tự động sử dụng cho các lần sau!`);
 
           await loadDocuments();
           const detailsModal = document.getElementById('modalDocDetails');
@@ -5069,7 +5151,7 @@
           return;
         }
 
-        // Phương án dự phòng qua Backend API nếu không có showDirectoryPicker
+        // Phương án dự phòng qua Backend API
         const res = await fetch(`/api/documents/${docId}/sync-onedrive`, {
           method: 'POST',
           headers: {
@@ -5083,7 +5165,7 @@
         const info = data.data || data.oneDriveInfo || {};
         alert(`🎉 ĐÃ LƯU HỒ SƠ THÀNH CÔNG VÀO ONEDRIVE (5TB)!\n\n` +
               `📁 Thư mục: ${info.category || '2. KẾ HOẠCH BÀI DẠY'}\n` +
-              `📄 Tệp tin: ${info.fileName || 'GiaoAn_DaKySo.pdf'}\n` +
+              `📄 Tệp tin: ${info.fileName || defaultFileName}\n` +
               `🏢 Thư mục chia sẻ: ${info.oneDriveRoot || 'OneDrive Trường'}\n\n` +
               `Hệ thống đã lưu vào thư mục máy tính và đồng bộ lên đám mây trường.`);
 
