@@ -1264,10 +1264,10 @@
                 <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl mx-auto shadow-md animate-pulse">
                   <i class="fa-solid fa-mobile-screen-button"></i>
                 </div>
-                <h4 class="font-extrabold text-sm text-blue-900 uppercase tracking-tight">ĐÃ GỬI YÊU CẦU XÁC THỰC TỚI ĐIỆN THOẠI</h4>
+                <h4 class="font-extrabold text-sm text-blue-900 uppercase tracking-tight">XÁC THỰC KÝ SỐ BAN CƠ YẾU CHÍNH PHỦ (VIRTUAL CSP)</h4>
                 <p class="text-xs text-slate-700 leading-relaxed max-w-sm mx-auto">
-                  Yêu cầu ký số Kế hoạch bài dạy đã được chuyển tới điện thoại của Thầy.<br>
-                  Thầy vui lòng mở ứng dụng và nhấn <strong>[ĐỒNG Ý]</strong> để xác nhận niêm phong chữ ký số.
+                  Hệ thống đang kết nối với <strong>Virtual CSP (TSE / Di động)</strong> của Ban Cơ yếu Chính phủ.<br>
+                  Thầy mở ứng dụng trên điện thoại nhấn <strong>[ĐỒNG Ý]</strong>, hoặc bấm nút xác nhận bên dưới để hoàn tất niêm phong chữ ký số ngay!
                 </p>
                 <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100/90 text-emerald-800 font-semibold text-[11px]">
                   <i class="fa-solid fa-shield-halved text-emerald-600"></i>
@@ -1281,7 +1281,7 @@
           <div class="flex items-center justify-between px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs">
             <div class="flex items-center gap-2 text-amber-900 font-medium">
               <i class="fa-solid fa-clock-rotate-left fa-spin text-amber-600"></i>
-              <span>Thời gian chờ Thầy nhấn Đồng ý trên điện thoại:</span>
+              <span>Thời gian chờ xác thực phiên giao dịch:</span>
             </div>
             <span id="vgcaCountdown" class="font-mono font-black text-amber-800 text-sm">01:30</span>
           </div>
@@ -1294,7 +1294,7 @@
               <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>
             </button>
             <p class="text-[11px] text-center text-slate-500 italic">
-              * Hệ thống niêm phong chữ ký số PAdES X.509 khi Thầy đã bấm Đồng ý trên điện thoại.
+              * Bấm nút này sau khi xác nhận trên điện thoại (hoặc để ký niêm phong ngay bằng chứng thư số công vụ trên máy).
             </p>
           </div>
 
@@ -3009,9 +3009,9 @@
         if (btn && btn.disabled) {
           btn.disabled = false;
           btn.innerHTML = origHtml;
-          alert('⚠️ Hết thời gian chờ phản hồi ký số từ Ban Cơ yếu (10 giây)!\nThầy vui lòng kiểm tra lại kết nối mạng hoặc thử lại.');
+          alert('⚠️ Hết thời gian chờ phản hồi ký số từ Ban Cơ yếu (90 giây)!\nThầy vui lòng kiểm tra lại kết nối mạng hoặc thử lại.');
         }
-      }, 10000);
+      }, 90000);
 
       try {
         // 1. Gửi xác nhận phiên ký lên máy chủ
@@ -3867,10 +3867,15 @@
           processedSignatureBase64 = data.signatureImage;
           const previewImg = document.getElementById('sigPreviewImage');
           const emptyText = document.getElementById('sigPreviewEmpty');
-          previewImg.src = data.signatureImage;
-          previewImg.style.display = 'block';
-          emptyText.style.display = 'none';
-          document.getElementById('sigSavedBadge').classList.remove('hidden');
+          if (previewImg) {
+            previewImg.src = data.signatureImage;
+            previewImg.style.display = 'block';
+          }
+          if (emptyText) {
+            emptyText.style.display = 'none';
+          }
+          const savedBadge = document.getElementById('sigSavedBadge');
+          if (savedBadge) savedBadge.classList.remove('hidden');
         }
       } catch (e) {
         console.error('Lỗi đọc chữ ký:', e);
