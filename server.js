@@ -459,6 +459,7 @@ app.get('/api/documents/:id/prepare-signing-pdf', async (req, res) => {
 app.post('/api/documents/prepare-signing-pdf', async (req, res) => {
   try {
     const docData = req.body || {};
+    const isCopy = (docData.signType === 'COPY' || docData.isCopySign === true);
     const tempDoc = {
       id: docData.id || 'DOC_' + Date.now(),
       title: docData.title || 'Kế hoạch bài dạy',
@@ -468,15 +469,22 @@ app.post('/api/documents/prepare-signing-pdf', async (req, res) => {
       filePath: docData.filePath || null,
       fileBase64: docData.fileBase64 || null,
       fileName: docData.fileName || 'GiaoAn.pdf',
-      signPlacement: docData.signPlacement || 'bottom-right',
+      signPlacement: isCopy ? 'top-right' : (docData.signPlacement || 'bottom-right'),
       signCoordinates: docData.signCoordinates || null,
-      signatureImage: docData.signatureImage || '/uploads/signatures/sig_user_cvaty.png',
-      signatures: docData.signatures || [{
+      signType: isCopy ? 'COPY' : (docData.signType || 'STANDARD'),
+      isCopySign: isCopy,
+      copyType: isCopy ? (docData.copyType || 'SAO Y') : null,
+      copyText: isCopy ? (docData.copyText || null) : null,
+      copySignBannerBase64: isCopy ? (docData.copySignBannerBase64 || null) : null,
+      copySignBannerWidthPt: isCopy ? (docData.copySignBannerWidthPt || null) : null,
+      copySignBannerHeightPt: isCopy ? (docData.copySignBannerHeightPt || null) : null,
+      signatureImage: isCopy ? null : (docData.signatureImage || '/uploads/signatures/sig_user_cvaty.png'),
+      signatures: isCopy ? [] : (docData.signatures || [{
         step: 1,
         role: 'Giáo viên',
         signerName: docData.author || 'Hà Văn Tý',
         visualSignImage: docData.signatureImage || '/uploads/signatures/sig_user_cvaty.png'
-      }]
+      }])
     };
 
     const stampedPdfBuffer = await pdfSignerService.generateSignedPdf(tempDoc);
@@ -577,12 +585,17 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
     }
 
-    const { realSignedPdfBase64, txId, tokenPin, signType, copyType, copyText } = req.body || {};
+    const { realSignedPdfBase64, txId, tokenPin, signType, copyType, copyText, copySignBannerBase64, copySignBannerWidthPt, copySignBannerHeightPt } = req.body || {};
     let signedFilePath = null;
 
+    const isCopy = (signType === 'COPY' || req.body.isCopySign === true || doc.signType === 'COPY' || doc.isCopySign === true);
     if (signType) doc.signType = signType;
+    if (isCopy) doc.isCopySign = true;
     if (copyType) doc.copyType = copyType;
     if (copyText) doc.copyText = copyText;
+    if (copySignBannerBase64) doc.copySignBannerBase64 = copySignBannerBase64;
+    if (copySignBannerWidthPt) doc.copySignBannerWidthPt = copySignBannerWidthPt;
+    if (copySignBannerHeightPt) doc.copySignBannerHeightPt = copySignBannerHeightPt;
 
     if (txId) {
       const session = vgcaSessions.get(txId);
@@ -618,9 +631,13 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
       realSignedPath: signedFilePath,
       realVgcaSigned: true,
       realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      signType: signType || doc.signType || 'STANDARD',
-      copyType: copyType || doc.copyType || null,
-      copyText: copyText || doc.copyText || null,
+      signType: isCopy ? 'COPY' : (signType || doc.signType || 'STANDARD'),
+      isCopySign: isCopy,
+      copyType: isCopy ? (copyType || doc.copyType || 'SAO Y') : null,
+      copyText: isCopy ? (copyText || doc.copyText || null) : null,
+      copySignBannerBase64: isCopy ? (copySignBannerBase64 || doc.copySignBannerBase64 || null) : null,
+      copySignBannerWidthPt: isCopy ? (copySignBannerWidthPt || doc.copySignBannerWidthPt || null) : null,
+      copySignBannerHeightPt: isCopy ? (copySignBannerHeightPt || doc.copySignBannerHeightPt || null) : null,
       vgcaInfo: {
         signer: (sessionObj && sessionObj.signerName) || 'Hà Văn Tý',
         issuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
@@ -1148,14 +1165,14 @@ app.post('/api/local-sign-doc', async (req, res) => {
 
 // Giáo viên nộp Kế hoạch bài dạy mới (Hỗ trợ Ký số Mật mã Thật VGCA qua điện thoại)
 app.post('/api/documents', requireAuth, async (req, res) => {
-  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage, signCoordinates, realVgcaSign, realSignedPdfBase64, txId, tokenPin, signType, copyType, copyText } = req.body;
+  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage, signCoordinates, realVgcaSign, realSignedPdfBase64, txId, tokenPin, signType, copyType, copyText, copySignBannerBase64, copySignBannerWidthPt, copySignBannerHeightPt } = req.body;
   if (!title) {
     return res.status(400).json({ success: false, message: 'Vui lòng nhập Tên kế hoạch bài dạy!' });
   }
 
   const currentUser = req.user;
-  const isCopy = signType === 'COPY' || req.body.isCopySign;
-  const activeSigImage = signatureImage || currentUser.signatureImage || (isCopy ? '/uploads/signatures/sig_user_cvaty.png' : null);
+  const isCopy = signType === 'COPY' || req.body.isCopySign === true;
+  const activeSigImage = isCopy ? null : (signatureImage || currentUser.signatureImage || null);
 
   // BẮT BUỘC PHẢI CÓ CHỮ KÝ HỢP LỆ TRƯỚC KHI NỘP (ngoại trừ ký sao y)
   if (!activeSigImage && !isCopy) {
@@ -1183,7 +1200,7 @@ app.post('/api/documents', requireAuth, async (req, res) => {
   }
 
   // Nếu người dùng ký trực tiếp trên modal và chưa lưu vào profile -> tự động lưu để tái sử dụng
-  if (signatureImage && !currentUser.signatureImage) {
+  if (!isCopy && signatureImage && !currentUser.signatureImage) {
     dataStore.updateUser(currentUser.id, { signatureImage });
   }
 
@@ -1218,8 +1235,12 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     signPlacement: signPlacement || (isCopy ? 'top-right' : 'bottom-right'),
     signCoordinates: signCoordinates || null,
     signType: isCopy ? 'COPY' : (signType || 'STANDARD'),
+    isCopySign: isCopy,
     copyType: isCopy ? (copyType || 'SAO Y') : null,
     copyText: isCopy ? (copyText || null) : null,
+    copySignBannerBase64: isCopy ? (copySignBannerBase64 || null) : null,
+    copySignBannerWidthPt: isCopy ? (copySignBannerWidthPt || null) : null,
+    copySignBannerHeightPt: isCopy ? (copySignBannerHeightPt || null) : null,
     signatures: [
       {
         step: 1,
@@ -1231,7 +1252,7 @@ app.post('/api/documents', requireAuth, async (req, res) => {
         status: 'VALID',
         placement: signPlacement || (isCopy ? 'top-right' : 'bottom-right'),
         coordinates: signCoordinates || null,
-        visualSignImage: activeSigImage,
+        visualSignImage: isCopy ? null : activeSigImage,
         visualSign: isCopy ? (copyText || `SAO Y; ${currentUser.name}`) : 'Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân'
       }
     ]
@@ -1266,8 +1287,12 @@ app.post('/api/documents', requireAuth, async (req, res) => {
         realVgcaSigned: true,
         realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
         signType: isCopy ? 'COPY' : (newDoc.signType || 'STANDARD'),
+        isCopySign: isCopy,
         copyType: isCopy ? (copyType || newDoc.copyType || 'SAO Y') : null,
         copyText: isCopy ? (copyText || newDoc.copyText) : null,
+        copySignBannerBase64: isCopy ? (copySignBannerBase64 || newDoc.copySignBannerBase64 || null) : null,
+        copySignBannerWidthPt: isCopy ? (copySignBannerWidthPt || newDoc.copySignBannerWidthPt || null) : null,
+        copySignBannerHeightPt: isCopy ? (copySignBannerHeightPt || newDoc.copySignBannerHeightPt || null) : null,
         signatures: signaturesCopy,
         vgcaInfo: {
           signer: currentUser.name || 'Hà Văn Tý',

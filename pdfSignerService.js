@@ -239,20 +239,62 @@ async function generateSignedPdf(doc) {
 
       const firstPage = sourcePages[0];
       const { width: p1W, height: p1H } = firstPage.getSize();
-      const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-      const fontSize = 9;
-      const textWidth = timesRoman.widthOfTextAtSize(copyText, fontSize);
-      const textX = p1W - textWidth - 40;
-      const textY = p1H - 28;
 
-      firstPage.drawText(copyText, {
-        x: textX,
-        y: textY,
-        size: fontSize,
-        font: timesRoman,
-        color: rgb(0, 0, 0)
-      });
-      console.log(`[Copy Sign] 📋 Đã in dòng chữ ký Sao y tại Trang 1 (${textX.toFixed(1)}, ${textY.toFixed(1)}): "${copyText}"`);
+      // 1. Nếu có ảnh banner PNG từ client (Canvas 300 DPI hiển thị tiếng Việt hoàn hảo)
+      let bannerDrawn = false;
+      const bannerB64 = doc.copySignBannerBase64 || doc.copyBannerBase64;
+      if (bannerB64 && typeof bannerB64 === 'string') {
+        try {
+          const rawB64 = bannerB64.replace(/^data:[^;]+;base64,/, '');
+          const bannerBuf = Buffer.from(rawB64, 'base64');
+          if (bannerBuf.length > 50) {
+            const bannerPng = await pdfDoc.embedPng(bannerBuf);
+            const wPt = (doc.copySignBannerWidthPt && doc.copySignBannerWidthPt > 10) 
+              ? doc.copySignBannerWidthPt 
+              : Math.round(bannerPng.width / 3.0);
+            const hPt = (doc.copySignBannerHeightPt && doc.copySignBannerHeightPt > 5) 
+              ? doc.copySignBannerHeightPt 
+              : Math.round(bannerPng.height / 3.0);
+            const textX = p1W - wPt - 40;
+            const textY = p1H - hPt - 18;
+            firstPage.drawImage(bannerPng, {
+              x: textX,
+              y: textY,
+              width: wPt,
+              height: hPt
+            });
+            bannerDrawn = true;
+            console.log(`[Copy Sign] 📋 Đã nhúng ảnh chữ ký Sao y chuẩn Canvas PNG tại Trang 1 (${textX.toFixed(1)}, ${textY.toFixed(1)}, W=${wPt}, H=${hPt}): "${copyText}"`);
+          }
+        } catch (bannerErr) {
+          console.warn('[Copy Sign] Lỗi nhúng ảnh banner PNG:', bannerErr.message);
+        }
+      }
+
+      // 2. Fallback: Nếu chưa có ảnh Canvas, in dòng text chuẩn an toàn (loại bỏ dấu tiếng Việt để tránh lỗi WinAnsi của pdf-lib)
+      if (!bannerDrawn) {
+        try {
+          const safeText = safeAscii(copyText);
+          const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+          const fontSize = 9;
+          const textWidth = timesRoman.widthOfTextAtSize(safeText, fontSize);
+          const textX = p1W - textWidth - 40;
+          const textY = p1H - 28;
+
+          firstPage.drawText(safeText, {
+            x: textX,
+            y: textY,
+            size: fontSize,
+            font: timesRoman,
+            color: rgb(0, 0, 0)
+          });
+          console.log(`[Copy Sign] 📋 Đã in dòng chữ ký Sao y (ASCII safe) tại Trang 1 (${textX.toFixed(1)}, ${textY.toFixed(1)}): "${safeText}"`);
+        } catch (fontErr) {
+          console.error('[Copy Sign] Lỗi in text sao y:', fontErr.message);
+        }
+      }
+
+      // TUYỆT ĐỐI KHÔNG ĐÓNG DẤU CHỮ KÝ TAY CỦA GIÁO VIÊN VÀO VĂN BẢN KÝ SAO Y
       return await pdfDoc.save();
     }
 

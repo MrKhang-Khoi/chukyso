@@ -2627,6 +2627,45 @@
     // ==================== CHỨC NĂNG KÝ SAO Y VĂN BẢN (NGHỊ ĐỊNH 30/2020/NĐ-CP & VGCA) ====================
     let currentCopySignTimestamp = '';
 
+    // Tạo ảnh đồ họa chữ ký Sao y chuẩn Nghị định 30/2020/NĐ-CP & Ban Cơ yếu Chính phủ bằng Canvas
+    function generateCopySignBannerData(copyText) {
+      const scale = 3.0; // 300 DPI high-definition
+      const ptToPx = 96 / 72; // 1.3333333333333333
+      const fontPt = 9.5;
+      const fontPx = Math.round(fontPt * scale * ptToPx);
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.font = `${fontPx}px "Times New Roman", Times, serif`;
+      const metrics = ctx.measureText(copyText);
+      const textWidthPx = Math.ceil(metrics.width);
+      
+      const padXPx = Math.round(16 * scale * ptToPx);
+      const padYPx = Math.round(6 * scale * ptToPx);
+      const widthPx = textWidthPx + padXPx;
+      const heightPx = Math.round(fontPx * 1.5) + padYPx;
+      
+      canvas.width = widthPx;
+      canvas.height = heightPx;
+      
+      const drawCtx = canvas.getContext('2d');
+      drawCtx.clearRect(0, 0, widthPx, heightPx);
+      drawCtx.font = `${fontPx}px "Times New Roman", Times, serif`;
+      drawCtx.fillStyle = '#000000';
+      drawCtx.textBaseline = 'middle';
+      drawCtx.textAlign = 'right';
+      drawCtx.fillText(copyText, widthPx - Math.round(4 * scale * ptToPx), heightPx / 2);
+      
+      const widthPt = widthPx / (scale * ptToPx);
+      const heightPt = heightPx / (scale * ptToPx);
+      
+      return {
+        dataUrl: canvas.toDataURL('image/png'),
+        widthPt: Math.round(widthPt * 10) / 10,
+        heightPt: Math.round(heightPt * 10) / 10
+      };
+    }
+
     function openCopySignModal() {
       const fileNameEl = document.getElementById('copySignDocFileName');
       const certOwnerEl = document.getElementById('copySignCertOwner');
@@ -2754,6 +2793,8 @@
       const grade = document.getElementById('newDocGrade')?.value || 'Khối 9';
       const week = document.getElementById('newDocWeek')?.value || 'Tuần 1';
 
+      const banner = generateCopySignBannerData(copyOptions.copyText);
+
       const payload = {
         title,
         grade,
@@ -2763,7 +2804,11 @@
         isCopySign: true,
         copyType: copyOptions.copyType || 'SAO Y',
         copyText: copyOptions.copyText,
+        copySignBannerBase64: banner.dataUrl,
+        copySignBannerWidthPt: banner.widthPt,
+        copySignBannerHeightPt: banner.heightPt,
         signPlacement: 'top-right',
+        signatureImage: null,
         fileName: selectedUploadFile ? selectedUploadFile.name : 'GiaoAn_SaoY.pdf',
         fileType: selectedUploadFile ? selectedUploadFile.name.split('.').pop().toLowerCase() : 'pdf',
         fileSize: selectedUploadFile ? formatFileSize(selectedUploadFile.size) : '1.5 MB',
@@ -2790,6 +2835,9 @@
               isCopySign: true,
               copyType: copyOptions.copyType,
               copyText: copyOptions.copyText,
+              copySignBannerBase64: banner.dataUrl,
+              copySignBannerWidthPt: banner.widthPt,
+              copySignBannerHeightPt: banner.heightPt,
               targetPage: 1
             };
 
@@ -2869,6 +2917,7 @@
     async function triggerCopySignVgca(docId, copyOptions) {
       const doc = currentDocList.find(d => d.id === docId);
       const title = doc ? doc.title : docId;
+      const banner = generateCopySignBannerData(copyOptions.copyText);
 
       startVgcaMobileSigning({
         docTitle: `[SAO Y] ${title}`,
@@ -2904,6 +2953,9 @@
               isCopySign: true,
               copyType: copyOptions.copyType,
               copyText: copyOptions.copyText,
+              copySignBannerBase64: banner.dataUrl,
+              copySignBannerWidthPt: banner.widthPt,
+              copySignBannerHeightPt: banner.heightPt,
               targetPage: 1
             };
 
@@ -2934,8 +2986,12 @@
             body: JSON.stringify({
               realSignedPdfBase64,
               signType: 'COPY',
+              isCopySign: true,
               copyType: copyOptions.copyType,
               copyText: copyOptions.copyText,
+              copySignBannerBase64: banner.dataUrl,
+              copySignBannerWidthPt: banner.widthPt,
+              copySignBannerHeightPt: banner.heightPt,
               txId: authInfo ? authInfo.txId : null,
               tokenPin: authInfo ? authInfo.tokenPin : null
             })

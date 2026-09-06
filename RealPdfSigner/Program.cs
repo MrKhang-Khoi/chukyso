@@ -1428,8 +1428,40 @@ namespace RealPdfSigner
                             copyText = $"{copyType}; {signerName}; Thời gian ký: {DateTime.Now:yyyy-MM-ddTHH:mm:ss+07:00}";
                         }
 
-                        var banner = GenerateCopySignBanner(copyText);
-                        sigImgBytes = banner.imageBytes;
+                        byte[]? bannerBytes = null;
+                        float rectW = 260f;
+                        float rectH = 16f;
+
+                        // Kiểm tra nếu client truyền copySignBannerBase64 (Canvas 300 DPI)
+                        string? bannerB64 = null;
+                        if (root.TryGetProperty("copySignBannerBase64", out var bProp)) bannerB64 = bProp.GetString();
+                        else if (root.TryGetProperty("doc", out var docElemB64) && docElemB64.TryGetProperty("copySignBannerBase64", out var dbProp)) bannerB64 = dbProp.GetString();
+
+                        if (!string.IsNullOrWhiteSpace(bannerB64))
+                        {
+                            try
+                            {
+                                string clean = bannerB64;
+                                if (clean.Contains(",")) clean = clean.Substring(clean.IndexOf(",") + 1);
+                                bannerBytes = Convert.FromBase64String(clean);
+                                if (root.TryGetProperty("copySignBannerWidthPt", out var wProp)) rectW = (float)wProp.GetDouble();
+                                else if (root.TryGetProperty("doc", out var docElemW) && docElemW.TryGetProperty("copySignBannerWidthPt", out var dwProp)) rectW = (float)dwProp.GetDouble();
+
+                                if (root.TryGetProperty("copySignBannerHeightPt", out var hProp)) rectH = (float)hProp.GetDouble();
+                                else if (root.TryGetProperty("doc", out var docElemH) && docElemH.TryGetProperty("copySignBannerHeightPt", out var dhProp)) rectH = (float)dhProp.GetDouble();
+                            }
+                            catch { }
+                        }
+
+                        if (bannerBytes == null || bannerBytes.Length == 0)
+                        {
+                            var banner = GenerateCopySignBanner(copyText);
+                            bannerBytes = banner.imageBytes;
+                            rectW = banner.widthPt;
+                            rectH = banner.heightPt;
+                        }
+
+                        sigImgBytes = bannerBytes;
                         targetPage = 1;
 
                         float p1W = 595.28f, p1H = 841.89f;
@@ -1447,8 +1479,6 @@ namespace RealPdfSigner
                         }
                         catch { }
 
-                        float rectW = banner.widthPt;
-                        float rectH = banner.heightPt;
                         float rectX = p1W - rectW - 40f; // Căn sát lề phải chuẩn H3
                         float rectY = p1H - rectH - 18f; // Căn lề trên chuẩn H3
                         signRect = new Rectangle(rectX, rectY, rectW, rectH);

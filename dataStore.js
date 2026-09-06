@@ -261,8 +261,12 @@ function createDocument(docData, currentUser) {
     fileSize: docData.fileSize || '1.5 MB',
     pages: docData.pages || 10,
     signType: docData.signType || 'STANDARD',
+    isCopySign: docData.isCopySign || (docData.signType === 'COPY'),
     copyType: docData.copyType || null,
     copyText: docData.copyText || null,
+    copySignBannerBase64: docData.copySignBannerBase64 || null,
+    copySignBannerWidthPt: docData.copySignBannerWidthPt || null,
+    copySignBannerHeightPt: docData.copySignBannerHeightPt || null,
     signatures: docData.signatures || [],
     driveInfo: null,
     logs: [

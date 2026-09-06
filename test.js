@@ -820,6 +820,37 @@ async function runTests() {
     });
     assert(newSaoyDocRes.status === 200 && newSaoyDocRes.body.success, 'Giáo viên nộp hồ sơ mới kết hợp Ký Sao Y (POST /api/documents) thành công');
     assert(newSaoyDocRes.body.doc && newSaoyDocRes.body.doc.signType === 'COPY', 'Hồ sơ mới tạo mang đúng cờ signType: COPY');
+    assert(!newSaoyDocRes.body.doc.signatures[0].visualSignImage, 'Hồ sơ Ký Sao Y KHÔNG gắn ảnh chữ ký tay của giáo viên (visualSignImage là null)');
+
+    // 3.10e Kiểm tra Tải file đã ký sao y (GET /api/documents/:id/download-signed)
+    const downloadSaoyRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/api/documents/${newSaoyDocRes.body.doc.id}/download-signed?inline=1`,
+      method: 'GET'
+    });
+    assert(downloadSaoyRes.status === 200, 'Tải file PDF Ký Sao Y thành công (Mã 200)');
+    assert(downloadSaoyRes.body.length > 500, 'Dung lượng file PDF Ký Sao Y hợp lệ (>500 bytes)');
+
+    // 3.10f Kiểm tra POST /api/documents/prepare-signing-pdf với Ký Sao Y (Không bị đóng dấu chữ ký tay trước)
+    const prepSaoyRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/documents/prepare-signing-pdf',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      title: 'Tài liệu chuẩn bị ký sao y',
+      signType: 'COPY',
+      isCopySign: true,
+      copyType: 'SAO Y',
+      copyText: 'SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:25:00+07:00'
+    });
+    assert(prepSaoyRes.status === 200 && prepSaoyRes.body.success, 'API prepare-signing-pdf cho Ký Sao Y xử lý thành công không bị lỗi font WinAnsi');
+    assert(prepSaoyRes.body.pdfBase64 && prepSaoyRes.body.pdfBase64.startsWith('data:application/pdf;base64,'), 'Trả về dữ liệu Base64 PDF bản sao hợp lệ');
 
   } catch (err) {
     assert(false, `Lỗi khi gọi API: ${err.message}`);
