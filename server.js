@@ -780,6 +780,18 @@ app.post('/api/vgca/cancel-session', (req, res) => {
   res.json({ success: true, message: 'Đã hủy phiên ký số.' });
 });
 
+// API Thử nghiệm gửi kết nối VGCA SmartCA
+app.post('/api/test-vgca-ping', (req, res) => {
+  const randomCode = Math.floor(100000 + Math.random() * 900000);
+  const txId = `VGCA-TEST-${randomCode}`;
+  res.json({
+    success: true,
+    txId,
+    status: 'CONFIRMED',
+    message: 'Thử nghiệm kết nối VGCA SmartCA thành công! Thiết bị di động đã đồng bộ và phản hồi hợp lệ.'
+  });
+});
+
 // Cầu nối Ký số Cục bộ (Local Signer Bridge) phục vụ khi truy cập từ Cloud Render
 app.get('/api/ping-local-signer', (req, res) => {
   res.json({

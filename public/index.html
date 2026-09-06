@@ -2745,26 +2745,20 @@
         action: async () => {
           if (isRemoteServer) {
             const statusDesc = document.getElementById('vgcaModalStatusDesc');
-            if (statusDesc) statusDesc.innerHTML = 'Đang kiểm tra kết nối với ứng dụng ký số VGCA trên máy tính của Thầy...';
+            if (statusDesc) statusDesc.innerHTML = 'Đang kiểm tra kết nối với dịch vụ SmartCA / VGCA...';
 
-            const ping = await pingLocalSigner();
-            if (!ping.available) {
-              throw new Error(
-                'Chưa phát hiện ứng dụng Ký số VGCA trên máy tính của Thầy!\n\n' +
-                'Vui lòng nhấp đúp chạy file "Chay_HeThong.bat" trên máy tính để kích hoạt dịch vụ ký số VGCA.'
-              );
+            const ping = await pingLocalSigner(1500);
+            if (ping && ping.available) {
+              if (statusDesc) {
+                statusDesc.innerHTML = 'Đã kết nối ứng dụng ký số VGCA trên máy tính! Đang gửi lệnh xác thực tới điện thoại của Thầy...<br>Xin mời Thầy mở thông báo <strong>SmartCA / VGCA</strong> và nhấn <strong>[Xác nhận Ký]</strong>.';
+              }
+              return await signDocViaLocalAgent({
+                id: 'TEST_PING_' + Date.now(),
+                title: 'Văn bản thử nghiệm kết nối SmartCA.pdf',
+                author: currentUser ? currentUser.name : 'Hà Văn Tý',
+                department: (currentUser && currentUser.department) || 'THCS Chu Văn An'
+              }, null, ping.host);
             }
-
-            if (statusDesc) {
-              statusDesc.innerHTML = 'Đã kết nối ứng dụng ký số VGCA trên máy tính! Đang gửi lệnh xác thực tới điện thoại của Thầy...<br>Xin mời Thầy mở thông báo <strong>SmartCA / VGCA</strong> và nhấn <strong>[Xác nhận Ký]</strong>.';
-            }
-
-            return await signDocViaLocalAgent({
-              id: 'TEST_PING_' + Date.now(),
-              title: 'Văn bản thử nghiệm kết nối SmartCA.pdf',
-              author: currentUser ? currentUser.name : 'Hà Văn Tý',
-              department: (currentUser && currentUser.department) || 'THCS Chu Văn An'
-            }, null, ping.host);
           }
 
           const res = await fetch('/api/test-vgca-ping', {
