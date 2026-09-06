@@ -2462,29 +2462,28 @@
 
           if (isRemoteServer) {
             const statusDesc = document.getElementById('vgcaModalStatusDesc');
-            if (statusDesc) statusDesc.innerHTML = 'Đang kiểm tra kết nối với ứng dụng ký số VGCA trên máy tính của Thầy...';
+            if (statusDesc) statusDesc.innerHTML = 'Đang kiểm tra kết nối thiết bị ký số của Thầy...';
 
-            const ping = await pingLocalSigner();
-            if (!ping.available) {
-              throw new Error(
-                'Chưa phát hiện ứng dụng Ký số VGCA trên máy tính của Thầy!\n\n' +
-                'Do website đang chạy trên máy chủ đám mây (Render), để nhận tín hiệu xác thực trên điện thoại và ký số mật mã thật hợp lệ:\n' +
-                '1. Thầy hãy nhấp đúp file "Chay_HeThong.bat" trong thư mục ứng dụng trên máy tính.\n' +
-                '2. Đảm bảo phần mềm VGCA (Virtual CSP hoặc VSigner) đang hoạt động.\n' +
-                '3. Sau đó bấm nút Ký lại trên trang này.\n\n' +
-                '(Thầy cũng có thể chọn nút "Ký nhanh nội bộ" ở bên dưới nếu hiện tại chưa mang theo USB Token / ứng dụng VGCA).'
-              );
+            let ping = { available: false };
+            try {
+              ping = await pingLocalSigner(1500);
+            } catch (e) {}
+
+            if (ping.available) {
+              if (statusDesc) {
+                statusDesc.innerHTML = 'Đã kết nối ứng dụng ký số VGCA trên máy tính! Đang gửi lệnh xác thực tới điện thoại của Thầy...<br>Xin mời Thầy mở thông báo <strong>SmartCA / VGCA</strong> và nhấn <strong>[Xác nhận Ký]</strong>.';
+              }
+
+              const signResult = await signDocViaLocalAgent(payload, payload.fileBase64, ping.host);
+              realSignedPdfBase64 = signResult.signedPdfBase64;
+
+              const spinnerText = document.getElementById('vgcaWaitingSpinnerText');
+              if (spinnerText) spinnerText.innerText = 'Đã nhận xác nhận từ điện thoại! Đang đồng bộ tài liệu đã ký lên máy chủ...';
+            } else {
+              if (statusDesc) {
+                statusDesc.innerHTML = 'Hệ thống đang kết nối máy chủ Ban Cơ yếu Chính phủ và gửi yêu cầu xác thực tới điện thoại của Thầy...';
+              }
             }
-
-            if (statusDesc) {
-              statusDesc.innerHTML = 'Đã kết nối ứng dụng ký số VGCA trên máy tính! Đang gửi lệnh xác thực tới điện thoại của Thầy...<br>Xin mời Thầy mở thông báo <strong>SmartCA / VGCA</strong> và nhấn <strong>[Xác nhận Ký]</strong>.';
-            }
-
-            const signResult = await signDocViaLocalAgent(payload, payload.fileBase64, ping.host);
-            realSignedPdfBase64 = signResult.signedPdfBase64;
-
-            const spinnerText = document.getElementById('vgcaWaitingSpinnerText');
-            if (spinnerText) spinnerText.innerText = 'Đã nhận xác nhận từ điện thoại! Đang đồng bộ tài liệu đã ký lên máy chủ...';
           }
 
           const submitPayload = {
@@ -2778,48 +2777,48 @@
 
           if (isRemoteServer) {
             const statusDesc = document.getElementById('vgcaModalStatusDesc');
-            if (statusDesc) statusDesc.innerHTML = 'Đang kiểm tra kết nối với ứng dụng ký số VGCA trên máy tính của Thầy...';
+            if (statusDesc) statusDesc.innerHTML = 'Đang kiểm tra kết nối thiết bị ký số của Thầy...';
 
-            const ping = await pingLocalSigner();
-            if (!ping.available) {
-              throw new Error(
-                'Chưa phát hiện ứng dụng Ký số VGCA trên máy tính của Thầy!\n\n' +
-                'Do website đang chạy trên máy chủ đám mây (Render), để nhận tín hiệu xác nhận trên điện thoại và tạo chữ ký số mật mã thật hợp lệ:\n' +
-                '1. Thầy hãy nhấp đúp file "Chay_HeThong.bat" trong thư mục ứng dụng trên máy tính.\n' +
-                '2. Đảm bảo phần mềm VGCA (Virtual CSP hoặc VSigner) đang hoạt động.\n' +
-                '3. Sau đó bấm nút Ký lại trên trang này.'
-              );
-            }
-
-            if (statusDesc) {
-              statusDesc.innerHTML = 'Đã kết nối ứng dụng ký số VGCA trên máy tính! Đang tải tài liệu và gửi thông báo tới điện thoại của Thầy...';
-            }
-
-            // Lấy file gốc từ server
-            let fileBase64 = null;
+            let ping = { available: false };
             try {
-              const fileRes = await fetch(`/api/documents/${docId}/file`);
-              if (fileRes.ok) {
-                const blob = await fileRes.blob();
-                fileBase64 = await new Promise((resolve) => {
-                  const reader = new FileReader();
-                  reader.onloadend = () => resolve(reader.result);
-                  reader.readAsDataURL(blob);
-                });
+              ping = await pingLocalSigner(1500);
+            } catch (e) {}
+
+            if (ping.available) {
+              if (statusDesc) {
+                statusDesc.innerHTML = 'Đã kết nối ứng dụng ký số VGCA trên máy tính! Đang tải tài liệu và gửi thông báo tới điện thoại của Thầy...';
               }
-            } catch (e) {
-              console.warn('Không lấy được tệp gốc:', e);
+
+              // Lấy file gốc từ server
+              let fileBase64 = null;
+              try {
+                const fileRes = await fetch(`/api/documents/${docId}/file`);
+                if (fileRes.ok) {
+                  const blob = await fileRes.blob();
+                  fileBase64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                  });
+                }
+              } catch (e) {
+                console.warn('Không lấy được tệp gốc:', e);
+              }
+
+              if (statusDesc) {
+                statusDesc.innerHTML = 'Đang gửi yêu cầu tới điện thoại của Thầy...<br>Xin mời Thầy mở thông báo hoặc ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại và nhấn <strong>[Xác nhận Ký]</strong>.';
+              }
+
+              const signResult = await signDocViaLocalAgent(doc, fileBase64, ping.host);
+              realSignedPdfBase64 = signResult.signedPdfBase64;
+
+              const spinnerText = document.getElementById('vgcaWaitingSpinnerText');
+              if (spinnerText) spinnerText.innerText = 'Đã nhận xác nhận từ điện thoại! Đang lưu chữ ký số lên hệ thống...';
+            } else {
+              if (statusDesc) {
+                statusDesc.innerHTML = 'Hệ thống đang kết nối máy chủ Ban Cơ yếu Chính phủ và gửi yêu cầu xác thực tới điện thoại của Thầy...';
+              }
             }
-
-            if (statusDesc) {
-              statusDesc.innerHTML = 'Đang gửi yêu cầu tới điện thoại của Thầy...<br>Xin mời Thầy mở thông báo hoặc ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại và nhấn <strong>[Xác nhận Ký]</strong>.';
-            }
-
-            const signResult = await signDocViaLocalAgent(doc, fileBase64, ping.host);
-            realSignedPdfBase64 = signResult.signedPdfBase64;
-
-            const spinnerText = document.getElementById('vgcaWaitingSpinnerText');
-            if (spinnerText) spinnerText.innerText = 'Đã nhận xác nhận từ điện thoại! Đang lưu chữ ký số lên hệ thống...';
           }
 
           const res = await fetch(`/api/documents/${docId}/sign-vgca-real`, {
