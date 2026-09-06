@@ -681,38 +681,6 @@
             class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-medium text-slate-900">
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-bold text-slate-700 mb-1">Khối lớp</label>
-            <select id="newDocGrade" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none bg-white font-medium">
-              <option value="Khối 6">Khối 6</option>
-              <option value="Khối 7">Khối 7</option>
-              <option value="Khối 8">Khối 8</option>
-              <option value="Khối 9" selected>Khối 9</option>
-            </select>
-          </div>
-          <div>
-            <label class="block font-bold text-slate-700 mb-1">Tuần thực hiện</label>
-            <select id="newDocWeek" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl outline-none bg-white font-medium">
-              <option value="Tuần 1">Tuần 1</option>
-              <option value="Tuần 2">Tuần 2</option>
-              <option value="Tuần 3">Tuần 3</option>
-              <option value="Tuần 4">Tuần 4</option>
-              <option value="Tuần 5">Tuần 5</option>
-              <option value="Tuần 6">Tuần 6</option>
-              <option value="Tuần 7">Tuần 7</option>
-              <option value="Tuần 8">Tuần 8</option>
-              <option value="Tuần 9">Tuần 9</option>
-              <option value="Tuần 10">Tuần 10</option>
-              <option value="Tuần 11">Tuần 11</option>
-              <option value="Tuần 12" selected>Tuần 12</option>
-              <option value="Tuần 13">Tuần 13</option>
-              <option value="Tuần 14">Tuần 14</option>
-              <option value="Tuần 15">Tuần 15</option>
-            </select>
-          </div>
-        </div>
-
         <div class="pt-4 flex justify-end gap-2 border-t border-slate-100 sticky bottom-0 bg-white z-10 pb-1">
           <button type="button" onclick="closeModal('modalNewDoc')" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition">Hủy</button>
           <button type="submit" id="btnSubmitNewDoc" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md flex items-center gap-2 transition cursor-pointer">
@@ -1542,27 +1510,27 @@
         <div class="p-3 bg-blue-50 rounded-2xl border border-blue-200 text-blue-900 leading-relaxed text-[11px] space-y-1">
           <div class="font-bold flex items-center gap-1.5 text-blue-800">
             <i class="fa-solid fa-circle-info text-blue-600"></i>
-            <span>Dịch vụ Ký số từ xa Virtual CSP / Di động:</span>
+            <span>Dịch vụ Ký số từ xa Virtual CSP / Ban Cơ yếu Chính phủ:</span>
           </div>
           <p>
-            Chỉ cần đăng nhập tài khoản một lần. Hệ thống tự động ghi nhớ để chỉ việc bấm ký và xác nhận [ĐỒNG Ý] trên điện thoại.
+            Tên đăng nhập là <strong>mã số CCCD</strong> và mật khẩu được gửi trong <strong>mail công vụ</strong>.
           </p>
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Tài khoản Ký số VGCA / Email công vụ *</label>
+          <label class="block font-bold text-slate-700 mb-1">Mã số CCCD (Tên đăng nhập VGCA) *</label>
           <div class="relative">
-            <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-400 text-sm"></i>
-            <input type="text" id="inputVgcaLoginAccount" required placeholder="Ví dụ: hvty-dakha@quangngai.gov.vn hoặc số định danh"
+            <i class="fa-solid fa-id-card absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="text" id="inputVgcaLoginAccount" required placeholder="Nhập mã số CCCD (12 chữ số) hoặc email công vụ"
               class="w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-medium text-xs">
           </div>
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Mật khẩu tài khoản VGCA *</label>
+          <label class="block font-bold text-slate-700 mb-1">Mật khẩu VGCA (được gửi trong mail công vụ) *</label>
           <div class="relative">
             <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
-            <input type="password" id="inputVgcaLoginPassword" required placeholder="Nhập mật khẩu tài khoản VGCA"
+            <input type="password" id="inputVgcaLoginPassword" required placeholder="Nhập mật khẩu được gửi trong mail công vụ"
               class="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-medium text-xs">
             <button type="button" onclick="togglePasswordVisibility('inputVgcaLoginPassword')" class="absolute right-3.5 top-2.5 text-slate-400 hover:text-slate-600">
               <i class="fa-solid fa-eye text-sm"></i>
@@ -1588,6 +1556,24 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL THÔNG BÁO HỘP THOẠI ĐẸP MẮT (APP NOTICE DIALOG) -->
+  <div id="modalAppNotice" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModalOnBackdrop(event, 'modalAppNotice')">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center border border-slate-200 transform transition-all" onclick="event.stopPropagation()">
+      <div id="modalNoticeIconContainer" class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+        <i id="modalNoticeIcon" class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 id="modalNoticeTitle" class="text-base font-extrabold text-slate-800 mb-2">Thông Báo</h3>
+      <div id="modalNoticeContent" class="text-xs text-slate-600 leading-relaxed font-medium mb-6 space-y-1">
+        <p class="font-bold text-slate-800">Tên đăng nhập hoặc mật khẩu không đúng.</p>
+        <p class="text-slate-500">Tên đăng nhập là mã số CCCD và mật khẩu được gửi trong mail công vụ.</p>
+      </div>
+      <button type="button" onclick="closeModal('modalAppNotice')" id="btnModalNoticeClose"
+        class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 transition cursor-pointer text-xs">
+        Đã hiểu
+      </button>
     </div>
   </div>
 
@@ -3470,6 +3456,31 @@
       openModal('modalVgcaLogin');
     }
 
+    function showAppNotice(message, title = 'Thông Báo', type = 'warning') {
+      const titleEl = document.getElementById('modalNoticeTitle');
+      const contentEl = document.getElementById('modalNoticeContent');
+      const iconContainer = document.getElementById('modalNoticeIconContainer');
+      const iconEl = document.getElementById('modalNoticeIcon');
+
+      if (titleEl) titleEl.innerText = title;
+      if (contentEl) contentEl.innerHTML = message;
+
+      if (iconContainer && iconEl) {
+        if (type === 'error' || type === 'warning') {
+          iconContainer.className = 'w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner';
+          iconEl.className = 'fa-solid fa-triangle-exclamation';
+        } else if (type === 'success') {
+          iconContainer.className = 'w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner';
+          iconEl.className = 'fa-solid fa-circle-check';
+        } else {
+          iconContainer.className = 'w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner';
+          iconEl.className = 'fa-solid fa-circle-info';
+        }
+      }
+
+      openModal('modalAppNotice');
+    }
+
     async function handleVgcaLoginSubmit(e) {
       e.preventDefault();
       const account = document.getElementById('inputVgcaLoginAccount').value.trim();
@@ -3477,13 +3488,18 @@
       const btn = document.getElementById('btnSubmitVgcaLogin');
 
       if (!account || !password) {
-        alert('Vui lòng nhập đầy đủ Tài khoản và Mật khẩu VGCA!');
+        showAppNotice(
+          `<p class="font-bold text-slate-800 text-sm">Vui lòng nhập đầy đủ thông tin.</p>` +
+          `<p class="text-slate-500 text-xs mt-1">Tên đăng nhập là mã số CCCD và mật khẩu được gửi trong mail công vụ.</p>`,
+          'Đăng Nhập VGCA',
+          'warning'
+        );
         return;
       }
 
       const origBtnText = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang xác thực với Ban Cơ yếu...</span>';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang kiểm tra...</span>';
 
       try {
         const res = await fetch('/api/vgca/login', {
@@ -3508,12 +3524,13 @@
         updateVgcaBarStatus();
         closeModal('modalVgcaLogin');
 
-        alert('✅ Đăng nhập tài khoản VGCA thành công!\n\n' +
-              '• Tài khoản: ' + data.data.account + '\n' +
-              '• Chủ thể: ' + data.data.signerName + '\n' +
-              '• Cơ quan: Ban Cơ yếu Chính phủ\n' +
-              '• Phương thức: Virtual CSP (Xác thực di động)\n\n' +
-              'Từ giờ khi ký giáo án, hệ thống sẽ gửi yêu cầu xác thực tới điện thoại.');
+        showAppNotice(
+          `<p class="font-bold text-emerald-800 text-sm">Đăng nhập tài khoản VGCA thành công!</p>` +
+          `<p class="text-slate-700 text-xs mt-1.5 font-medium">Chủ thể chứng thư: <strong>${data.data.signerName}</strong></p>` +
+          `<p class="text-slate-500 text-[11px]">Tài khoản: ${data.data.account} • Ban Cơ yếu Chính phủ</p>`,
+          'Xác Thực Thành Công',
+          'success'
+        );
 
         if (pendingVgcaSigningOptions) {
           const pending = pendingVgcaSigningOptions;
@@ -3521,7 +3538,12 @@
           startVgcaMobileSigning(pending);
         }
       } catch (err) {
-        alert('⚠️ Đăng nhập tài khoản VGCA không thành công: ' + err.message);
+        showAppNotice(
+          `<p class="font-bold text-slate-800 text-sm">Tên đăng nhập hoặc mật khẩu không đúng.</p>` +
+          `<p class="text-slate-500 text-xs mt-1">Tên đăng nhập là mã số CCCD và mật khẩu được gửi trong mail công vụ.</p>`,
+          'Đăng Nhập VGCA',
+          'warning'
+        );
       } finally {
         btn.disabled = false;
         btn.innerHTML = origBtnText;
@@ -4403,8 +4425,8 @@
         return;
       }
 
-      const grade = document.getElementById('newDocGrade').value;
-      const week = document.getElementById('newDocWeek').value;
+      const grade = (document.getElementById('newDocGrade')?.value) || 'Khối 9';
+      const week = (document.getElementById('newDocWeek')?.value) || 'Tuần 12';
 
       window.pendingNewDocData = {
         title,
@@ -5891,7 +5913,7 @@
     // Lắng nghe phím Escape để đóng nhanh bất kỳ modal nào đang mở
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        const modals = ['modalVgcaLogin', 'modalVgcaAccountInfo', 'modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalChangePass'];
+        const modals = ['modalAppNotice', 'modalVgcaLogin', 'modalVgcaAccountInfo', 'modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalChangePass'];
         for (const id of modals) {
           const el = document.getElementById(id);
           if (el && !el.classList.contains('hidden')) {
