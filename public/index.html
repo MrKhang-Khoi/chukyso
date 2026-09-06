@@ -2564,27 +2564,39 @@
     function getVgcaLoggedInUser() {
       try {
         const saved = localStorage.getItem('edusign_vgca_user');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.account) {
+            // Kiểm tra thời gian hết hạn phiên làm việc (30 phút không hoạt động thì tự động out)
+            if (parsed.expiresAt && Date.now() > parsed.expiresAt) {
+              clearVgcaLoggedInUser();
+              if (currentUser) currentUser.vgcaAuth = null;
+              return null;
+            }
+            // Gia hạn phiên hoạt động
+            parsed.lastActiveAt = Date.now();
+            parsed.expiresAt = Date.now() + 30 * 60 * 1000;
+            try { localStorage.setItem('edusign_vgca_user', JSON.stringify(parsed)); } catch (e) {}
+            return parsed;
+          }
+        }
       } catch (e) {}
-      if (currentUser && currentUser.vgcaAuth) return currentUser.vgcaAuth;
-      // Tự động liên kết tài khoản cho Thầy Hà Văn Tý nếu đã có phiên công vụ
-      if (currentUser && (currentUser.username === 'hvty' || currentUser.name.includes('Hà Văn Tý'))) {
-        const defaultVgca = {
-          account: currentUser.email || 'hvty-dakha@quangngai.gov.vn',
-          email: currentUser.email || 'hvty-dakha@quangngai.gov.vn',
-          signerName: currentUser.name,
-          status: 'CONNECTED',
-          provider: 'Ban Cơ yếu Chính phủ (Virtual CSP / TSE)',
-          method: 'IMPLICIT/TSE'
-        };
-        saveVgcaLoggedInUser(defaultVgca);
-        return defaultVgca;
+      if (currentUser && currentUser.vgcaAuth && currentUser.vgcaAuth.account) {
+        if (currentUser.vgcaAuth.expiresAt && Date.now() > currentUser.vgcaAuth.expiresAt) {
+          currentUser.vgcaAuth = null;
+          return null;
+        }
+        return currentUser.vgcaAuth;
       }
       return null;
     }
 
     function saveVgcaLoggedInUser(vgcaData) {
       try {
+        if (vgcaData) {
+          vgcaData.lastActiveAt = Date.now();
+          vgcaData.expiresAt = Date.now() + 30 * 60 * 1000; // 30 phút tự động hết hạn
+        }
         localStorage.setItem('edusign_vgca_user', JSON.stringify(vgcaData));
       } catch (e) {}
     }
@@ -2600,7 +2612,9 @@
       const accInput = document.getElementById('inputVgcaLoginAccount');
       const passInput = document.getElementById('inputVgcaLoginPassword');
       if (accInput) {
-        accInput.value = (currentUser && currentUser.email) || 'hvty-dakha@quangngai.gov.vn';
+        // Tuyệt đối KHÔNG gán cva.ty@thcschuvanan.edu.vn, chỉ giữ tài khoản người dùng đã đăng nhập hoặc để trống
+        const existing = getVgcaLoggedInUser();
+        accInput.value = existing ? existing.account : '';
       }
       if (passInput) passInput.value = '';
       openModal('modalVgcaLogin');
@@ -2645,10 +2659,11 @@
         closeModal('modalVgcaLogin');
 
         alert('✅ Đăng nhập tài khoản VGCA thành công!\n\n' +
+              '• Tài khoản: ' + data.data.account + '\n' +
               '• Chủ thể: ' + data.data.signerName + '\n' +
               '• Cơ quan: Ban Cơ yếu Chính phủ\n' +
               '• Phương thức: Virtual CSP (Xác thực di động)\n\n' +
-              'Từ giờ khi ký giáo án, Thầy chỉ cần mở điện thoại và bấm [ĐỒNG Ý].');
+              'Từ giờ khi ký giáo án, hệ thống sẽ gửi yêu cầu xác thực tới điện thoại của Thầy.');
 
         if (pendingVgcaSigningOptions) {
           const pending = pendingVgcaSigningOptions;
@@ -2675,12 +2690,12 @@
       if (currentUser) currentUser.vgcaAuth = null;
       updateVgcaBarStatus();
       closeModal('modalVgcaAccountInfo');
-      alert('Đã đăng xuất tài khoản VGCA.');
+      alert('Đã đăng xuất tài khoản VGCA thành công. Khi cần ký tiếp, Thầy có thể đăng nhập lại bất kỳ lúc nào.');
     }
 
     function openVgcaAccountInfoModal() {
       const vgca = getVgcaLoggedInUser();
-      if (!vgca) {
+      if (!vgca || !vgca.account) {
         openVgcaLoginModal();
         return;
       }
@@ -2689,7 +2704,7 @@
       const accEl = document.getElementById('infoVgcaAccount');
       if (nameEl) nameEl.innerText = vgca.signerName || 'Hà Văn Tý';
       if (orgEl) orgEl.innerText = (currentUser && currentUser.department) ? (currentUser.department + ' — THCS Chu Văn An') : 'TRƯỜNG THCS CHU VĂN AN';
-      if (accEl) accEl.innerText = vgca.account || (currentUser && currentUser.email) || 'hvty-dakha@quangngai.gov.vn';
+      if (accEl) accEl.innerText = vgca.account;
       openModal('modalVgcaAccountInfo');
     }
 
@@ -2699,10 +2714,10 @@
       const signerText = document.getElementById('vgcaBarSignerName');
 
       const vgca = getVgcaLoggedInUser();
-      if (vgca && (vgca.account || vgca.status === 'CONNECTED')) {
+      if (vgca && vgca.account && vgca.status === 'CONNECTED') {
         if (btnLogin) btnLogin.classList.add('hidden');
         if (badgeLogged) badgeLogged.classList.remove('hidden');
-        if (signerText) signerText.innerText = (vgca.signerName || 'Hà Văn Tý') + ' (Đã kết nối VGCA)';
+        if (signerText) signerText.innerText = (vgca.signerName || 'Hà Văn Tý') + ' (' + vgca.account + ')';
       } else {
         if (btnLogin) btnLogin.classList.remove('hidden');
         if (badgeLogged) badgeLogged.classList.add('hidden');
@@ -2902,7 +2917,7 @@
      */
     async function proceedToStep2SmartCA(customAccount) {
       const vgcaUser = getVgcaLoggedInUser();
-      const account = customAccount || (vgcaUser && vgcaUser.account) || (currentUser ? currentUser.email : 'hvty-dakha@quangngai.gov.vn');
+      const account = customAccount || (vgcaUser && vgcaUser.account) || '';
 
       const docTitle = (currentVgcaSigningOptions && currentVgcaSigningOptions.docTitle) || 'KeHoachBaiDay.pdf';
       const signerName = (vgcaUser && vgcaUser.signerName) || (currentVgcaSigningOptions && currentVgcaSigningOptions.signerName) || (currentUser ? currentUser.name : 'Hà Văn Tý');

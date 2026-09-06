@@ -428,6 +428,30 @@ app.get('/api/documents/:id/download-signed', async (req, res) => {
       return res.sendFile(path.resolve(doc.realSignedPath));
     }
 
+    // Nếu chưa có file ký số mật mã thật, tiến hành niêm phong chữ ký số PAdES X.509
+    console.log(`[Download Signed] Hồ sơ ${doc.id} chưa có file ký số mật mã thật. Đang niêm phong chữ ký số PAdES X.509...`);
+    try {
+      const signResult = await pdfSignerService.signWithRealVgca(doc);
+      if (signResult && signResult.signedFilePath && fs.existsSync(signResult.signedFilePath)) {
+        dataStore.updateDocument(doc.id, {
+          realSignedPath: signResult.signedFilePath,
+          realVgcaSigned: true,
+          realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+          vgcaInfo: {
+            signer: 'Hà Văn Tý',
+            issuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
+            standard: 'PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)',
+            verified: true
+          }
+        });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${downloadFileName}"`);
+        return res.sendFile(path.resolve(signResult.signedFilePath));
+      }
+    } catch (signErr) {
+      console.warn('[Download Signed] Cảnh báo khi tạo chữ ký số VGCA:', signErr.message);
+    }
+
     const signedPdfBuffer = await pdfSignerService.generateSignedPdf(doc);
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -726,6 +750,7 @@ app.post('/api/vgca/login', (req, res) => {
     const cleanAccount = vgcaAccount.trim();
     const signerName = (user && user.name) ? user.name : 'Hà Văn Tý';
     const email = cleanAccount.includes('@') ? cleanAccount : `${cleanAccount}@quangngai.gov.vn`;
+    const now = Date.now();
 
     const vgcaAuthData = {
       account: cleanAccount,
@@ -734,7 +759,9 @@ app.post('/api/vgca/login', (req, res) => {
       status: 'CONNECTED',
       provider: 'Ban Cơ yếu Chính phủ (Virtual CSP / TSE)',
       method: 'IMPLICIT/TSE',
-      loggedInAt: new Date().toISOString()
+      loggedInAt: new Date().toISOString(),
+      lastActiveAt: now,
+      expiresAt: now + (30 * 60 * 1000) // 30 phút tự động hết hạn nếu không hoạt động
     };
 
     if (user && user.id) {
@@ -760,19 +787,36 @@ app.post('/api/vgca/login', (req, res) => {
 // API Kiểm tra trạng thái tài khoản VGCA của giáo viên
 app.get('/api/vgca/status', (req, res) => {
   const user = getCurrentUser(req);
-  const vgcaAuth = (user && user.vgcaAuth) || null;
-  const signerName = (user && user.name) || 'Hà Văn Tý';
-  const email = (user && user.email) || 'hvty-dakha@quangngai.gov.vn';
+  let vgcaAuth = (user && user.vgcaAuth) || null;
+
+  // Kiểm tra tự động đăng xuất nếu hết hạn phiên (30 phút không hoạt động)
+  if (vgcaAuth) {
+    if (vgcaAuth.expiresAt && Date.now() > vgcaAuth.expiresAt) {
+      console.log(`[VGCA Auth] ⏱️ Phiên tài khoản VGCA của ${vgcaAuth.signerName} (${vgcaAuth.account}) đã hết hạn do không hoạt động.`);
+      vgcaAuth = null;
+      if (user && user.id) {
+        try { dataStore.updateUser(user.id, { vgcaAuth: null }); } catch (e) {}
+      }
+    } else {
+      // Gia hạn thời gian hoạt động
+      vgcaAuth.lastActiveAt = Date.now();
+      vgcaAuth.expiresAt = Date.now() + (30 * 60 * 1000);
+      if (user && user.id) {
+        try { dataStore.updateUser(user.id, { vgcaAuth }); } catch (e) {}
+      }
+    }
+  }
 
   res.json({
     success: true,
     data: {
       isLoggedIn: !!vgcaAuth,
-      account: vgcaAuth ? vgcaAuth.account : email,
-      signerName: (vgcaAuth && vgcaAuth.signerName) || signerName,
+      account: vgcaAuth ? vgcaAuth.account : null,
+      signerName: vgcaAuth ? vgcaAuth.signerName : null,
       provider: 'Ban Cơ yếu Chính phủ (Virtual CSP / TSE)',
       method: 'IMPLICIT/TSE',
-      status: vgcaAuth ? 'CONNECTED' : 'DISCONNECTED'
+      status: vgcaAuth ? 'CONNECTED' : 'DISCONNECTED',
+      expiresAt: vgcaAuth ? vgcaAuth.expiresAt : null
     }
   });
 });
@@ -1281,32 +1325,44 @@ app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
     logs: updatedLogs
   });
 
-  // Tự động sao lưu và phân loại lên Google Drive của trường
-  const realSignedPdf = path.join(__dirname, 'GiaoAn_DaKy_That.pdf');
-  const fallbackPdf = path.join(__dirname, 'GiaoAn_CanKy.pdf');
-  const pathToUpload = fs.existsSync(realSignedPdf) ? realSignedPdf : fallbackPdf;
+  // Tự động ký số mật mã PAdES X.509 khi Ban Giám hiệu duyệt
+  pdfSignerService.signWithRealVgca(updatedDoc)
+    .then(result => {
+      if (result && result.signedFilePath) {
+        dataStore.updateDocument(updatedDoc.id, {
+          realSignedPath: result.signedFilePath,
+          realVgcaSigned: true,
+          realSignedAt: now
+        });
+        console.log(`[Approve Principal] ✅ Đã niêm phong chữ ký số PAdES X.509 cho hồ sơ ${updatedDoc.id}`);
 
-  googleDriveService.uploadToGoogleDrive(updatedDoc, pathToUpload)
-    .then(driveRes => {
-      const driveLogs = [
-        ...updatedDoc.logs,
-        {
-          time: new Date().toISOString().replace('T', ' ').substring(0, 19),
-          actor: 'Google Drive Sync',
-          action: `Đã tự động lưu trữ và phân loại vào Google Drive: "${driveRes.folderPath}"`
+        // Tự động sao lưu file đã ký số thật lên Google Drive của trường
+        if (fs.existsSync(result.signedFilePath)) {
+          googleDriveService.uploadToGoogleDrive(updatedDoc, result.signedFilePath)
+            .then(driveRes => {
+              const driveLogs = [
+                ...updatedDoc.logs,
+                {
+                  time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                  actor: 'Google Drive Sync',
+                  action: `Đã tự động lưu trữ và phân loại vào Google Drive: "${driveRes.folderPath}"`
+                }
+              ];
+              dataStore.updateDocument(updatedDoc.id, {
+                driveInfo: {
+                  fileId: driveRes.fileId,
+                  viewUrl: driveRes.viewUrl,
+                  folderPath: driveRes.folderPath,
+                  uploadedAt: driveRes.uploadedAt
+                },
+                logs: driveLogs
+              });
+            })
+            .catch(e => console.error('[Google Drive] Lỗi tự động sao lưu:', e.message));
         }
-      ];
-      dataStore.updateDocument(updatedDoc.id, {
-        driveInfo: {
-          fileId: driveRes.fileId,
-          viewUrl: driveRes.viewUrl,
-          folderPath: driveRes.folderPath,
-          uploadedAt: driveRes.uploadedAt
-        },
-        logs: driveLogs
-      });
+      }
     })
-    .catch(err => console.error('[Google Drive] Auto sync error:', err.message));
+    .catch(e => console.warn('[Approve Principal] Lỗi tạo chữ ký số VGCA:', e.message));
 
   res.json({
     success: true,

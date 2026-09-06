@@ -238,10 +238,10 @@ async function generateSignedPdf(doc) {
  */
 function findSignerRunner() {
   const candidates = [
-    path.join(__dirname, 'public', 'downloads', 'EduSign_Agent.exe'),
     path.join(__dirname, 'RealPdfSigner', 'bin', 'Release', 'net8.0', 'RealPdfSigner.exe'),
-    path.join(__dirname, 'public', 'downloads', 'RealPdfSigner.exe'),
     path.join(__dirname, 'RealPdfSigner', 'bin', 'Debug', 'net8.0', 'RealPdfSigner.exe'),
+    path.join(__dirname, 'public', 'downloads', 'RealPdfSigner.exe'),
+    path.join(__dirname, 'public', 'downloads', 'EduSign_Agent.exe'),
     path.join(__dirname, 'RealPdfSigner', 'bin', 'Release', 'net8.0', 'RealPdfSigner'),
     path.join(__dirname, 'RealPdfSigner', 'bin', 'Debug', 'net8.0', 'RealPdfSigner')
   ];

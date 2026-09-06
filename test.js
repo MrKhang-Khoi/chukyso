@@ -100,7 +100,7 @@ async function runTests() {
 
   // --- TEST 3: Khởi chạy Express Server & Kiểm thử Phân quyền 3 cấp ---
   console.log('📌 3. Khởi chạy Server & Kiểm thử Đăng nhập & Phân quyền RBAC:');
-  const serverProcess = spawn('node', ['server.js'], { cwd: __dirname, env: { ...process.env, PORT: String(TEST_PORT) } });
+  const serverProcess = spawn('node', ['server.js'], { cwd: __dirname, env: { ...process.env, PORT: String(TEST_PORT), TEST_PORT: String(TEST_PORT), NODE_ENV: 'test' } });
   
   let serverReady = false;
   serverProcess.stdout.on('data', (chunk) => {
@@ -679,6 +679,17 @@ async function runTests() {
       }
     });
     assert(vgcaLogoutRes.status === 200 && vgcaLogoutRes.body.success === true, 'Đăng xuất tài khoản VGCA thành công');
+
+    const vgcaStatusAfterLogoutRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/vgca/status',
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    });
+    assert(vgcaStatusAfterLogoutRes.status === 200 && vgcaStatusAfterLogoutRes.body.data.isLoggedIn === false && vgcaStatusAfterLogoutRes.body.data.account === null, 'Sau khi đăng xuất: Trạng thái DISCONNECTED, không lưu giữ tài khoản cũ và account là null');
 
     // 3.9b Kiểm tra cú pháp toàn bộ JavaScript trong file giao diện index.html (Không bị lỗi cú pháp như Unexpected token)
     const htmlContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
