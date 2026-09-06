@@ -66,14 +66,21 @@ function getUsers() {
 
 function saveJsonSafe(filePath, data) {
   const content = JSON.stringify(data, null, 2);
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 12; attempt++) {
     try {
-      fs.writeFileSync(filePath, content, 'utf8');
+      const tempPath = `${filePath}.${Date.now()}.${Math.random().toString(36).slice(2, 6)}.tmp`;
+      fs.writeFileSync(tempPath, content, 'utf8');
+      fs.renameSync(tempPath, filePath);
       return;
     } catch (err) {
-      if (attempt === 4) throw err;
-      const start = Date.now();
-      while (Date.now() - start < 60) {}
+      try {
+        fs.writeFileSync(filePath, content, 'utf8');
+        return;
+      } catch (err2) {
+        if (attempt === 11) throw err2;
+        const start = Date.now();
+        while (Date.now() - start < 100) {}
+      }
     }
   }
 }

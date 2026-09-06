@@ -855,11 +855,17 @@ namespace RealPdfSigner
             var res = context.Response;
 
             // Thiết lập tiêu đề CORS & Private Network Access (Chuẩn Chrome/Edge PNA)
-            string origin = req.Headers["Origin"] ?? "*";
+            string origin = req.Headers["Origin"];
+            if (string.IsNullOrEmpty(origin) || origin == "*")
+            {
+                origin = "https://edusign-vgca.onrender.com";
+            }
             res.AddHeader("Access-Control-Allow-Origin", origin);
-            res.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-            res.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Access-Control-Request-Private-Network");
+            res.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD");
+            res.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Access-Control-Request-Private-Network, targetaddressspace");
             res.AddHeader("Access-Control-Allow-Private-Network", "true");
+            res.AddHeader("Access-Control-Allow-Credentials", "true");
+            res.AddHeader("Access-Control-Max-Age", "86400");
 
             if (req.HttpMethod == "OPTIONS")
             {

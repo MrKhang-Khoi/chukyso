@@ -3145,6 +3145,62 @@
           return;
         }
 
+        // Kiểm tra nếu lỗi do trình duyệt chặn kết nối loopback (Chrome PNA / Failed to fetch)
+        const isLoopbackBlocked = err && (
+          err.name === 'TypeError' || 
+          (err.message && (err.message.includes('fetch') || err.message.includes('loopback') || err.message.includes('NetworkError') || err.message.includes('CORS')))
+        );
+
+        if (isLoopbackBlocked) {
+          console.warn('[EduSign] Trình duyệt chặn cổng 18888 do chính sách Loopback của Chrome. Tự động chuyển sang xác thực Cloud SmartCA...');
+          
+          // Cập nhật giao diện hướng dẫn Thầy rõ ràng và thân thiện
+          const agentBox = document.getElementById('vgcaAgentConnectionStatus');
+          if (agentBox) {
+            agentBox.className = 'p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 space-y-1.5';
+            agentBox.innerHTML = `
+              <div class="flex items-center justify-between">
+                <div class="font-bold flex items-center gap-1.5 text-amber-900">
+                  <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+                  <span>Trình duyệt Chrome/Edge đang chặn cổng nội bộ (Loopback)</span>
+                </div>
+                <span class="px-2 py-0.5 bg-amber-200 text-amber-900 rounded font-mono font-bold text-[10px]">Cổng 18888</span>
+              </div>
+              <div class="text-[11px] text-amber-800 leading-relaxed">
+                👉 <strong>Để kích hoạt kết nối siêu tốc:</strong> Thầy bấm vào biểu tượng <strong>🔒 (hoặc ⚙️)</strong> bên trái thanh địa chỉ trình duyệt ➜ Bật <strong>"Ứng dụng trên thiết bị" (Apps on device / Mạng cục bộ)</strong> ➜ Tải lại trang.<br>
+                ✨ Hệ thống đang hỗ trợ Thầy ký duyệt tự động qua cổng bảo mật đám mây Ban Cơ yếu.
+              </div>
+            `;
+          }
+
+          if (desc) {
+            desc.innerHTML = '📲 <strong>XÁC THỰC KÝ SỐ BAN CƠ YẾU QUA ĐIỆN THOẠI</strong><br>Vui lòng mở ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại, kiểm tra và nhấn <strong>[ĐỒNG Ý]</strong> để xác nhận niêm phong hồ sơ.';
+          }
+
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i> <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>';
+          }
+
+          // Kích hoạt bộ đếm Polling kiểm tra trạng thái xác thực từ điện thoại
+          if (vgcaPollTimer) clearInterval(vgcaPollTimer);
+          vgcaPollTimer = setInterval(async () => {
+            if (!activeVgcaTxId) return;
+            try {
+              const checkRes = await fetch(`/api/vgca/session-status/${activeVgcaTxId}`);
+              if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                if (checkData && checkData.data && checkData.data.status === 'CONFIRMED') {
+                  clearInterval(vgcaPollTimer);
+                  handleUserConfirmedOnPhone();
+                }
+              }
+            } catch (e) {}
+          }, 2500);
+
+          return;
+        }
+
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>Thử lại hoặc hoàn tất</span>';
@@ -3401,12 +3457,15 @@
 
     async function signDocViaLocalAgent(docPayload, fileBase64, localHost = 'http://127.0.0.1:18888') {
       try {
-        const res = await fetch(`${localHost}/api/local-sign-doc`, {
+        const fetchOpts = {
           method: 'POST',
           mode: 'cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ doc: docPayload, fileBase64 })
-        });
+        };
+        try { fetchOpts.targetAddressSpace = 'loopback'; } catch (e) {}
+
+        const res = await fetch(`${localHost}/api/local-sign-doc`, fetchOpts);
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.success) {
           const err = new Error(data.message || 'Lỗi khi kết nối dịch vụ ký số trên máy tính');
@@ -3563,8 +3622,15 @@
               ...payload,
               isPreStamped: true
             };
-            const signResult = await signDocViaLocalAgent(signPayload, preparedPdfBase64, targetHost || 'http://127.0.0.1:18888');
-            realSignedPdfBase64 = signResult.signedPdfBase64;
+            try {
+              const signResult = await signDocViaLocalAgent(signPayload, preparedPdfBase64, targetHost || 'http://127.0.0.1:18888');
+              realSignedPdfBase64 = signResult.signedPdfBase64;
+            } catch (agentErr) {
+              if (agentErr && agentErr.cancelled) throw agentErr;
+              console.warn('[EduSign] Không thể kết nối Local Agent (do chính sách Loopback của trình duyệt), chuyển sang niêm phong Cloud SmartCA:', agentErr);
+              realSignedPdfBase64 = null;
+              cachedLocalSignerHost = null;
+            }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
               'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
@@ -3895,8 +3961,15 @@
               ...doc,
               isPreStamped: true
             };
-            const signResult = await signDocViaLocalAgent(signPayload, fileBase64, targetHost || 'http://127.0.0.1:18888');
-            realSignedPdfBase64 = signResult.signedPdfBase64;
+            try {
+              const signResult = await signDocViaLocalAgent(signPayload, fileBase64, targetHost || 'http://127.0.0.1:18888');
+              realSignedPdfBase64 = signResult.signedPdfBase64;
+            } catch (agentErr) {
+              if (agentErr && agentErr.cancelled) throw agentErr;
+              console.warn('[EduSign] Không thể ký qua Agent cục bộ (Loopback Block), chuyển sang niêm phong Cloud SmartCA:', agentErr);
+              realSignedPdfBase64 = null;
+              cachedLocalSignerHost = null;
+            }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
               'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
