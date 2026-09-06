@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EduSign - Quản lý & Trình ký Giáo án Điện tử - THCS Chu Văn An</title>
+  <!-- Suppress Tailwind CDN production warning in console -->
+  <script>
+    const _consoleWarn = console.warn;
+    console.warn = function(...args) {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+      _consoleWarn.apply(console, args);
+    };
+  </script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome Icons -->
@@ -147,10 +155,13 @@
           </button>
         </form>
 
-        <div class="pt-2 text-center border-t border-slate-100">
+        <div class="pt-2 text-center border-t border-slate-100 flex flex-col items-center gap-2">
           <p class="text-[11px] text-slate-500">
             Tài khoản Quản trị: <span class="font-bold text-slate-700">admin</span> / Mật khẩu: <span class="font-bold text-slate-700">admin@123</span>
           </p>
+          <button type="button" onclick="openInstallGuideModal()" class="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer transition">
+            <i class="fa-solid fa-circle-question text-blue-600"></i> Hướng dẫn cài đặt trên máy tính khác & Ký số
+          </button>
         </div>
       </div>
 
@@ -893,8 +904,9 @@
             </div>
           </div>
         </div>
-
       </div>
+    </div>
+  </div>
 
   <!-- MODAL KÝ SỐ BẢN SAO VĂN BẢN SANG ĐỊNH DẠNG ĐIỆN TỬ (CHẾ ĐỘ SAO Y THEO NGHỊ ĐỊNH 30/2020/NĐ-CP & VGCA - HÌNH 2) -->
   <div id="modalCopySign" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto" onclick="closeModalOnBackdrop(event, 'modalCopySign')">
@@ -1590,7 +1602,7 @@
   </div>
 
   <!-- MODAL HƯỚNG DẪN CÀI ĐẶT & KÝ SỐ TRÊN MÁY TÍNH KHÁC (INSTALL GUIDE MODAL) -->
-  <div id="modalInstallGuide" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto" style="z-index: 50;" onclick="closeModalOnBackdrop(event, 'modalInstallGuide')">
+  <div id="modalInstallGuide" class="hidden fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto" style="z-index: 99999;" onclick="closeModalOnBackdrop(event, 'modalInstallGuide')">
     <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden my-6" onclick="event.stopPropagation()">
       <!-- Header -->
       <div class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">
@@ -2522,9 +2534,17 @@
     // ==================== QUẢN LÝ HỒ SƠ GIÁO ÁN ====================
     async function loadDocuments() {
       try {
+        if (!authToken) {
+          handleLogout();
+          return;
+        }
         const res = await fetch('/api/documents', {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
+        if (res.status === 401) {
+          handleLogout();
+          return;
+        }
         const result = await res.json();
         currentDocList = result.data || [];
         renderDocsTable(currentDocList);
@@ -3755,8 +3775,14 @@
     }
 
     function openInstallGuideModal() {
-      openModal('modalInstallGuide');
+      const modal = document.getElementById('modalInstallGuide');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.zIndex = '99999';
+      }
     }
+    window.openInstallGuideModal = openInstallGuideModal;
 
     async function handleVgcaLoginSubmit(e) {
       e.preventDefault();
