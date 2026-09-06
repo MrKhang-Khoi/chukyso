@@ -879,12 +879,6 @@
             <span>Ký Số (Xác thực Điện thoại)</span>
           </button>
 
-          <!-- Nút Lưu vào OneDrive Trường (5TB) -->
-          <button type="button" id="btnViewerSyncOneDrive" onclick="handleViewerSyncOneDrive()" class="px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer" title="Lưu và nộp trực tiếp văn bản này vào thư mục OneDrive Trường (5TB)">
-            <i class="fa-brands fa-microsoft text-sky-600"></i>
-            <span>Lưu OneDrive (5TB)</span>
-          </button>
-
           <button onclick="closeModal('modalDocViewer')" class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition">
             Đóng xem trước
           </button>
@@ -2035,11 +2029,27 @@
         if (spinner) spinner.classList.remove('hidden');
 
         try {
-          if (!window._currentConvertedPdfUrl && currentViewerDocId) {
-            const res = await fetch(`/api/documents/${currentViewerDocId}/prepare-signing-pdf`);
-            if (res.ok) {
-              const blob = await res.blob();
-              window._currentConvertedPdfUrl = URL.createObjectURL(blob);
+          if (!window._currentConvertedPdfUrl) {
+            if (currentViewerDocId) {
+              const res = await fetch(`/api/documents/${currentViewerDocId}/prepare-signing-pdf`);
+              if (res.ok) {
+                const blob = await res.blob();
+                window._currentConvertedPdfUrl = URL.createObjectURL(blob);
+              }
+            } else if (selectedUploadFileBase64) {
+              const res = await fetch('/api/documents/prepare-signing-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fileBase64: selectedUploadFileBase64,
+                  fileName: selectedUploadFile ? selectedUploadFile.name : 'GiaoAn.docx',
+                  title: (document.getElementById('newDocTitle')?.value) || 'Kế hoạch bài dạy'
+                })
+              });
+              const data = await res.json();
+              if (res.ok && data.pdfBase64) {
+                window._currentConvertedPdfUrl = data.pdfBase64;
+              }
             }
           }
           if (window._currentConvertedPdfUrl) {
@@ -2157,6 +2167,7 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data.message);
 
+          window._currentConvertedPdfUrl = null;
           alert('🎉 Đã lưu toàn bộ nội dung chỉnh sửa giáo án thành công!');
           loadDocuments();
         } catch (e) {
@@ -2164,6 +2175,7 @@
         }
       } else if (selectedUploadFile) {
         window.currentCustomDocxHtml = html;
+        window._currentConvertedPdfUrl = null;
         alert('🎉 Đã lưu thay đổi vào bản xem trước! Khi nhấn "Ký Số & Nộp Trình Duyệt", nội dung đã chỉnh sửa này sẽ được nộp lên.');
       }
     }

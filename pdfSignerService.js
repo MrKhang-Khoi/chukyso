@@ -202,7 +202,7 @@ async function generateSignedPdf(doc) {
     const helvetica = await newEmptyDoc.embedFont(StandardFonts.Helvetica);
 
     const docTitleAscii = safeAscii(doc.title || 'KE HOACH BAI DAY').toUpperCase();
-    const docAuthorAscii = safeAscii(doc.author || 'Thầy Hà Văn Tý');
+    const docAuthorAscii = safeAscii(doc.author || 'Hà Văn Tý');
     const docDeptAscii = safeAscii(doc.department || 'Tổ Toán - Tin');
     const docWeekAscii = safeAscii(doc.week || 'Tuần 12');
     const docGradeAscii = safeAscii(doc.grade || 'Khối 9');
