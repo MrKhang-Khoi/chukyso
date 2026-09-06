@@ -1265,13 +1265,21 @@
                   <i class="fa-solid fa-mobile-screen-button"></i>
                 </div>
                 <h4 class="font-extrabold text-sm text-blue-900 uppercase tracking-tight">XÁC THỰC KÝ SỐ BAN CƠ YẾU CHÍNH PHỦ (VIRTUAL CSP)</h4>
-                <p class="text-xs text-slate-700 leading-relaxed max-w-sm mx-auto">
+                <p id="vgcaModalStatusDesc" class="text-xs text-slate-700 leading-relaxed max-w-sm mx-auto">
                   Hệ thống đang kết nối với <strong>Virtual CSP (TSE / Di động)</strong> của Ban Cơ yếu Chính phủ.<br>
-                  Thầy mở ứng dụng trên điện thoại nhấn <strong>[ĐỒNG Ý]</strong>, hoặc bấm nút xác nhận bên dưới để hoàn tất niêm phong chữ ký số ngay!
+                  Thầy mở ứng dụng trên điện thoại nhấn <strong>[ĐỒNG Ý]</strong> để hoàn tất niêm phong chữ ký số ngay!
                 </p>
                 <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100/90 text-emerald-800 font-semibold text-[11px]">
                   <i class="fa-solid fa-shield-halved text-emerald-600"></i>
                   <span>Người ký: Thầy Hà Văn Tý (Ban Cơ yếu Chính phủ - Virtual CSP)</span>
+                </div>
+              </div>
+
+              <!-- Hộp trạng thái kết nối EduSign Agent trên máy tính (Cầu nối kích hoạt điện thoại) -->
+              <div id="vgcaAgentConnectionStatus" class="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs text-blue-800">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-spinner fa-spin text-blue-600"></i>
+                  <span>Đang kết nối EduSign Agent để gửi thông báo tới điện thoại...</span>
                 </div>
               </div>
             </div>
@@ -2980,6 +2988,19 @@
           }
         }, 1000);
 
+        // Kiểm tra kết nối EduSign Agent trên máy tính Thầy (Cổng 18888 / 3000)
+        let ping = { available: false };
+        try {
+          ping = await pingLocalSigner(1500);
+        } catch (e) {}
+
+        updateAgentStatusBox(ping);
+
+        // NẾU ĐÃ KẾT NỐI EDUSIGN AGENT: Kích hoạt ngay lệnh ký cục bộ để gửi Push Notification tới điện thoại!
+        if (ping.available) {
+          startAgentSigningWorkflow(ping.host);
+        }
+
         // Polling kiểm tra tự động xem Thầy đã bấm [Đồng ý] trên điện thoại chưa
         if (vgcaPollTimer) clearInterval(vgcaPollTimer);
         vgcaPollTimer = setInterval(async () => {
@@ -3001,13 +3022,145 @@
       }
     }
 
+    let isAgentSigningActive = false;
+
+    function updateAgentStatusBox(ping) {
+      const box = document.getElementById('vgcaAgentConnectionStatus');
+      if (!box) return;
+      if (ping && ping.available) {
+        box.className = 'p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800';
+        box.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <div>
+              <div class="font-bold text-emerald-900">🟢 Đã kết nối EduSign Agent trên máy tính</div>
+              <div class="text-[11px] text-emerald-700">Đã gửi tín hiệu Push Notification tới điện thoại của Thầy...</div>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded font-mono font-bold text-[10px]">Cổng 18888</span>
+        `;
+      } else {
+        box.className = 'p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 space-y-2';
+        box.innerHTML = `
+          <div class="flex items-start gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600 text-base mt-0.5"></i>
+            <div class="flex-1">
+              <div class="font-bold text-amber-900">Chưa phát hiện phần mềm EduSign Agent trên máy tính!</div>
+              <div class="text-[11px] text-amber-800 leading-relaxed mt-1">
+                Để Ban Cơ yếu gửi thông báo xác thực tới điện thoại, Thầy vui lòng mở ứng dụng <strong>EduSign Agent</strong> trên máy tính (ở góc khay hệ thống cạnh đồng hồ).
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1 border-t border-amber-200/60">
+            <a href="/public/downloads/EduSign_Agent.exe" download class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-bold text-[11px] transition shadow-sm">
+              <i class="fa-solid fa-download"></i> <span>Tải EduSign Agent</span>
+            </a>
+            <button type="button" onclick="retryConnectAgent()" class="px-3 py-1 bg-white hover:bg-amber-100 border border-amber-400 text-amber-900 rounded font-semibold text-[11px] transition">
+              <i class="fa-solid fa-rotate"></i> <span>Kiểm tra lại kết nối</span>
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    async function retryConnectAgent() {
+      const box = document.getElementById('vgcaAgentConnectionStatus');
+      if (box) {
+        box.innerHTML = '<div class="flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin text-blue-600"></i><span>Đang kiểm tra kết nối với EduSign Agent trên máy tính...</span></div>';
+      }
+      const ping = await pingLocalSigner(1500);
+      updateAgentStatusBox(ping);
+      if (ping.available) {
+        startAgentSigningWorkflow(ping.host);
+      } else {
+        alert('Vẫn chưa phát hiện EduSign Agent!\n\nThầy hãy chắc chắn đã chạy tệp EduSign_Agent.exe trên máy tính để biểu tượng khiên xanh hiển thị ở góc khay hệ thống (cạnh đồng hồ).');
+      }
+    }
+
+    async function startAgentSigningWorkflow(localHost) {
+      if (isAgentSigningActive) return;
+      isAgentSigningActive = true;
+
+      const desc = document.getElementById('vgcaModalStatusDesc');
+      if (desc) {
+        desc.innerHTML = '📲 <strong>ĐÃ GỬI TÍN HIỆU TỚI ĐIỆN THOẠI CỦA THẦY!</strong><br>Xin mời Thầy mở thông báo trên điện thoại và nhấn <strong>[ĐỒNG Ý]</strong> để hoàn tất niêm phong chữ ký số.';
+      }
+
+      const btn = document.getElementById('btnVgcaConfirmFromPhone');
+      if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang chờ Thầy nhấn [ĐỒNG Ý] trên điện thoại...</span>';
+      }
+
+      try {
+        if (currentVgcaSigningOptions && typeof currentVgcaSigningOptions.action === 'function') {
+          const signResult = await currentVgcaSigningOptions.action({
+            txId: activeVgcaTxId,
+            mode: 'smartca',
+            localHost: localHost
+          });
+
+          // Đã nhận chữ ký và hoàn tất!
+          if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+          if (vgcaPollTimer) clearInterval(vgcaPollTimer);
+
+          try {
+            await fetch('/api/vgca/confirm-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+              body: JSON.stringify({ txId: activeVgcaTxId })
+            });
+          } catch (e) {}
+
+          // Chuyển sang màn hình thành công xanh lá
+          const step2 = document.getElementById('vgcaStep2Container');
+          const successAlert = document.getElementById('vgcaAuthSuccessAlert');
+          if (step2) step2.classList.add('hidden');
+          if (successAlert) successAlert.classList.remove('hidden');
+
+          setTimeout(() => {
+            closeVgcaMobileAuthModal();
+            if (typeof currentVgcaSigningOptions.onSuccess === 'function') {
+              currentVgcaSigningOptions.onSuccess(signResult);
+            }
+          }, 1200);
+        }
+      } catch (err) {
+        console.error('Lỗi trong tiến trình ký qua Agent:', err);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i> <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>';
+        }
+        if (desc) {
+          desc.innerHTML = `<span class="text-rose-600 font-semibold">⚠️ ${err.message || 'Chưa hoàn tất ký số'}</span>`;
+        }
+      } finally {
+        isAgentSigningActive = false;
+      }
+    }
+
     /**
      * BƯỚC 2: Người dùng nhấn nút "TÔI ĐÃ BẤM XÁC NHẬN TRÊN ĐIỆN THOẠI"
-     * TUYỆT ĐỐI CHẶN BÁO THÀNH CÔNG TỰ ĐỘNG KHI CHƯA BẤM NÚT NÀY!
      */
     async function handleUserConfirmedOnPhone() {
       if (!activeVgcaTxId) {
         alert('Không tìm thấy mã giao dịch ký số!');
+        return;
+      }
+
+      if (isAgentSigningActive) {
+        const btn = document.getElementById('btnVgcaConfirmFromPhone');
+        if (btn) {
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang tiếp nhận kết quả từ điện thoại...</span>';
+        }
+        return;
+      }
+
+      const ping = await pingLocalSigner(1500);
+      if (ping.available) {
+        startAgentSigningWorkflow(ping.host);
         return;
       }
 
@@ -3172,7 +3325,7 @@
       return { available: false };
     }
 
-    async function signDocViaLocalAgent(docPayload, fileBase64, localHost = 'http://127.0.0.1:3000') {
+    async function signDocViaLocalAgent(docPayload, fileBase64, localHost = 'http://127.0.0.1:18888') {
       const res = await fetch(`${localHost}/api/local-sign-doc`, {
         method: 'POST',
         mode: 'cors',
@@ -3188,28 +3341,23 @@
 
     // Thử nghiệm gửi thông báo xác thực tới điện thoại của Thầy
     function testSendVgcaMobileAuth() {
-      const isRemoteServer = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-
       startVgcaMobileSigning({
         docTitle: 'Văn bản thử nghiệm kết nối SmartCA.pdf',
         signerName: currentUser ? currentUser.name : 'Hà Văn Tý',
-        action: async () => {
-          if (isRemoteServer) {
-            const statusDesc = document.getElementById('vgcaModalStatusDesc');
-            if (statusDesc) statusDesc.innerHTML = 'Đang kiểm tra kết nối với dịch vụ SmartCA / VGCA...';
+        action: async (authInfo) => {
+          let ping = { available: false };
+          try {
+            ping = await pingLocalSigner(1500);
+          } catch (e) {}
 
-            const ping = await pingLocalSigner(1500);
-            if (ping && ping.available) {
-              if (statusDesc) {
-                statusDesc.innerHTML = 'Đã kết nối ứng dụng ký số VGCA trên máy tính! Đang gửi lệnh xác thực tới điện thoại của Thầy...<br>Xin mời Thầy mở thông báo <strong>SmartCA / VGCA</strong> và nhấn <strong>[Xác nhận Ký]</strong>.';
-              }
-              return await signDocViaLocalAgent({
-                id: 'TEST_PING_' + Date.now(),
-                title: 'Văn bản thử nghiệm kết nối SmartCA.pdf',
-                author: currentUser ? currentUser.name : 'Hà Văn Tý',
-                department: (currentUser && currentUser.department) || 'THCS Chu Văn An'
-              }, null, ping.host);
-            }
+          const targetHost = (authInfo && authInfo.localHost) || ping.host;
+          if (ping.available || targetHost) {
+            return await signDocViaLocalAgent({
+              id: 'TEST_PING_' + Date.now(),
+              title: 'Văn bản thử nghiệm kết nối SmartCA.pdf',
+              author: currentUser ? currentUser.name : 'Hà Văn Tý',
+              department: (currentUser && currentUser.department) || 'THCS Chu Văn An'
+            }, null, targetHost || 'http://127.0.0.1:18888');
           }
 
           const res = await fetch('/api/test-vgca-ping', {
@@ -3304,23 +3452,22 @@
         action: async (authInfo) => {
           let realSignedPdfBase64 = null;
 
-          if (isRemoteServer) {
-            let ping = { available: false };
-            try {
-              ping = await pingLocalSigner(1500);
-            } catch (e) {}
+          let ping = { available: false };
+          try {
+            ping = await pingLocalSigner(1500);
+          } catch (e) {}
 
-            if (ping.available) {
-              const signResult = await signDocViaLocalAgent(payload, payload.fileBase64, ping.host);
-              realSignedPdfBase64 = signResult.signedPdfBase64;
-            } else if (authInfo && authInfo.mode === 'usb_token') {
-              throw new Error(
-                'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
-                '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
-                '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.\n' +
-                '3. Hoặc Thầy có thể chọn [Ký nhanh nội bộ] bên dưới để nộp giáo án kịp tiến độ.'
-              );
-            }
+          const targetHost = (authInfo && authInfo.localHost) || ping.host;
+          if (ping.available || targetHost) {
+            const signResult = await signDocViaLocalAgent(payload, payload.fileBase64, targetHost || 'http://127.0.0.1:18888');
+            realSignedPdfBase64 = signResult.signedPdfBase64;
+          } else if (authInfo && authInfo.mode === 'usb_token') {
+            throw new Error(
+              'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
+              '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
+              '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.\n' +
+              '3. Hoặc Thầy có thể chọn [Ký nhanh nội bộ] bên dưới để nộp giáo án kịp tiến độ.'
+            );
           }
 
           const submitPayload = {
@@ -3614,39 +3761,38 @@
         action: async (authInfo) => {
           let realSignedPdfBase64 = null;
 
-          if (isRemoteServer) {
-            let ping = { available: false };
+          let ping = { available: false };
+          try {
+            ping = await pingLocalSigner(1500);
+          } catch (e) {}
+
+          const targetHost = (authInfo && authInfo.localHost) || ping.host;
+          if (ping.available || targetHost) {
+            // Lấy file gốc từ server
+            let fileBase64 = null;
             try {
-              ping = await pingLocalSigner(1500);
-            } catch (e) {}
-
-            if (ping.available) {
-              // Lấy file gốc từ server
-              let fileBase64 = null;
-              try {
-                const fileRes = await fetch(`/api/documents/${docId}/file`);
-                if (fileRes.ok) {
-                  const blob = await fileRes.blob();
-                  fileBase64 = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.readAsDataURL(blob);
-                  });
-                }
-              } catch (e) {
-                console.warn('Không lấy được tệp gốc:', e);
+              const fileRes = await fetch(`/api/documents/${docId}/file`);
+              if (fileRes.ok) {
+                const blob = await fileRes.blob();
+                fileBase64 = await new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result);
+                  reader.readAsDataURL(blob);
+                });
               }
-
-              const signResult = await signDocViaLocalAgent(doc, fileBase64, ping.host);
-              realSignedPdfBase64 = signResult.signedPdfBase64;
-            } else if (authInfo && authInfo.mode === 'usb_token') {
-              throw new Error(
-                'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
-                '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
-                '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.\n' +
-                '3. Hoặc Thầy có thể chọn [Ký nhanh nội bộ] bên dưới để hoàn tất việc ký duyệt.'
-              );
+            } catch (e) {
+              console.warn('Không lấy được tệp gốc:', e);
             }
+
+            const signResult = await signDocViaLocalAgent(doc, fileBase64, targetHost || 'http://127.0.0.1:18888');
+            realSignedPdfBase64 = signResult.signedPdfBase64;
+          } else if (authInfo && authInfo.mode === 'usb_token') {
+            throw new Error(
+              'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
+              '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
+              '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.\n' +
+              '3. Hoặc Thầy có thể chọn [Ký nhanh nội bộ] bên dưới để hoàn tất việc ký duyệt.'
+            );
           }
 
           const res = await fetch(`/api/documents/${docId}/sign-vgca-real`, {

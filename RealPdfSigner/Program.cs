@@ -799,15 +799,6 @@ namespace RealPdfSigner
             }
 
             var prefixes = new List<string> { "http://127.0.0.1:18888/", "http://localhost:18888/" };
-            try
-            {
-                var testListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 3000);
-                testListener.Start();
-                testListener.Stop();
-                prefixes.Add("http://127.0.0.1:3000/");
-                prefixes.Add("http://localhost:3000/");
-            }
-            catch { }
 
             using var listener = new HttpListener();
             foreach (var prefix in prefixes)
@@ -848,10 +839,11 @@ namespace RealPdfSigner
             var req = context.Request;
             var res = context.Response;
 
-            // Thiết lập tiêu đề CORS & Private Network Access
-            res.AddHeader("Access-Control-Allow-Origin", "*");
+            // Thiết lập tiêu đề CORS & Private Network Access (Chuẩn Chrome/Edge PNA)
+            string origin = req.Headers["Origin"] ?? "*";
+            res.AddHeader("Access-Control-Allow-Origin", origin);
             res.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-            res.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+            res.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Access-Control-Request-Private-Network");
             res.AddHeader("Access-Control-Allow-Private-Network", "true");
 
             if (req.HttpMethod == "OPTIONS")
@@ -950,6 +942,46 @@ namespace RealPdfSigner
                     };
                     byte[] resBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(resObj));
                     res.OutputStream.Write(resBytes, 0, resBytes.Length);
+                    res.Close();
+                    return;
+                }
+
+                if (path == "/api/trigger-mobile-auth" && req.HttpMethod == "POST")
+                {
+                    var cert = FindVgcaCertificate();
+                    if (cert == null || !cert.HasPrivateKey)
+                    {
+                        var errObj = new { success = false, message = "Chưa phát hiện chứng thư số Ban Cơ yếu có khóa riêng trên máy tính này." };
+                        byte[] errBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(errObj));
+                        res.StatusCode = 400;
+                        res.OutputStream.Write(errBytes, 0, errBytes.Length);
+                        res.Close();
+                        return;
+                    }
+
+                    string signer = ExtractCn(cert.Subject);
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 📲 Đang kích hoạt tín hiệu Push Notification tới điện thoại của {signer}...");
+                    Console.ResetColor();
+
+                    // Kích hoạt hàm SignData của Ban Cơ yếu để gửi lệnh tới điện thoại ngay lập tức
+                    byte[] testPayload = System.Text.Encoding.UTF8.GetBytes("VGCA_PING_" + DateTime.UtcNow.Ticks);
+                    var vgcaSig = new VgcaSignature(cert);
+                    byte[] sig = vgcaSig.Sign(testPayload);
+
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎉 Giáo viên đã bấm [ĐỒNG Ý] trên điện thoại thành công!");
+                    Console.ResetColor();
+
+                    var okObj = new
+                    {
+                        success = true,
+                        message = "Điện thoại đã xác nhận ký số thành công!",
+                        signer = signer,
+                        thumbprint = cert.Thumbprint
+                    };
+                    byte[] okBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(okObj));
+                    res.OutputStream.Write(okBytes, 0, okBytes.Length);
                     res.Close();
                     return;
                 }
@@ -1311,15 +1343,6 @@ namespace RealPdfSigner
             _listenerThread = new Thread(() =>
             {
                 var prefixes = new List<string> { "http://127.0.0.1:18888/", "http://localhost:18888/" };
-                try
-                {
-                    var testListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 3000);
-                    testListener.Start();
-                    testListener.Stop();
-                    prefixes.Add("http://127.0.0.1:3000/");
-                    prefixes.Add("http://localhost:3000/");
-                }
-                catch { }
 
                 try
                 {
