@@ -4563,11 +4563,6 @@
           const f = document.getElementById('formNewDoc');
           if (f) f.reset();
           removeSelectedFile();
-          alert('🎉🎉🎉 KÝ SỐ MẬT MÃ THẬT VGCA VÀ LƯU HỒ SƠ THÀNH CÔNG 100%!\n\n' +
-                '✓ Chủ thể: ' + (currentUser ? currentUser.name : 'Hà Văn Tý') + '\n' +
-                '✓ Ban Cơ yếu Chính phủ đã niêm phong chữ ký số PAdES X.509 RFC 3279\n' +
-                '✓ Hồ sơ đã được lưu trữ và chuyển đến Tổ trưởng chuyên môn phê duyệt.\n\n' +
-                'Bạn có thể bấm tải file PDF về để kiểm tra chữ ký số công vụ có giá trị pháp lý!');
           loadDocuments();
         }
       });
@@ -5049,10 +5044,14 @@
       const origRowHtml = btnRow ? btnRow.innerHTML : '';
 
       const targetDoc = doc || { id: docId, title: 'Kế hoạch bài dạy' };
-      const cleanTitle = (targetDoc.title || targetDoc.id).replace(/[/\\?%*:|"<>]/g, '_').trim();
-      const weekStr = targetDoc.week ? ('_' + targetDoc.week.replace(/\s+/g, '_')) : '';
-      const deptStr = targetDoc.department ? ('[' + targetDoc.department.replace(/\s+/g, '_') + ']') : '[To_Chuyen_Mon]';
-      const defaultFileName = `${deptStr}${weekStr}_${cleanTitle}_DaKySo.pdf`;
+      let rawName = targetDoc.fileName || targetDoc.title || 'KeHoachBaiDay';
+      let cleanName = rawName.replace(/[/\\?%*:|"<>]/g, '_').trim();
+      if (cleanName.toLowerCase().endsWith('.docx') || cleanName.toLowerCase().endsWith('.doc')) {
+        cleanName = cleanName.substring(0, cleanName.lastIndexOf('.')) + '.pdf';
+      } else if (!cleanName.toLowerCase().endsWith('.pdf')) {
+        cleanName = cleanName + '.pdf';
+      }
+      const defaultFileName = cleanName;
 
       if (btnModal) {
         btnModal.disabled = true;
@@ -5092,7 +5091,7 @@
           throw new Error('Hồ sơ chưa có tệp đính kèm hoặc không tải được nội dung');
         }
 
-        // 2. Cho phép người dùng chọn đường dẫn thư mục và đổi tên file bằng showSaveFilePicker
+        // 2. Cho phép người dùng chọn đường dẫn thư mục và gõ/đổi tên file bằng showSaveFilePicker
         // ID 'edusign_onedrive_save_picker' giúp trình duyệt tự động ghi nhớ đường dẫn thư mục đã chọn cho các lần sau
         if (window.showSaveFilePicker) {
           let fileHandle = null;
@@ -5139,11 +5138,6 @@
               });
             } catch (e) {}
 
-            alert(`🎉 ĐÃ LƯU HỒ SƠ THÀNH CÔNG VÀO ONEDRIVE / MÁY TÍNH!\n\n` +
-                  `📄 Tên tệp đã lưu: "${savedName}"\n\n` +
-                  `✅ Vị trí thư mục đã được tự động ghi nhớ cho các lần sau!\n` +
-                  `Tệp đã nằm trong thư mục máy tính và OneDrive sẽ tự động đồng bộ lên đám mây trường.`);
-
             await loadDocuments();
             const detailsModal = document.getElementById('modalDocDetails');
             if (detailsModal && !detailsModal.classList.contains('hidden')) {
@@ -5158,12 +5152,7 @@
           const dirHandle = await promptSelectOneDriveFolder(false);
           if (!dirHandle) return;
 
-          const result = await saveSingleDocToLocalOneDrive(targetDoc, dirHandle);
-          alert(`🎉 ĐÃ LƯU HỒ SƠ THÀNH CÔNG VÀO ONEDRIVE TRƯỜNG (5TB)!\n\n` +
-                `📁 Thư mục lưu trữ: ${result.category}\n` +
-                `📄 Tệp tin: ${result.fileName}\n` +
-                `🏢 Thư mục chia sẻ: "${result.folderName}"\n\n` +
-                `✅ Đường dẫn đã được lưu lại để tự động sử dụng cho các lần sau!`);
+          await saveSingleDocToLocalOneDrive(targetDoc, dirHandle);
 
           await loadDocuments();
           const detailsModal = document.getElementById('modalDocDetails');
@@ -5184,20 +5173,17 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Lỗi khi lưu lên OneDrive');
 
-        const info = data.data || data.oneDriveInfo || {};
-        alert(`🎉 ĐÃ LƯU HỒ SƠ THÀNH CÔNG VÀO ONEDRIVE (5TB)!\n\n` +
-              `📁 Thư mục: ${info.category || '2. KẾ HOẠCH BÀI DẠY'}\n` +
-              `📄 Tệp tin: ${info.fileName || defaultFileName}\n` +
-              `🏢 Thư mục chia sẻ: ${info.oneDriveRoot || 'OneDrive Trường'}\n\n` +
-              `Hệ thống đã lưu vào thư mục máy tính và đồng bộ lên đám mây trường.`);
-
         await loadDocuments();
         const detailsModal = document.getElementById('modalDocDetails');
         if (detailsModal && !detailsModal.classList.contains('hidden')) {
           openDocDetails(docId);
         }
       } catch (err) {
-        alert('⚠️ Không thể lưu vào OneDrive: ' + err.message);
+        if (typeof showAppNotice === 'function') {
+          showAppNotice('Không thể lưu vào OneDrive: ' + err.message, 'Thông Báo', 'error');
+        } else {
+          console.error('Lỗi khi lưu vào OneDrive:', err);
+        }
       } finally {
         if (btnModal) {
           btnModal.disabled = false;
@@ -5213,7 +5199,9 @@
     // Nộp tài liệu đang xem trong Viewer vào OneDrive (5TB)
     async function handleViewerSyncOneDrive() {
       if (!currentlyViewedDoc || !currentlyViewedDoc.id) {
-        alert('Không tìm thấy tài liệu đang mở để lưu OneDrive!');
+        if (typeof showAppNotice === 'function') {
+          showAppNotice('Không tìm thấy tài liệu đang mở để lưu OneDrive!', 'Thông Báo');
+        }
         return;
       }
       await handleSyncDocToOneDrive(currentlyViewedDoc.id);
@@ -5225,73 +5213,62 @@
       let docIds = checkedBoxes.map(cb => cb.value);
 
       if (docIds.length === 0) {
-        if (!currentDocList || currentDocList.length === 0) {
-          alert('Chưa có kế hoạch bài dạy nào trong danh sách để lưu vào OneDrive!');
-          return;
+        if (typeof showAppNotice === 'function') {
+          showAppNotice('Vui lòng tích chọn ít nhất 1 kế hoạch bài dạy trong danh sách để lưu vào OneDrive!', 'Thông Báo');
         }
-        alert('Vui lòng tích chọn ít nhất 1 kế hoạch bài dạy trong danh sách để lưu vào OneDrive!');
         return;
-      }
-
-      // 1. Kiểm tra và chọn thư mục OneDrive
-      let dirHandle = null;
-      if (window.showDirectoryPicker) {
-        dirHandle = await promptSelectOneDriveFolder(false);
-        if (!dirHandle) return; // Người dùng hủy chọn
       }
 
       const btn = document.getElementById('btnBatchSyncOneDrive');
       const origHtml = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang lưu vào OneDrive...</span>';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang lưu...</span>';
       }
 
-      let successCount = 0;
-      let failCount = 0;
-      let lastResult = null;
-
-      for (const id of docIds) {
-        const d = currentDocList.find(x => x.id === id) || { id, title: 'Kế hoạch bài dạy' };
-        try {
-          if (dirHandle) {
-            lastResult = await saveSingleDocToLocalOneDrive(d, dirHandle);
-            successCount++;
-          } else {
-            const res = await fetch(`/api/documents/${id}/sync-onedrive`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-              }
-            });
-            const data = await res.json();
-            if (res.ok) {
-              successCount++;
-              lastResult = data.data || data.oneDriveInfo;
-            } else {
-              failCount++;
+      try {
+        // 1. Ưu tiên showSaveFilePicker: mở hộp thoại Lưu tệp cho phép chọn thư mục VÀ gõ đổi tên tệp trực tiếp
+        if (window.showSaveFilePicker) {
+          for (const id of docIds) {
+            try {
+              await handleSyncDocToOneDrive(id);
+            } catch (e) {
+              console.error('Lỗi khi lưu tệp:', e);
             }
           }
-        } catch (e) {
-          failCount++;
+          return;
         }
-      }
 
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = origHtml;
-      }
+        // 2. Dự phòng bằng showDirectoryPicker nếu trình duyệt chưa hỗ trợ showSaveFilePicker
+        let dirHandle = null;
+        if (window.showDirectoryPicker) {
+          dirHandle = await promptSelectOneDriveFolder(false);
+          if (!dirHandle) return; // Người dùng hủy chọn
+        }
 
-      await loadDocuments();
+        for (const id of docIds) {
+          const d = currentDocList.find(x => x.id === id) || { id, title: 'Kế hoạch bài dạy' };
+          try {
+            if (dirHandle) {
+              await saveSingleDocToLocalOneDrive(d, dirHandle);
+            } else {
+              await fetch(`/api/documents/${id}/sync-onedrive`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+                }
+              });
+            }
+          } catch (e) {}
+        }
 
-      if (successCount > 0) {
-        alert(`🎉 ĐÃ LƯU THÀNH CÔNG ${successCount} HỒ SƠ VÀO ONEDRIVE TRƯỜNG (5TB)!\n\n` +
-              (lastResult ? `📁 Thư mục lưu: "${lastResult.category || 'Kế hoạch bài dạy'}"\n🏢 Thư mục gốc: "${lastResult.folderName || lastResult.oneDriveRoot || 'OneDrive Trường'}"\n\n` : '') +
-              `✅ Đường dẫn đã được lưu lại để tự động sử dụng cho các lần sau!\n` +
-              (failCount > 0 ? `⚠️ Có ${failCount} hồ sơ chưa lưu được do chưa đính kèm tệp.` : 'Tất cả hồ sơ đã được lưu vào thư mục máy tính và đồng bộ lên đám mây trường.'));
-      } else {
-        alert('⚠️ Không thể lưu hồ sơ vào OneDrive. Vui lòng kiểm tra xem hồ sơ đã có tệp đính kèm chưa!');
+        await loadDocuments();
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
       }
     }
 
@@ -5373,12 +5350,6 @@
           return data;
         },
         onSuccess: (data) => {
-          alert('🎉🎉🎉 KÝ SỐ MẬT MÃ THẬT VGCA THÀNH CÔNG 100%!\n\n' +
-                '✓ Chủ thể: Hà Văn Tý\n' +
-                '✓ Cơ quan cấp phát: Ban Cơ yếu Chính phủ\n' +
-                '✓ Tiêu chuẩn: PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)\n' +
-                '✓ Bảo vệ toàn vẹn: 100% tài liệu được niêm phong mật mã\n\n' +
-                'Bạn có thể bấm nút "Lưu Văn Bản Đã Ký Về Máy (.PDF)" để mở file bằng Adobe Acrobat Reader kiểm tra chứng nhận hợp lệ!');
           loadDocuments();
           openDocDetails(docId);
         }
