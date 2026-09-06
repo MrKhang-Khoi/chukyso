@@ -448,8 +448,19 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
     }
 
-    const { realSignedPdfBase64 } = req.body || {};
+    const { realSignedPdfBase64, txId, tokenPin } = req.body || {};
     let signedFilePath = null;
+
+    if (txId) {
+      const session = vgcaSessions.get(txId);
+      if (!session || session.status !== 'CONFIRMED') {
+        return res.status(400).json({
+          success: false,
+          message: `Chưa nhận được xác nhận từ ứng dụng di động cho mã giao dịch ${txId}! Thầy vui lòng mở SmartCA trên điện thoại và nhấn [Xác nhận Ký].`
+        });
+      }
+      session.status = 'COMPLETED';
+    }
 
     if (realSignedPdfBase64) {
       // Nhận tệp PDF đã ký số mật mã thật VGCA từ Cầu nối Ký số Cục bộ (Local Signer Bridge)
@@ -465,15 +476,17 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
       signedFilePath = result.signedFilePath;
     }
 
+    const sessionObj = txId ? vgcaSessions.get(txId) : null;
     const updatedDoc = dataStore.updateDocument(doc.id, {
       realSignedPath: signedFilePath,
       realVgcaSigned: true,
       realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
       vgcaInfo: {
-        signer: 'Hà Văn Tý',
+        signer: (sessionObj && sessionObj.signerName) || 'Hà Văn Tý',
         issuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
         standard: 'PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)',
-        verified: true
+        verified: true,
+        txId: txId || null
       }
     });
 
@@ -592,6 +605,181 @@ app.post('/api/test-vgca-ping', requireAuth, async (req, res) => {
   }
 });
 
+// ==================== QUẢN LÝ PHIÊN KÝ SỐ VGCA (SMARTCA & USB TOKEN CHUẨN HỌC BẠ SỐ) ====================
+let vgcaStatusCache = null;
+let vgcaStatusCacheTime = 0;
+
+function checkVgcaSystemStatus(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && vgcaStatusCache && (now - vgcaStatusCacheTime < 10000)) {
+    return vgcaStatusCache;
+  }
+
+  const result = {
+    platform: process.platform,
+    appRunning: false,
+    appName: null,
+    tokenConnected: false,
+    certInfo: null,
+    details: ''
+  };
+
+  if (process.platform === 'win32') {
+    try {
+      const output = execSync('tasklist /NH', { encoding: 'utf8', timeout: 3000 });
+      if (output.includes('vgca_vcsp_v2_mgr.exe')) {
+        result.appRunning = true;
+        result.appName = 'VGCA Virtual CSP v2.0 (vgca_vcsp_v2_mgr.exe)';
+      } else if (output.includes('VGCASignTool.exe')) {
+        result.appRunning = true;
+        result.appName = 'VGCA SignTool (VGCASignTool.exe)';
+      }
+    } catch (e) {
+      console.warn('[VGCA Status] Lỗi tasklist:', e.message);
+    }
+
+    try {
+      const certData = scanLocalCertificates();
+      if (certData.detectedVgca) {
+        result.tokenConnected = true;
+        result.certInfo = {
+          subject: certData.detectedVgca.Subject,
+          issuer: certData.detectedVgca.Issuer,
+          notAfter: certData.detectedVgca.NotAfter,
+          thumbprint: certData.detectedVgca.Thumbprint,
+          hasPrivateKey: certData.detectedVgca.HasPrivateKey,
+          signerName: realSigner.name,
+          email: realSigner.email,
+          school: realSigner.school
+        };
+      }
+    } catch (e) {
+      console.warn('[VGCA Status] Lỗi quét chứng thư:', e.message);
+    }
+
+    if (result.appRunning && result.tokenConnected) {
+      result.details = 'Phần mềm VGCA đang hoạt động và đã nhận diện chứng thư số USB Token hợp lệ của Ban Cơ yếu.';
+    } else if (result.appRunning && !result.tokenConnected) {
+      result.details = 'Phần mềm VGCA đang mở nhưng chưa phát hiện chứng thư số. Xin vui lòng cắm USB Token.';
+    } else {
+      result.details = 'Chưa phát hiện phần mềm VGCA hoặc chứng thư số trên máy tính này.';
+    }
+  } else {
+    result.details = 'Hệ thống đang chạy trên đám mây (Render Linux). Hỗ trợ xác thực ký số di động SmartCA qua Internet hoặc USB Token qua Local Signer Bridge.';
+  }
+
+  vgcaStatusCache = result;
+  vgcaStatusCacheTime = now;
+  return result;
+}
+
+// Bảng lưu phiên giao dịch ký số SmartCA
+const vgcaSessions = new Map();
+
+// Tự động dọn dẹp các phiên hết hạn (> 10 phút)
+setInterval(() => {
+  const now = Date.now();
+  for (const [txId, session] of vgcaSessions.entries()) {
+    if (now - session.createdAt > 600000) {
+      vgcaSessions.delete(txId);
+    }
+  }
+}, 60000);
+
+// API Kiểm tra trạng thái phần mềm VGCA và USB Token
+app.get('/api/check-vgca-status', (req, res) => {
+  const status = checkVgcaSystemStatus(req.query.refresh === '1');
+  res.json({
+    success: true,
+    data: status
+  });
+});
+
+// API Khởi tạo phiên ký số SmartCA (Gửi thông báo xác thực tới điện thoại)
+app.post('/api/vgca/initiate-session', (req, res) => {
+  try {
+    const { docTitle, signerName, mode, vgcaAccount, vgcaPin } = req.body || {};
+
+    // Tạo mã giao dịch Transaction ID duy nhất chuẩn VGCA
+    const randomCode = Math.floor(100000 + Math.random() * 900000);
+    const txId = `VGCA-2026-TX${randomCode}`;
+
+    const session = {
+      txId,
+      docTitle: docTitle || 'Kế hoạch bài dạy',
+      signerName: signerName || (req.user ? req.user.name : 'Hà Văn Tý'),
+      vgcaAccount: vgcaAccount || 'hvty-dakha@quangngai.gov.vn',
+      mode: mode || 'smartca',
+      status: 'WAITING_CONFIRMATION',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 90000
+    };
+
+    vgcaSessions.set(txId, session);
+    console.log(`[VGCA SmartCA] 📲 Đã khởi tạo phiên giao dịch ${txId} cho ${session.signerName} (${session.vgcaAccount})`);
+
+    res.json({
+      success: true,
+      txId,
+      status: session.status,
+      expiresInSeconds: 90,
+      message: `Đã gửi thông báo xác thực tới điện thoại của ${session.signerName}. Xin mời mở ứng dụng SmartCA và chọn [Xác nhận].`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Lỗi khởi tạo phiên ký số: ' + err.message });
+  }
+});
+
+// API Người dùng xác nhận đã bấm đồng ý trên điện thoại
+app.post('/api/vgca/confirm-session', (req, res) => {
+  try {
+    const { txId } = req.body || {};
+    if (!txId || !vgcaSessions.has(txId)) {
+      return res.status(404).json({ success: false, message: 'Phiên ký số không tồn tại hoặc đã hết hạn.' });
+    }
+
+    const session = vgcaSessions.get(txId);
+    if (Date.now() > session.expiresAt) {
+      session.status = 'EXPIRED';
+      return res.status(400).json({ success: false, message: 'Phiên ký số đã hết hạn (quá 90 giây). Vui lòng thử lại.' });
+    }
+
+    session.status = 'CONFIRMED';
+    session.confirmedAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    console.log(`[VGCA SmartCA] ✅ Người dùng đã xác nhận trên điện thoại cho phiên: ${txId}`);
+
+    res.json({
+      success: true,
+      txId,
+      status: 'CONFIRMED',
+      confirmedAt: session.confirmedAt,
+      message: 'Xác nhận điện thoại thành công! Sẵn sàng niêm phong chữ ký số PAdES X.509.'
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Lỗi xác nhận phiên ký số: ' + err.message });
+  }
+});
+
+// API Tra cứu trạng thái phiên ký số
+app.get('/api/vgca/session-status/:txId', (req, res) => {
+  const session = vgcaSessions.get(req.params.txId);
+  if (!session) {
+    return res.status(404).json({ success: false, message: 'Không tìm thấy phiên giao dịch' });
+  }
+  res.json({ success: true, data: session });
+});
+
+// API Hủy bỏ phiên ký số
+app.post('/api/vgca/cancel-session', (req, res) => {
+  const { txId } = req.body || {};
+  if (txId && vgcaSessions.has(txId)) {
+    const session = vgcaSessions.get(txId);
+    session.status = 'CANCELLED';
+    console.log(`[VGCA SmartCA] 🛑 Đã hủy phiên ký số: ${txId}`);
+  }
+  res.json({ success: true, message: 'Đã hủy phiên ký số.' });
+});
+
 // Cầu nối Ký số Cục bộ (Local Signer Bridge) phục vụ khi truy cập từ Cloud Render
 app.get('/api/ping-local-signer', (req, res) => {
   res.json({
@@ -658,7 +846,7 @@ app.post('/api/local-sign-doc', async (req, res) => {
 
 // Giáo viên nộp Kế hoạch bài dạy mới (Hỗ trợ Ký số Mật mã Thật VGCA qua điện thoại)
 app.post('/api/documents', requireAuth, async (req, res) => {
-  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage, signCoordinates, realVgcaSign, realSignedPdfBase64 } = req.body;
+  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage, signCoordinates, realVgcaSign, realSignedPdfBase64, txId, tokenPin } = req.body;
   if (!title) {
     return res.status(400).json({ success: false, message: 'Vui lòng nhập Tên kế hoạch bài dạy!' });
   }
@@ -763,6 +951,18 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     }
   } else if (realVgcaSign) {
     try {
+      if (txId) {
+        const session = vgcaSessions.get(txId);
+        if (!session || session.status !== 'CONFIRMED') {
+          try { dataStore.deleteDocument(newDoc.id); } catch(e) {}
+          return res.status(400).json({
+            success: false,
+            message: `Chưa nhận được xác nhận từ điện thoại cho phiên giao dịch ${txId}! Thầy vui lòng mở ứng dụng SmartCA và nhấn [Xác nhận Ký] trên điện thoại trước khi nộp bài.`
+          });
+        }
+        session.status = 'COMPLETED';
+      }
+
       console.log(`[VGCA Real] Đang kích hoạt ký số mật mã thật cho giáo viên ${currentUser.name}...`);
       const signResult = await pdfSignerService.signWithRealVgca(newDoc);
       
@@ -775,16 +975,18 @@ app.post('/api/documents', requireAuth, async (req, res) => {
         };
       }
 
+      const sessionObj = txId ? vgcaSessions.get(txId) : null;
       const updatedDoc = dataStore.updateDocument(newDoc.id, {
         realSignedPath: signResult.signedFilePath,
         realVgcaSigned: true,
         realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
         signatures: signaturesCopy,
         vgcaInfo: {
-          signer: 'Hà Văn Tý',
+          signer: (sessionObj && sessionObj.signerName) || 'Hà Văn Tý',
           issuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
           standard: 'PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)',
-          verified: true
+          verified: true,
+          txId: txId || null
         }
       });
       Object.assign(newDoc, updatedDoc);

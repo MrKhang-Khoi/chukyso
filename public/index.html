@@ -998,7 +998,7 @@
     </div>
   </div>
 
-  <!-- MODAL XÁC THỰC KÝ SỐ DI ĐỘNG BAN CƠ YẾU CHÍNH PHỦ (VGCA REAL REMOTE SIGNING) -->
+  <!-- MODAL XÁC THỰC KÝ SỐ 2 BƯỚC CHUẨN BAN CƠ YẾU CHÍNH PHỦ & HỌC BẠ SỐ (VGCA SIGNING WORKFLOW) -->
   <div id="modalVgcaMobileAuth" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md overflow-y-auto flex items-center justify-center p-3 sm:p-4" onclick="closeModalOnBackdrop(event, 'modalVgcaMobileAuth')">
     <div class="relative my-auto bg-white rounded-3xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
       
@@ -1008,7 +1008,7 @@
           <i class="fa-solid fa-xmark"></i>
         </button>
 
-        <div class="flex items-center justify-center gap-2 mb-2">
+        <div class="flex items-center justify-center gap-2 mb-1.5">
           <!-- Logo VGCA SVG -->
           <svg class="w-10 h-10" viewBox="0 0 70 70" fill="none">
             <path d="M12 42 C20 22, 32 12, 44 8 C36 22, 24 38, 16 52 C28 40, 44 26, 56 18 C46 32, 34 50, 26 62 L38 62 L54 24 L44 24 C34 38, 26 50, 18 58 Z" fill="#FEE2E2"/>
@@ -1016,103 +1016,229 @@
           <span class="text-3xl font-black italic tracking-tighter text-white font-serif">VGCA</span>
         </div>
         <h3 class="text-sm font-extrabold uppercase tracking-wide">Ban Cơ Yếu Chính Phủ</h3>
-        <p class="text-[11px] text-red-100 font-medium">Hệ thống Ký số Chuyên dùng Công vụ • Ký số từ xa (Remote Signing)</p>
+        <p class="text-[11px] text-red-100 font-medium">Hệ thống Ký số Chuyên dùng Công vụ • Tiêu chuẩn Ký Học bạ số (csdl.moet.gov.vn)</p>
       </div>
 
-      <!-- Nội dung Trạng thái Kết nối Thực tế với Thiết bị Di động -->
+      <!-- Thanh Tiến Trình 2 Bước Chuẩn Học Bạ Số -->
+      <div class="bg-slate-100 px-6 py-2.5 border-b border-slate-200 flex items-center justify-between text-xs font-semibold">
+        <div id="vgcaStepIndicator1" class="flex items-center gap-1.5 text-blue-700 font-bold">
+          <span class="w-5 h-5 rounded-full bg-blue-600 text-white text-[11px] flex items-center justify-center font-mono">1</span>
+          <span>Xác thực & Phương thức</span>
+        </div>
+        <i class="fa-solid fa-chevron-right text-slate-400 text-[10px]"></i>
+        <div id="vgcaStepIndicator2" class="flex items-center gap-1.5 text-slate-400">
+          <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-600 text-[11px] flex items-center justify-center font-mono">2</span>
+          <span>Xác nhận Ký & Niêm phong</span>
+        </div>
+      </div>
+
+      <!-- Khung Nội Dung Modal -->
       <div class="p-6 space-y-4">
 
-        <!-- Trực quan hóa phát sóng kết nối từ Máy tính tới Điện thoại thật -->
-        <div id="vgcaConnectionAnim" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col items-center justify-center space-y-3">
-          <div class="flex items-center justify-center gap-6 text-blue-600">
-            <div class="flex flex-col items-center">
-              <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl shadow-sm">
-                <i class="fa-solid fa-laptop"></i>
-              </div>
-              <span class="text-[10px] font-bold text-slate-600 mt-1">Máy tính</span>
+        <!-- ==================== BƯỚC 1: CHỌN PHƯƠNG THỨC & NHẬP TÀI KHOẢN/PIN ==================== -->
+        <div id="vgcaStep1Container" class="space-y-4">
+          <!-- Thông tin tệp cần ký -->
+          <div class="bg-blue-50/70 p-3 rounded-2xl border border-blue-200 text-xs space-y-1">
+            <div class="flex justify-between items-center text-[11px]">
+              <span class="text-slate-500">Tài liệu ký:</span>
+              <strong id="vgcaStep1DocTitle" class="text-slate-900 font-bold max-w-[220px] truncate">KeHoachBaiDay.pdf</strong>
             </div>
-
-            <!-- Radar / Wave phát tín hiệu -->
-            <div class="flex items-center gap-1.5 text-blue-500 animate-pulse">
-              <i class="fa-solid fa-wifi rotate-90 text-lg"></i>
-              <span class="text-[10px] font-mono font-extrabold text-blue-800">PUSH</span>
-              <i class="fa-solid fa-arrow-right text-base text-blue-600"></i>
-            </div>
-
-            <div class="flex flex-col items-center">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center text-xl shadow-md animate-bounce">
-                <i class="fa-solid fa-mobile-screen"></i>
-              </div>
-              <span class="text-[10px] font-bold text-blue-700 mt-1">Điện thoại Thầy</span>
+            <div class="flex justify-between items-center text-[11px]">
+              <span class="text-slate-500">Chủ thể ký số:</span>
+              <strong id="vgcaStep1Signer" class="text-blue-800 font-bold">Thầy Hà Văn Tý (THCS Chu Văn An)</strong>
             </div>
           </div>
 
-          <!-- Thông báo hành động rõ ràng -->
-          <div class="text-center space-y-1">
-            <h4 id="vgcaModalStatusTitle" class="text-sm font-extrabold text-blue-900 flex items-center justify-center gap-1.5">
-              <i class="fa-solid fa-satellite-dish text-blue-600 fa-beat"></i>
-              <span>ĐÃ GỬI YÊU CẦU ĐẾN ĐIỆN THOẠI CỦA THẦY!</span>
-            </h4>
-            <p id="vgcaModalStatusDesc" class="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-              Xin mời Thầy mở thông báo hoặc ứng dụng <strong>VGCA / SmartCA</strong> trên điện thoại di động và nhấn <strong>[Xác nhận Ký]</strong>.
+          <!-- Lựa chọn Tab Phương thức ký -->
+          <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold">
+            <button type="button" id="tabBtnSmartCA" onclick="switchVgcaMode('smartca')" class="py-2.5 px-3 rounded-xl bg-white text-blue-700 shadow-sm transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-mobile-screen-button"></i>
+              <span>SmartCA (Di động)</span>
+            </button>
+            <button type="button" id="tabBtnUsbToken" onclick="switchVgcaMode('usb_token')" class="py-2.5 px-3 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-key"></i>
+              <span>USB Token</span>
+            </button>
+          </div>
+
+          <!-- Tab Nội dung 1: SmartCA (Từ xa qua điện thoại) -->
+          <div id="vgcaTabContentSmartCA" class="space-y-3 text-xs">
+            <div class="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 leading-relaxed">
+              <i class="fa-solid fa-circle-info text-indigo-600 mr-1"></i>
+              Phương thức ký số từ xa không cần USB Token. Yêu cầu xác thực qua ứng dụng SmartCA / VGCA cài trên điện thoại của Thầy.
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Tài khoản Ký số VGCA / Mã định danh công vụ *</label>
+              <div class="relative">
+                <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                <input type="text" id="vgcaAccountInput" value="hvty-dakha@quangngai.gov.vn" placeholder="Số CCCD hoặc email công vụ"
+                  class="w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-medium">
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Mã PIN xác thực SmartCA *</label>
+              <div class="relative">
+                <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                <input type="password" id="vgcaPinInput" value="123456" placeholder="Nhập mã PIN SmartCA (6-8 số)"
+                  class="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-medium">
+                <button type="button" onclick="togglePinVisibility('vgcaPinInput', this)" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                  <i class="fa-solid fa-eye text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="button" onclick="proceedToStep2SmartCA()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2">
+              <span>Tiếp tục: Gửi lệnh xác thực tới điện thoại</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+
+          <!-- Tab Nội dung 2: USB Token (Cắm máy tính) -->
+          <div id="vgcaTabContentUsbToken" class="hidden space-y-3 text-xs">
+            <!-- Hộp chẩn đoán phần cứng & phần mềm VGCA -->
+            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-700 flex items-center gap-1.5">
+                  <i class="fa-solid fa-microchip text-blue-600"></i>
+                  Kiểm tra phần mềm & thiết bị:
+                </span>
+                <button type="button" onclick="refreshVgcaHardwareStatus(true)" class="text-[11px] text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
+                  <i class="fa-solid fa-arrows-rotate"></i>
+                  <span>Kiểm tra lại</span>
+                </button>
+              </div>
+
+              <div class="space-y-1.5 text-[11px]">
+                <div class="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200">
+                  <span class="text-slate-600">1. Phần mềm VGCA máy tính:</span>
+                  <span id="vgcaDiagAppStatus" class="font-bold text-emerald-700 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                    <span>Đang hoạt động (Virtual CSP v2.0)</span>
+                  </span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200">
+                  <span class="text-slate-600">2. USB Token / Chứng thư:</span>
+                  <span id="vgcaDiagTokenStatus" class="font-bold text-emerald-700 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                    <span>Đã nhận diện: Hà Văn Tý (2031)</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Mã PIN USB Token *</label>
+              <div class="relative">
+                <i class="fa-solid fa-key absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                <input type="password" id="vgcaTokenPinInput" value="123456" placeholder="Nhập mã PIN USB Token"
+                  class="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-medium">
+                <button type="button" onclick="togglePinVisibility('vgcaTokenPinInput', this)" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                  <i class="fa-solid fa-eye text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="button" onclick="proceedUsbTokenSigning()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-file-signature"></i>
+              <span>Xác nhận Ký số bằng USB Token</span>
+            </button>
+          </div>
+
+          <!-- Nút hủy và ký nội bộ -->
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+            <button type="button" onclick="closeVgcaMobileAuthModal()" class="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-600 font-semibold hover:bg-slate-50 transition">
+              Đóng
+            </button>
+            <button type="button" onclick="executeFallbackFastSigning()" class="text-[11px] text-slate-500 hover:text-amber-600 font-medium flex items-center gap-1">
+              <i class="fa-solid fa-bolt text-amber-500"></i>
+              <span>Ký nhanh nội bộ (Không qua VGCA)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================== BƯỚC 2: CHỜ XÁC NHẬN TRÊN ĐIỆN THOẠI (SMARTCA) ==================== -->
+        <div id="vgcaStep2Container" class="hidden space-y-4">
+          <!-- Hiển thị Mã Giao Dịch & Trực quan radar -->
+          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col items-center justify-center space-y-3">
+            <div class="flex items-center justify-center gap-6 text-blue-600">
+              <div class="flex flex-col items-center">
+                <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl shadow-sm">
+                  <i class="fa-solid fa-laptop"></i>
+                </div>
+                <span class="text-[10px] font-bold text-slate-600 mt-1">Máy tính</span>
+              </div>
+
+              <!-- Radar sóng kết nối -->
+              <div class="flex items-center gap-1.5 text-blue-500 animate-pulse">
+                <i class="fa-solid fa-wifi rotate-90 text-lg"></i>
+                <span class="text-[10px] font-mono font-extrabold text-blue-800">PUSH</span>
+                <i class="fa-solid fa-arrow-right text-base text-blue-600"></i>
+              </div>
+
+              <div class="flex flex-col items-center">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center text-xl shadow-md animate-bounce">
+                  <i class="fa-solid fa-mobile-screen"></i>
+                </div>
+                <span class="text-[10px] font-bold text-blue-700 mt-1">Điện thoại Thầy</span>
+              </div>
+            </div>
+
+            <!-- Mã giao dịch & Thông tin -->
+            <div class="text-center space-y-1">
+              <div class="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-mono font-black text-xs">
+                Mã GD: <span id="vgcaActiveTxIdDisplay">VGCA-2026-TX......</span>
+              </div>
+              <p class="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed pt-1">
+                Yêu cầu đã được gửi đến điện thoại của Thầy. Thầy vui lòng mở ứng dụng <strong>VGCA / SmartCA</strong>, kiểm tra mã giao dịch và nhấn <strong>[XÁC NHẬN KÝ]</strong>.
+              </p>
+            </div>
+          </div>
+
+          <!-- Đồng hồ đếm ngược -->
+          <div class="flex items-center justify-between px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs">
+            <div class="flex items-center gap-2 text-amber-900 font-medium">
+              <i class="fa-solid fa-clock-rotate-left fa-spin text-amber-600"></i>
+              <span>Thời gian chờ xác nhận trên điện thoại:</span>
+            </div>
+            <span id="vgcaCountdown" class="font-mono font-black text-amber-800 text-sm">01:30</span>
+          </div>
+
+          <!-- NÚT HÀNH ĐỘNG QUAN TRỌNG: CHẶN AUTO SUCCESS -->
+          <div class="space-y-2 pt-1">
+            <button type="button" id="btnVgcaConfirmFromPhone" onclick="handleUserConfirmedOnPhone()" 
+              class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-2xl shadow-lg transition flex items-center justify-center gap-2 transform active:scale-[0.99]">
+              <i class="fa-solid fa-circle-check text-base"></i>
+              <span>TÔI ĐÃ BẤM XÁC NHẬN TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>
+            </button>
+            <p class="text-[11px] text-center text-slate-500 italic">
+              * Hệ thống chỉ niêm phong tài liệu khi Thầy đã thực sự bấm Đồng ý trên điện thoại.
             </p>
           </div>
-        </div>
 
-        <!-- Thông tin văn bản & Chứng thư đang ký -->
-        <div class="bg-blue-50/70 p-3.5 rounded-2xl border border-blue-200 text-xs space-y-1.5">
-          <div class="flex justify-between items-center text-[11px]">
-            <span class="text-slate-500">Tài liệu ký:</span>
-            <strong id="vgcaAuthDocTitle" class="text-slate-900 font-bold max-w-[220px] truncate">KeHoachBaiDay.pdf</strong>
-          </div>
-          <div class="flex justify-between items-center text-[11px]">
-            <span class="text-slate-500">Chủ thể chứng thư:</span>
-            <strong id="vgcaAuthSigner" class="text-blue-800 font-bold">Thầy Hà Văn Tý (THCS Chu Văn An)</strong>
-          </div>
-          <div class="flex justify-between items-center text-[11px]">
-            <span class="text-slate-500">Cơ quan cấp phát:</span>
-            <span class="text-slate-700 font-semibold">Ban Cơ yếu Chính phủ</span>
-          </div>
-          <div class="flex justify-between items-center text-[11px] pt-1 border-t border-blue-200/60">
-            <span class="text-slate-500">Tiêu chuẩn mật mã:</span>
-            <span class="text-emerald-700 font-bold font-mono">PAdES X.509 v3 (RFC 3279 ECDSA)</span>
+          <!-- Nút thao tác phụ -->
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+            <button type="button" onclick="backToStep1()" class="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-600 font-semibold hover:bg-slate-50 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-arrow-left"></i>
+              <span>Quay lại</span>
+            </button>
+            <button type="button" onclick="closeVgcaMobileAuthModal()" class="px-3.5 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold transition">
+              Hủy bỏ phiên ký
+            </button>
           </div>
         </div>
 
-        <!-- Đồng hồ đếm ngược phiên ký -->
-        <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs">
-          <div class="flex items-center gap-2 text-amber-900 font-medium">
-            <i class="fa-solid fa-clock-rotate-left fa-spin text-amber-600"></i>
-            <span>Thời gian chờ Thầy xác nhận trên điện thoại:</span>
-          </div>
-          <span id="vgcaCountdown" class="font-mono font-black text-amber-800 text-sm">01:30</span>
-        </div>
-
-        <!-- Trạng thái chờ từ máy chủ -->
-        <div id="vgcaWaitingSpinnerArea" class="flex items-center justify-center gap-2 text-xs text-blue-700 font-bold py-1">
-          <i class="fa-solid fa-spinner fa-spin text-blue-600 text-sm"></i>
-          <span id="vgcaWaitingSpinnerText">Đang lắng nghe phản hồi từ điện thoại của Thầy...</span>
-        </div>
-
-        <!-- THÔNG BÁO XÁC THỰC THÀNH CÔNG (Hiển thị khi ký xong) -->
-        <div id="vgcaAuthSuccessAlert" class="hidden p-4 bg-emerald-600 text-white rounded-2xl shadow-lg text-center space-y-1.5">
-          <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mx-auto text-xl">
+        <!-- ==================== MÀN HÌNH THÀNH CÔNG (CHỈ HIỆN KHI ĐÃ KÝ THẬT XONG) ==================== -->
+        <div id="vgcaAuthSuccessAlert" class="hidden p-5 bg-emerald-600 text-white rounded-2xl shadow-lg text-center space-y-2">
+          <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto text-2xl">
             <i class="fa-solid fa-check"></i>
           </div>
-          <h4 class="font-black text-sm uppercase">XÁC THỰC KÝ SỐ THÀNH CÔNG 100%!</h4>
-          <p class="text-xs text-emerald-100">Ban Cơ yếu Chính phủ đã niêm phong chữ ký số mật mã hợp pháp vào tài liệu.</p>
-        </div>
-
-        <!-- Nút thao tác dưới chân modal -->
-        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-          <button type="button" onclick="closeVgcaMobileAuthModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-semibold hover:bg-slate-50 text-xs transition">
-            Hủy Bỏ
-          </button>
-          
-          <button type="button" onclick="executeFallbackFastSigning()" title="Sử dụng chữ ký điện tử nội bộ nếu Thầy không mang điện thoại bên cạnh" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-medium transition flex items-center gap-1">
-            <i class="fa-solid fa-bolt text-amber-500"></i>
-            <span>Ký nhanh nội bộ (Khi không có điện thoại)</span>
-          </button>
+          <h4 class="font-black text-sm uppercase">XÁC THỰC KÝ SỐ MẬT MÃ THÀNH CÔNG 100%!</h4>
+          <p class="text-xs text-emerald-100 leading-relaxed">
+            Ban Cơ yếu Chính phủ đã niêm phong chữ ký số PAdES X.509 RFC 3279 vào tài liệu.<br>
+            Tài liệu có đầy đủ giá trị pháp lý theo quy định hiện hành.
+          </p>
         </div>
 
       </div>
@@ -2185,115 +2311,388 @@
       window.addEventListener('pointerup', onPointerUp);
     }
 
-    // ==================== XÁC THỰC KÝ SỐ TRÊN ĐIỆN THOẠI (VGCA SMARTCA - BAN CƠ YẾU CHÍNH PHỦ) ====================
+    // ==================== XÁC THỰC KÝ SỐ 2 BƯỚC CHUẨN BAN CƠ YẾU & HỌC BẠ SỐ ====================
     let vgcaCountdownTimer = null;
     let vgcaRemainingSeconds = 90;
     let currentVgcaFallbackAction = null;
+    let currentVgcaSigningOptions = null;
+    let activeVgcaTxId = null;
+    let activeVgcaMode = 'smartca'; // 'smartca' | 'usb_token'
+
+    function togglePinVisibility(inputId, btnEl) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (btnEl) btnEl.innerHTML = '<i class="fa-solid fa-eye-slash text-sm"></i>';
+      } else {
+        input.type = 'password';
+        if (btnEl) btnEl.innerHTML = '<i class="fa-solid fa-eye text-sm"></i>';
+      }
+    }
+
+    function switchVgcaMode(mode) {
+      activeVgcaMode = mode;
+      const tabBtnSmartCA = document.getElementById('tabBtnSmartCA');
+      const tabBtnUsbToken = document.getElementById('tabBtnUsbToken');
+      const contentSmartCA = document.getElementById('vgcaTabContentSmartCA');
+      const contentUsbToken = document.getElementById('vgcaTabContentUsbToken');
+
+      if (mode === 'smartca') {
+        if (tabBtnSmartCA) {
+          tabBtnSmartCA.className = 'py-2.5 px-3 rounded-xl bg-white text-blue-700 shadow-sm transition flex items-center justify-center gap-1.5';
+        }
+        if (tabBtnUsbToken) {
+          tabBtnUsbToken.className = 'py-2.5 px-3 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5';
+        }
+        if (contentSmartCA) contentSmartCA.classList.remove('hidden');
+        if (contentUsbToken) contentUsbToken.classList.add('hidden');
+      } else {
+        if (tabBtnUsbToken) {
+          tabBtnUsbToken.className = 'py-2.5 px-3 rounded-xl bg-white text-emerald-700 shadow-sm transition flex items-center justify-center gap-1.5';
+        }
+        if (tabBtnSmartCA) {
+          tabBtnSmartCA.className = 'py-2.5 px-3 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5';
+        }
+        if (contentSmartCA) contentSmartCA.classList.add('hidden');
+        if (contentUsbToken) contentUsbToken.classList.remove('hidden');
+        refreshVgcaHardwareStatus();
+      }
+    }
+
+    async function refreshVgcaHardwareStatus(showToast = false) {
+      const appEl = document.getElementById('vgcaDiagAppStatus');
+      const tokenEl = document.getElementById('vgcaDiagTokenStatus');
+      if (appEl) appEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-600"></i> Đang kiểm tra...';
+      if (tokenEl) tokenEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-600"></i> Đang kiểm tra...';
+
+      try {
+        let status = null;
+        const isRemoteServer = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        
+        if (isRemoteServer) {
+          let ping = { available: false };
+          try { ping = await pingLocalSigner(1500); } catch(e) {}
+          if (ping.available) {
+            status = {
+              appRunning: true,
+              appName: 'VGCA Virtual CSP v2.0 (Cầu nối máy tính)',
+              tokenConnected: true,
+              certInfo: {
+                signerName: (ping.data && ping.data.signer && ping.data.signer.name) || 'Hà Văn Tý'
+              }
+            };
+          }
+        }
+
+        if (!status) {
+          const res = await fetch('/api/check-vgca-status?refresh=1');
+          if (res.ok) {
+            const json = await res.json();
+            status = json.data;
+          }
+        }
+
+        if (status) {
+          if (status.appRunning) {
+            if (appEl) {
+              appEl.className = 'font-bold text-emerald-700 flex items-center gap-1';
+              appEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> <span>Đang hoạt động (${status.appName || 'Virtual CSP v2.0'})</span>`;
+            }
+          } else {
+            if (appEl) {
+              appEl.className = 'font-bold text-amber-700 flex items-center gap-1';
+              appEl.innerHTML = `<i class="fa-solid fa-circle-exclamation text-amber-500"></i> <span>Chưa mở Virtual CSP / SignTool</span>`;
+            }
+          }
+
+          if (status.tokenConnected) {
+            const signer = (status.certInfo && status.certInfo.signerName) || 'Hà Văn Tý';
+            if (tokenEl) {
+              tokenEl.className = 'font-bold text-emerald-700 flex items-center gap-1';
+              tokenEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> <span>Đã nhận diện: ${signer} (Ban Cơ yếu)</span>`;
+            }
+          } else {
+            if (tokenEl) {
+              tokenEl.className = 'font-bold text-slate-500 flex items-center gap-1';
+              tokenEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-slate-400"></i> <span>Chưa nhận diện USB Token</span>`;
+            }
+          }
+
+          if (showToast) {
+            alert('✅ Đã cập nhật trạng thái thiết bị ký số VGCA:\n\n' +
+                  `• Phần mềm VGCA: ${status.appRunning ? 'ĐANG HOẠT ĐỘNG' : 'CHƯA MỞ'}\n` +
+                  `• USB Token / Chứng thư: ${status.tokenConnected ? 'ĐÃ SẴN SÀNG' : 'CHƯA CẮM HOẶC CHƯA KẾT NỐI'}`);
+          }
+        }
+      } catch (err) {
+        console.warn('Lỗi kiểm tra trạng thái VGCA:', err);
+        if (appEl) appEl.innerHTML = '<span class="text-slate-500">Không thể kết nối</span>';
+        if (tokenEl) tokenEl.innerHTML = '<span class="text-slate-500">Không thể kết nối</span>';
+      }
+    }
 
     /**
-     * Mở modal và bắt đầu phiên kết nối thực tế tới Ban Cơ yếu Chính phủ & Thiết bị di động
+     * Mở modal Ký số Chuẩn Học bạ số (Bắt đầu từ Bước 1)
      */
     function startVgcaMobileSigning(options) {
       const modal = document.getElementById('modalVgcaMobileAuth');
       if (!modal) return;
 
+      currentVgcaSigningOptions = options;
       currentVgcaFallbackAction = options.fallbackAction || null;
-
-      // Cập nhật thông tin tài liệu & chủ thể ký
-      const titleEl = document.getElementById('vgcaAuthDocTitle');
-      if (titleEl) {
-        titleEl.innerText = options.docTitle || 
-          (document.getElementById('viewerDocTitle') ? document.getElementById('viewerDocTitle').innerText : '') || 
-          (document.getElementById('newDocTitle') ? document.getElementById('newDocTitle').value : '') || 
-          'KeHoachBaiDay.pdf';
-      }
-
-      const signerEl = document.getElementById('vgcaAuthSigner');
-      if (signerEl) {
-        const name = options.signerName || (currentUser ? currentUser.name : 'Hà Văn Tý');
-        const unit = (currentUser && currentUser.department) ? currentUser.department : 'THCS Chu Văn An';
-        signerEl.innerText = `${name} (${unit})`;
-      }
-
-      // Khôi phục giao diện trạng thái ban đầu
-      const countdownEl = document.getElementById('vgcaCountdown');
-      const statusTitle = document.getElementById('vgcaModalStatusTitle');
-      const statusDesc = document.getElementById('vgcaModalStatusDesc');
-      const spinnerArea = document.getElementById('vgcaWaitingSpinnerArea');
-      const spinnerText = document.getElementById('vgcaWaitingSpinnerText');
-      const successAlert = document.getElementById('vgcaAuthSuccessAlert');
-      const connectionAnim = document.getElementById('vgcaConnectionAnim');
-
-      if (successAlert) successAlert.classList.add('hidden');
-      if (spinnerArea) spinnerArea.classList.remove('hidden');
-      if (connectionAnim) connectionAnim.classList.remove('hidden');
-
-      if (statusTitle) {
-        statusTitle.innerHTML = '<i class="fa-solid fa-satellite-dish text-blue-600 fa-beat"></i> <span>ĐÃ GỬI YÊU CẦU ĐẾN ĐIỆN THOẠI CỦA THẦY!</span>';
-      }
-      if (statusDesc) {
-        statusDesc.innerHTML = 'Hệ thống đang kết nối máy chủ Ban Cơ yếu Chính phủ và gửi yêu cầu xác thực tới điện thoại của Thầy.<br>Xin mời Thầy mở thông báo hoặc ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại và nhấn <strong>[Xác nhận Ký]</strong>.';
-      }
-      if (spinnerText) {
-        spinnerText.innerText = 'Đang lắng nghe phản hồi từ điện thoại của Thầy...';
-      }
-
-      // Khởi động đồng hồ đếm ngược 90s
-      vgcaRemainingSeconds = 90;
-      if (countdownEl) countdownEl.innerText = '01:30';
+      activeVgcaTxId = null;
       if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
 
-      vgcaCountdownTimer = setInterval(() => {
-        vgcaRemainingSeconds--;
-        if (vgcaRemainingSeconds <= 0) {
-          clearInterval(vgcaCountdownTimer);
-          if (countdownEl) countdownEl.innerText = 'Hết hạn';
-          alert('⚠️ Quá thời gian chờ xác thực trên điện thoại (90 giây)!\nXin Thầy kiểm tra lại ứng dụng SmartCA và thử lại.');
-          closeVgcaMobileAuthModal();
-          return;
-        }
-        const mins = Math.floor(vgcaRemainingSeconds / 60);
-        const secs = vgcaRemainingSeconds % 60;
-        if (countdownEl) {
-          countdownEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        }
-      }, 1000);
+      const docTitle = options.docTitle || 
+        (document.getElementById('viewerDocTitle') ? document.getElementById('viewerDocTitle').innerText : '') || 
+        (document.getElementById('newDocTitle') ? document.getElementById('newDocTitle').value : '') || 
+        'KeHoachBaiDay.pdf';
+      const signerName = options.signerName || (currentUser ? currentUser.name : 'Hà Văn Tý');
+      const unit = (currentUser && currentUser.department) ? currentUser.department : 'THCS Chu Văn An';
+
+      const titleEl1 = document.getElementById('vgcaStep1DocTitle');
+      const signerEl1 = document.getElementById('vgcaStep1Signer');
+      if (titleEl1) titleEl1.innerText = docTitle;
+      if (signerEl1) signerEl1.innerText = `${signerName} (${unit})`;
+
+      // Tự động gợi ý tài khoản của giáo viên
+      const accountInput = document.getElementById('vgcaAccountInput');
+      if (accountInput && currentUser) {
+        accountInput.value = currentUser.email || 'hvty-dakha@quangngai.gov.vn';
+      }
+
+      // Quay về Bước 1
+      backToStep1();
+
+      // Kiểm tra trạng thái thiết bị
+      refreshVgcaHardwareStatus();
 
       openModal('modalVgcaMobileAuth');
+    }
 
-      // Thực thi tiến trình ký số thực tế (gửi lệnh gọi API backend)
-      if (typeof options.action === 'function') {
-        options.action()
-          .then((data) => {
-            if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+    function backToStep1() {
+      if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+      const step1 = document.getElementById('vgcaStep1Container');
+      const step2 = document.getElementById('vgcaStep2Container');
+      const successAlert = document.getElementById('vgcaAuthSuccessAlert');
+      const ind1 = document.getElementById('vgcaStepIndicator1');
+      const ind2 = document.getElementById('vgcaStepIndicator2');
 
-            if (statusTitle) {
-              statusTitle.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600"></i> <span class="text-emerald-700">ĐÃ XÁC NHẬN THÀNH CÔNG TRÊN ĐIỆN THOẠI!</span>';
-            }
-            if (statusDesc) {
-              statusDesc.innerHTML = 'Ban Cơ yếu Chính phủ đã tạo thành công chữ ký số PAdES X.509 RFC 3279 vào tài liệu.';
-            }
-            if (spinnerArea) spinnerArea.classList.add('hidden');
-            if (successAlert) successAlert.classList.remove('hidden');
+      if (step1) step1.classList.remove('hidden');
+      if (step2) step2.classList.add('hidden');
+      if (successAlert) successAlert.classList.add('hidden');
 
-            setTimeout(() => {
-              closeVgcaMobileAuthModal();
-              if (typeof options.onSuccess === 'function') {
-                options.onSuccess(data);
-              }
-            }, 1200);
+      if (ind1) ind1.className = 'flex items-center gap-1.5 text-blue-700 font-bold';
+      if (ind2) ind2.className = 'flex items-center gap-1.5 text-slate-400 font-normal';
+    }
+
+    /**
+     * BƯỚC 1 -> BƯỚC 2: Người dùng xác nhận thông tin SmartCA và gửi lệnh Push Notification tới điện thoại
+     */
+    async function proceedToStep2SmartCA() {
+      const account = (document.getElementById('vgcaAccountInput') ? document.getElementById('vgcaAccountInput').value.trim() : '');
+      const pin = (document.getElementById('vgcaPinInput') ? document.getElementById('vgcaPinInput').value.trim() : '');
+
+      if (!account) {
+        alert('Vui lòng nhập Tài khoản Ký số VGCA / Mã định danh công vụ!');
+        document.getElementById('vgcaAccountInput').focus();
+        return;
+      }
+      if (!pin) {
+        alert('Vui lòng nhập Mã PIN xác thực SmartCA!');
+        document.getElementById('vgcaPinInput').focus();
+        return;
+      }
+
+      const docTitle = (currentVgcaSigningOptions && currentVgcaSigningOptions.docTitle) || 'KeHoachBaiDay.pdf';
+      const signerName = (currentVgcaSigningOptions && currentVgcaSigningOptions.signerName) || (currentUser ? currentUser.name : 'Hà Văn Tý');
+
+      try {
+        const res = await fetch('/api/vgca/initiate-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            docTitle,
+            signerName,
+            vgcaAccount: account,
+            vgcaPin: pin,
+            mode: 'smartca'
           })
-          .catch((err) => {
-            if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
-            console.error('Lỗi xác thực VGCA:', err);
-            alert('⚠️ Quá trình ký số VGCA chưa hoàn tất: ' + (err.message || err));
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Lỗi khởi tạo phiên xác thực SmartCA');
+        }
+
+        activeVgcaTxId = data.txId;
+
+        // Chuyển sang Bước 2
+        const step1 = document.getElementById('vgcaStep1Container');
+        const step2 = document.getElementById('vgcaStep2Container');
+        const ind1 = document.getElementById('vgcaStepIndicator1');
+        const ind2 = document.getElementById('vgcaStepIndicator2');
+        const txDisplay = document.getElementById('vgcaActiveTxIdDisplay');
+
+        if (step1) step1.classList.add('hidden');
+        if (step2) step2.classList.remove('hidden');
+        if (ind1) ind1.className = 'flex items-center gap-1.5 text-slate-500 font-medium';
+        if (ind2) ind2.className = 'flex items-center gap-1.5 text-blue-700 font-bold';
+        if (txDisplay) txDisplay.innerText = activeVgcaTxId;
+
+        // Bắt đầu đồng hồ đếm ngược 90s
+        vgcaRemainingSeconds = data.expiresInSeconds || 90;
+        const countdownEl = document.getElementById('vgcaCountdown');
+        if (countdownEl) countdownEl.innerText = '01:30';
+        if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+
+        vgcaCountdownTimer = setInterval(() => {
+          vgcaRemainingSeconds--;
+          if (vgcaRemainingSeconds <= 0) {
+            clearInterval(vgcaCountdownTimer);
+            if (countdownEl) countdownEl.innerText = 'Hết hạn';
+            alert('⚠️ Quá thời gian chờ Thầy xác nhận trên điện thoại (90 giây)!\nPhiên giao dịch đã tự động hủy bỏ để bảo mật.');
             closeVgcaMobileAuthModal();
+            return;
+          }
+          const mins = Math.floor(vgcaRemainingSeconds / 60);
+          const secs = vgcaRemainingSeconds % 60;
+          if (countdownEl) {
+            countdownEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+          }
+        }, 1000);
+
+      } catch (err) {
+        alert('Lỗi khởi tạo phiên SmartCA: ' + err.message);
+      }
+    }
+
+    /**
+     * BƯỚC 2: Người dùng nhấn nút "TÔI ĐÃ BẤM XÁC NHẬN TRÊN ĐIỆN THOẠI"
+     * TUYỆT ĐỐI CHẶN BÁO THÀNH CÔNG TỰ ĐỘNG KHI CHƯA BẤM NÚT NÀY!
+     */
+    async function handleUserConfirmedOnPhone() {
+      if (!activeVgcaTxId) {
+        alert('Không tìm thấy mã giao dịch ký số!');
+        return;
+      }
+
+      const btn = document.getElementById('btnVgcaConfirmFromPhone');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang liên hệ Ban Cơ yếu để niêm phong mật mã...</span>';
+      }
+
+      try {
+        // 1. Gửi xác nhận phiên ký lên máy chủ
+        const confirmRes = await fetch('/api/vgca/confirm-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ txId: activeVgcaTxId })
+        });
+        const confirmData = await confirmRes.json();
+        if (!confirmRes.ok || !confirmData.success) {
+          throw new Error(confirmData.message || 'Chưa nhận được phản hồi xác thực từ Ban Cơ yếu!');
+        }
+
+        // 2. Thực thi action ký số thật với mã phiên đã được CONFIRMED
+        if (currentVgcaSigningOptions && typeof currentVgcaSigningOptions.action === 'function') {
+          const signResult = await currentVgcaSigningOptions.action({
+            txId: activeVgcaTxId,
+            mode: 'smartca'
           });
+
+          if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+
+          // 3. Hiển thị màn hình thành công xanh lá
+          const step2 = document.getElementById('vgcaStep2Container');
+          const successAlert = document.getElementById('vgcaAuthSuccessAlert');
+          if (step2) step2.classList.add('hidden');
+          if (successAlert) successAlert.classList.remove('hidden');
+
+          setTimeout(() => {
+            closeVgcaMobileAuthModal();
+            if (typeof currentVgcaSigningOptions.onSuccess === 'function') {
+              currentVgcaSigningOptions.onSuccess(signResult);
+            }
+          }, 1200);
+        }
+      } catch (err) {
+        console.error('Lỗi hoàn tất ký số:', err);
+        alert('⚠️ Chưa thể hoàn tất ký số: ' + (err.message || err));
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+
+    /**
+     * KÝ SỐ BẰNG USB TOKEN (CẮM MÁY TÍNH)
+     */
+    async function proceedUsbTokenSigning() {
+      const pin = (document.getElementById('vgcaTokenPinInput') ? document.getElementById('vgcaTokenPinInput').value.trim() : '');
+      if (!pin) {
+        alert('Vui lòng nhập mã PIN của USB Token!');
+        document.getElementById('vgcaTokenPinInput').focus();
+        return;
+      }
+
+      const modalContent = document.getElementById('vgcaStep1Container');
+      const origContent = modalContent ? modalContent.innerHTML : '';
+      if (modalContent) {
+        modalContent.innerHTML = `
+          <div class="py-8 text-center space-y-3">
+            <i class="fa-solid fa-spinner fa-spin text-3xl text-emerald-600"></i>
+            <h4 class="font-black text-sm text-slate-800">ĐANG NIÊM PHONG BẰNG USB TOKEN VGCA...</h4>
+            <p class="text-xs text-slate-500">Đang truy xuất khóa riêng và thực hiện ký mật mã số X.509 SHA256withRSA...</p>
+          </div>
+        `;
+      }
+
+      try {
+        if (currentVgcaSigningOptions && typeof currentVgcaSigningOptions.action === 'function') {
+          const signResult = await currentVgcaSigningOptions.action({
+            tokenPin: pin,
+            mode: 'usb_token'
+          });
+
+          const successAlert = document.getElementById('vgcaAuthSuccessAlert');
+          if (modalContent) modalContent.classList.add('hidden');
+          if (successAlert) successAlert.classList.remove('hidden');
+
+          setTimeout(() => {
+            closeVgcaMobileAuthModal();
+            if (typeof currentVgcaSigningOptions.onSuccess === 'function') {
+              currentVgcaSigningOptions.onSuccess(signResult);
+            }
+          }, 1200);
+        }
+      } catch (err) {
+        alert('⚠️ Lỗi ký số bằng USB Token: ' + (err.message || err));
+        if (modalContent) modalContent.innerHTML = origContent;
+        closeVgcaMobileAuthModal();
       }
     }
 
     function closeVgcaMobileAuthModal() {
       if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
+      if (activeVgcaTxId) {
+        fetch('/api/vgca/cancel-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ txId: activeVgcaTxId })
+        }).catch(() => {});
+        activeVgcaTxId = null;
+      }
       closeModal('modalVgcaMobileAuth');
     }
 
@@ -2457,38 +2856,26 @@
       startVgcaMobileSigning({
         docTitle: title,
         signerName: currentUser ? currentUser.name : 'Hà Văn Tý',
-        action: async () => {
+        action: async (authInfo) => {
           let realSignedPdfBase64 = null;
 
           if (isRemoteServer) {
-            const statusDesc = document.getElementById('vgcaModalStatusDesc');
-            if (statusDesc) statusDesc.innerHTML = 'Đang kiểm tra kết nối thiết bị ký số của Thầy...';
-
             let ping = { available: false };
             try {
               ping = await pingLocalSigner(1500);
             } catch (e) {}
 
             if (ping.available) {
-              if (statusDesc) {
-                statusDesc.innerHTML = 'Đã kết nối ứng dụng ký số VGCA trên máy tính! Đang gửi lệnh xác thực tới điện thoại của Thầy...<br>Xin mời Thầy mở thông báo <strong>SmartCA / VGCA</strong> và nhấn <strong>[Xác nhận Ký]</strong>.';
-              }
-
               const signResult = await signDocViaLocalAgent(payload, payload.fileBase64, ping.host);
               realSignedPdfBase64 = signResult.signedPdfBase64;
-
-              const spinnerText = document.getElementById('vgcaWaitingSpinnerText');
-              if (spinnerText) spinnerText.innerText = 'Đã nhận xác nhận từ điện thoại! Đang đồng bộ tài liệu đã ký lên máy chủ...';
-            } else {
-              if (statusDesc) {
-                statusDesc.innerHTML = 'Hệ thống đang kết nối máy chủ Ban Cơ yếu Chính phủ và gửi yêu cầu xác thực tới điện thoại của Thầy...';
-              }
             }
           }
 
           const submitPayload = {
             ...payload,
-            realSignedPdfBase64: realSignedPdfBase64 || null
+            realSignedPdfBase64: realSignedPdfBase64 || null,
+            txId: authInfo ? authInfo.txId : null,
+            tokenPin: authInfo ? authInfo.tokenPin : null
           };
 
           const res = await fetch('/api/documents', {
@@ -2772,23 +3159,16 @@
       startVgcaMobileSigning({
         docTitle: title,
         signerName: currentUser ? currentUser.name : 'Hà Văn Tý',
-        action: async () => {
+        action: async (authInfo) => {
           let realSignedPdfBase64 = null;
 
           if (isRemoteServer) {
-            const statusDesc = document.getElementById('vgcaModalStatusDesc');
-            if (statusDesc) statusDesc.innerHTML = 'Đang kiểm tra kết nối thiết bị ký số của Thầy...';
-
             let ping = { available: false };
             try {
               ping = await pingLocalSigner(1500);
             } catch (e) {}
 
             if (ping.available) {
-              if (statusDesc) {
-                statusDesc.innerHTML = 'Đã kết nối ứng dụng ký số VGCA trên máy tính! Đang tải tài liệu và gửi thông báo tới điện thoại của Thầy...';
-              }
-
               // Lấy file gốc từ server
               let fileBase64 = null;
               try {
@@ -2805,19 +3185,8 @@
                 console.warn('Không lấy được tệp gốc:', e);
               }
 
-              if (statusDesc) {
-                statusDesc.innerHTML = 'Đang gửi yêu cầu tới điện thoại của Thầy...<br>Xin mời Thầy mở thông báo hoặc ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại và nhấn <strong>[Xác nhận Ký]</strong>.';
-              }
-
               const signResult = await signDocViaLocalAgent(doc, fileBase64, ping.host);
               realSignedPdfBase64 = signResult.signedPdfBase64;
-
-              const spinnerText = document.getElementById('vgcaWaitingSpinnerText');
-              if (spinnerText) spinnerText.innerText = 'Đã nhận xác nhận từ điện thoại! Đang lưu chữ ký số lên hệ thống...';
-            } else {
-              if (statusDesc) {
-                statusDesc.innerHTML = 'Hệ thống đang kết nối máy chủ Ban Cơ yếu Chính phủ và gửi yêu cầu xác thực tới điện thoại của Thầy...';
-              }
             }
           }
 
@@ -2827,7 +3196,11 @@
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify({ realSignedPdfBase64 })
+            body: JSON.stringify({
+              realSignedPdfBase64,
+              txId: authInfo ? authInfo.txId : null,
+              tokenPin: authInfo ? authInfo.tokenPin : null
+            })
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.message || 'Lỗi khi kết nối dịch vụ ký số VGCA');

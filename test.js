@@ -107,8 +107,11 @@ async function runTests() {
       serverReady = true;
     }
   });
+  serverProcess.stderr.on('data', (chunk) => {
+    console.error('[Server Err]', chunk.toString('utf8'));
+  });
 
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 150; i++) {
     if (serverReady) break;
     await new Promise(r => setTimeout(r, 100));
   }
@@ -508,6 +511,90 @@ async function runTests() {
       realSignedPdfBase64: sampleBase64
     });
     assert(bridgeSubmitRes.status === 200 && bridgeSubmitRes.body.data.realVgcaSigned === true, 'Hồ sơ nộp qua Local Signer Bridge được xác nhận chữ ký số thật thành công 100%');
+
+    // 3.14 Kiểm tra API Chẩn đoán phần mềm VGCA & USB Token (/api/check-vgca-status)
+    const checkVgcaRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/check-vgca-status',
+      method: 'GET'
+    });
+    assert(checkVgcaRes.status === 200 && checkVgcaRes.body.success === true, 'API /api/check-vgca-status phản hồi thành công');
+    assert('appRunning' in checkVgcaRes.body.data && 'tokenConnected' in checkVgcaRes.body.data, 'Kiểm tra chính xác trạng thái phần mềm VGCA và kết nối USB Token');
+
+    // 3.15 Kiểm tra Quy trình Ký số 2 Bước SmartCA: Khởi tạo phiên & Chặn báo thành công giả định
+    const initSessionRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/vgca/initiate-session',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      docTitle: 'Kế hoạch bài dạy Toán 9 - Xác thực 2 bước',
+      signerName: 'Hà Văn Tý',
+      vgcaAccount: 'hvty-dakha@quangngai.gov.vn',
+      vgcaPin: '123456'
+    });
+    assert(initSessionRes.status === 200 && initSessionRes.body.txId && initSessionRes.body.status === 'WAITING_CONFIRMATION', 'Bước 1: Khởi tạo phiên SmartCA thành công, sinh mã giao dịch duy nhất');
+    const vgcaTxId = initSessionRes.body.txId;
+
+    // Chặn tuyệt đối: Không cho phép ký khi Thầy CHƯA bấm xác nhận trên điện thoại (Session status: WAITING_CONFIRMATION)
+    const prematureSignRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/documents',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      title: 'Kế hoạch bài dạy thử nghiệm chặn ký sớm',
+      grade: 'Khối 9',
+      week: 'Tuần 16',
+      signatureImage: dummySignature,
+      realVgcaSign: true,
+      txId: vgcaTxId
+    });
+    assert(prematureSignRes.status === 400 && prematureSignRes.body.message.includes('Chưa nhận được xác nhận'), 'Hệ thống CHẶN THÀNH CÔNG: Từ chối ký số nếu người dùng chưa xác nhận trên điện thoại');
+
+    // Bước 2: Người dùng mở điện thoại và bấm xác nhận
+    const confirmSessionRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/vgca/confirm-session',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      txId: vgcaTxId
+    });
+    assert(confirmSessionRes.status === 200 && confirmSessionRes.body.status === 'CONFIRMED', 'Bước 2: Xác nhận tín hiệu từ điện thoại thành công');
+
+    // Hoàn tất niêm phong chữ ký sau khi đã xác nhận
+    const finalSignRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/documents',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      title: 'Kế hoạch bài dạy đã xác thực điện thoại chuẩn',
+      grade: 'Khối 9',
+      week: 'Tuần 16',
+      signatureImage: dummySignature,
+      realVgcaSign: true,
+      txId: vgcaTxId
+    });
+    assert(finalSignRes.status === 200 && finalSignRes.body.data.realVgcaSigned === true, 'Ký số mật mã thật VGCA và nộp bài hoàn tất 100% sau khi đã xác nhận điện thoại');
 
     // 3.9b Kiểm tra cú pháp toàn bộ JavaScript trong file giao diện index.html (Không bị lỗi cú pháp như Unexpected token)
     const htmlContent = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
