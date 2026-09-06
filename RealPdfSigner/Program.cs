@@ -181,6 +181,46 @@ namespace RealPdfSigner
                 return;
             }
 
+            if (args.Length > 0 && args[0].Equals("--copy-sign", StringComparison.OrdinalIgnoreCase))
+            {
+                string copyInputPdf = args.Length > 1 ? args[1] : "GiaoAn_CanKy.pdf";
+                string copyOutputPdf = args.Length > 2 ? args[2] : "GiaoAn_SaoY.pdf";
+                string copyType = args.Length > 3 ? args[3] : "SAO Y";
+                string signerName = args.Length > 4 ? args[4] : "Hà Văn Tý";
+
+                string copyText = $"{copyType}; {signerName}; Thời gian ký: {DateTime.Now:yyyy-MM-ddTHH:mm:ss+07:00}";
+                var banner = GenerateCopySignBanner(copyText);
+
+                float p1W = 595.28f, p1H = 841.89f;
+                if (File.Exists(copyInputPdf))
+                {
+                    try
+                    {
+                        using var r = new PdfReader(copyInputPdf);
+                        using var d = new PdfDocument(r);
+                        var p1 = d.GetPage(1);
+                        if (p1 != null)
+                        {
+                            p1W = p1.GetPageSize().GetWidth();
+                            p1H = p1.GetPageSize().GetHeight();
+                        }
+                    }
+                    catch { }
+
+                    float copyW = banner.widthPt;
+                    float copyH = banner.heightPt;
+                    float copyX = p1W - copyW - 40f;
+                    float copyY = p1H - copyH - 18f;
+                    var signRect = new Rectangle(copyX, copyY, copyW, copyH);
+
+                    byte[] inBytes = File.ReadAllBytes(copyInputPdf);
+                    byte[] outBytes = KySoPdfBytes(inBytes, $"{copyType} theo NĐ 30/2020/NĐ-CP - {signerName}", "Quảng Ngãi", strict: false, visualSignImageBytes: banner.imageBytes, signRect: signRect, targetPage: 1);
+                    File.WriteAllBytes(copyOutputPdf, outBytes);
+                    Console.WriteLine($"✅ Ký sao y thành công: {copyOutputPdf}");
+                    return;
+                }
+            }
+
             // 1. Tìm chứng thư thật của Giáo viên / Ban Cơ yếu trong Windows Certificate Store
             X509Certificate2? realCert = FindVgcaCertificate();
 
@@ -699,6 +739,44 @@ namespace RealPdfSigner
             catch { }
 
             return null;
+        }
+
+        /// <summary>
+        /// Tạo ảnh đồ họa chữ ký Sao y chuẩn Nghị định 30/2020/NĐ-CP & Ban Cơ yếu Chính phủ (VGCA SignTool)
+        /// Cú pháp: SAO Y; [Họ tên]; Thời gian ký: YYYY-MM-DDTHH:mm:ss+07:00
+        /// </summary>
+        public static (byte[] imageBytes, float widthPt, float heightPt) GenerateCopySignBanner(string copyText)
+        {
+            float scale = 3.0f; // 300 DPI high-definition rendering
+            using var tempBmp = new System.Drawing.Bitmap(1, 1);
+            using var tempG = System.Drawing.Graphics.FromImage(tempBmp);
+            using var font = new System.Drawing.Font("Times New Roman", 9.5f * scale, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel);
+            var measured = tempG.MeasureString(copyText, font);
+
+            int widthPx = Math.Max((int)Math.Ceiling(measured.Width) + 12, (int)(260 * scale));
+            int heightPx = Math.Max((int)Math.Ceiling(measured.Height) + 6, (int)(16 * scale));
+
+            using var bmp = new System.Drawing.Bitmap(widthPx, heightPx);
+            using (var g = System.Drawing.Graphics.FromImage(bmp))
+            {
+                g.Clear(System.Drawing.Color.Transparent);
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+                using var brush = new System.Drawing.SolidBrush(System.Drawing.Color.Black);
+
+                var stringFormat = new System.Drawing.StringFormat
+                {
+                    Alignment = System.Drawing.StringAlignment.Far, // Căn phải lề văn bản đúng như H3
+                    LineAlignment = System.Drawing.StringAlignment.Center
+                };
+
+                g.DrawString(copyText, font, brush, new System.Drawing.RectangleF(0, 0, widthPx, heightPx), stringFormat);
+            }
+
+            using var ms = new MemoryStream();
+            bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+            float widthPt = widthPx / scale;
+            float heightPt = heightPx / scale;
+            return (ms.ToArray(), widthPt, heightPt);
         }
 
         public static (int page, float x, float y, float w, float h) DetermineCoordinates(byte[] pdfBytes, string signerName, string role, float? reqX = null, float? reqY = null, float? reqW = null, float? reqH = null, int? reqPage = null)
@@ -1322,11 +1400,62 @@ namespace RealPdfSigner
                     // Do đó EduSign Agent BẮT BUỘC phải nhúng SignatureFieldAppearance trong Incremental Update để hiện đầy đủ ảnh chữ ký!
                     bool needVisualAppearance = hasExisting || !isPreStamped;
 
+                    bool isCopySign = false;
+                    string copyType = "SAO Y";
+                    string copyText = "";
+
+                    if (root.TryGetProperty("signType", out var stProp) && stProp.GetString()?.Equals("COPY", StringComparison.OrdinalIgnoreCase) == true) isCopySign = true;
+                    if (root.TryGetProperty("isCopySign", out var csProp) && csProp.GetBoolean()) isCopySign = true;
+                    if (root.TryGetProperty("copyType", out var ctProp) && !string.IsNullOrWhiteSpace(ctProp.GetString())) copyType = ctProp.GetString()!;
+                    if (root.TryGetProperty("copyText", out var ctxtProp) && !string.IsNullOrWhiteSpace(ctxtProp.GetString())) copyText = ctxtProp.GetString()!;
+
+                    if (root.TryGetProperty("doc", out var docElemCheck))
+                    {
+                        if (!isCopySign && docElemCheck.TryGetProperty("signType", out var dstProp) && dstProp.GetString()?.Equals("COPY", StringComparison.OrdinalIgnoreCase) == true) isCopySign = true;
+                        if (!isCopySign && docElemCheck.TryGetProperty("isCopySign", out var dcsProp) && dcsProp.GetBoolean()) isCopySign = true;
+                        if (docElemCheck.TryGetProperty("copyType", out var dctProp) && !string.IsNullOrWhiteSpace(dctProp.GetString())) copyType = dctProp.GetString()!;
+                        if (docElemCheck.TryGetProperty("copyText", out var dctxtProp) && !string.IsNullOrWhiteSpace(dctxtProp.GetString())) copyText = dctxtProp.GetString()!;
+                    }
+
                     byte[]? sigImgBytes = null;
                     Rectangle? signRect = null;
                     int targetPage = 0;
 
-                    if (needVisualAppearance)
+                    if (isCopySign)
+                    {
+                        if (string.IsNullOrWhiteSpace(copyText))
+                        {
+                            copyText = $"{copyType}; {signerName}; Thời gian ký: {DateTime.Now:yyyy-MM-ddTHH:mm:ss+07:00}";
+                        }
+
+                        var banner = GenerateCopySignBanner(copyText);
+                        sigImgBytes = banner.imageBytes;
+                        targetPage = 1;
+
+                        float p1W = 595.28f, p1H = 841.89f;
+                        try
+                        {
+                            using var tempReader = new PdfReader(new MemoryStream(pdfBytes));
+                            using var tempDoc = new PdfDocument(tempReader);
+                            var p1 = tempDoc.GetPage(1);
+                            if (p1 != null)
+                            {
+                                var pSize = p1.GetPageSize();
+                                p1W = pSize.GetWidth();
+                                p1H = pSize.GetHeight();
+                            }
+                        }
+                        catch { }
+
+                        float rectW = banner.widthPt;
+                        float rectH = banner.heightPt;
+                        float rectX = p1W - rectW - 40f; // Căn sát lề phải chuẩn H3
+                        float rectY = p1H - rectH - 18f; // Căn lề trên chuẩn H3
+                        signRect = new Rectangle(rectX, rectY, rectW, rectH);
+
+                        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 📋 Ký Sao Y ({copyType}) Trang 1, X={rectX:F1}, Y={rectY:F1}, W={rectW:F1}, H={rectH:F1}: \"{copyText}\"");
+                    }
+                    else if (needVisualAppearance)
                     {
                         sigImgBytes = ResolveSignatureImage(sigImgData);
                         var coords = DetermineCoordinates(pdfBytes, signerName, "teacher", reqX, reqY, reqW, reqH, reqPage);
@@ -1335,9 +1464,11 @@ namespace RealPdfSigner
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎯 Xác định vị trí chữ ký số trực quan: Trang {targetPage}, X={coords.x:F1}, Y={coords.y:F1}, W={coords.w:F1}, H={coords.h:F1} (hasExistingSig={hasExisting}, ảnh={sigImgBytes?.Length ?? 0} bytes)");
                     }
 
+                    string signReason = isCopySign ? $"{copyType} theo NĐ 30/2020/NĐ-CP - {signerName}" : $"{signerName} đã ký số VGCA";
+
                     try
                     {
-                        byte[] signedBytes = KySoPdfBytes(pdfBytes, $"{signerName} đã ký số VGCA", "Quảng Ngãi", strict: true, visualSignImageBytes: sigImgBytes, signRect: signRect, targetPage: targetPage);
+                        byte[] signedBytes = KySoPdfBytes(pdfBytes, signReason, "Quảng Ngãi", strict: true, visualSignImageBytes: sigImgBytes, signRect: signRect, targetPage: targetPage);
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎉 Niêm phong PAdES X.509 thành công! Dung lượng: {signedBytes.Length} bytes.");
 
                         var resObj = new

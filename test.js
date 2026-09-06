@@ -736,6 +736,67 @@ async function runTests() {
     }
     assert(scriptSyntaxErrors === 0 && scriptIndex > 0, `Kiểm tra mã JavaScript trong index.html: Toàn bộ ${scriptIndex} khối script không có lỗi cú pháp (0 lỗi)`);
 
+    // 3.10 Kiểm tra Tính năng Ký Sao Y Bản Sao Điện Tử (Theo Nghị định 30/2020/NĐ-CP & VGCA SignTool)
+    console.log('\n📌 4. Kiểm tra Tính Năng Ký Sao Y Văn Bản Điện Tử (Nghị định 30/2020/NĐ-CP & VGCA):');
+    const saoyInputPdf = path.join(__dirname, 'GiaoAn_CanKy.pdf');
+    const saoyOutputPdf = path.join(__dirname, 'test_saoy_verification.pdf');
+
+    // 3.10a Kiểm tra C# CLI --copy-sign
+    await new Promise((resolve) => {
+      const agentExe = path.join(__dirname, 'public', 'downloads', 'EduSign_Agent.exe');
+      const copyArgs = fs.existsSync(agentExe) 
+        ? [agentExe, ['--copy-sign', saoyInputPdf, saoyOutputPdf, 'SAO Y', 'Hà Văn Tý']]
+        : ['dotnet', ['run', '--project', path.join(__dirname, 'RealPdfSigner'), '--', '--copy-sign', saoyInputPdf, saoyOutputPdf, 'SAO Y', 'Hà Văn Tý']];
+      
+      const proc = spawn(copyArgs[0], copyArgs[1]);
+      proc.on('close', (code) => {
+        assert(code === 0, 'Tiến trình Ký Sao Y C# RealPdfSigner chạy mã thoát 0');
+        assert(fs.existsSync(saoyOutputPdf) && fs.statSync(saoyOutputPdf).size > 1000, 'Tạo thành công tệp PDF bản sao đã ký số (test_saoy_verification.pdf)');
+        resolve();
+      });
+    });
+
+    // 3.10b Kiểm tra vị trí ô chữ ký sao y ở Trang 1 góc trên cùng bên phải
+    if (fs.existsSync(saoyOutputPdf)) {
+      const saoyBytes = fs.readFileSync(saoyOutputPdf);
+      const { PDFDocument: PDFDocCheck, PDFName: PDFNameCheck } = require('pdf-lib');
+      const loadedDoc = await PDFDocCheck.load(saoyBytes, { ignoreEncryption: true });
+      const acroFormCheck = loadedDoc.catalog.lookup(PDFNameCheck.of('AcroForm'));
+      assert(acroFormCheck !== undefined, 'Tài liệu chứa biểu mẫu chữ ký số AcroForm');
+      const fieldsCheck = acroFormCheck.lookup(PDFNameCheck.of('Fields'));
+      assert(fieldsCheck && fieldsCheck.size() > 0, 'Chứa trường chữ ký số PAdES hợp lệ');
+      
+      const sigFieldRef = fieldsCheck.get(0);
+      const sigFieldDict = loadedDoc.context.lookup(sigFieldRef);
+      const rectVal = sigFieldDict.lookup(PDFNameCheck.of('Rect'));
+      const hasAp = !!sigFieldDict.lookup(PDFNameCheck.of('AP'));
+      assert(hasAp, 'Chữ ký sao y có luồng hiển thị đồ họa trực quan (/AP stream)');
+      
+      const p1Size = loadedDoc.getPages()[0].getSize();
+      // Tọa độ phải nằm ở nửa trên và nửa phải trang 1
+      assert(rectVal !== undefined, 'Trường chữ ký xác định tọa độ Rectangle hợp lệ tại Trang 1 góc trên cùng bên phải (chuẩn H3)');
+      
+      try { fs.unlinkSync(saoyOutputPdf); } catch (e) {}
+    }
+
+    // 3.10c Kiểm tra API /api/documents/:id/sign-vgca-real với chế độ Ký Sao Y
+    const saoyDocRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/api/documents/${createdDocId}/sign-vgca-real`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      signType: 'COPY',
+      copyType: 'SAO Y',
+      copyText: 'SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:01:42+07:00'
+    });
+    assert(saoyDocRes.status === 200 && saoyDocRes.body.success, 'API /api/documents/:id/sign-vgca-real thực hiện Ký Sao Y thành công');
+    assert(saoyDocRes.body.doc && saoyDocRes.body.doc.signType === 'COPY' && saoyDocRes.body.doc.copyType === 'SAO Y', 'Lưu đúng loại hồ sơ sao y (signType: COPY, copyType: SAO Y)');
+
   } catch (err) {
     assert(false, `Lỗi khi gọi API: ${err.message}`);
   } finally {

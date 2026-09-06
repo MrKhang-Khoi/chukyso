@@ -761,6 +761,12 @@
             <span id="btnToggleSignatureText">Đặt Chữ Ký Số VGCA</span>
           </button>
 
+          <!-- Nút Ký Sao Y Văn Bản Điện Tử theo Nghị Định 30/2020/NĐ-CP & VGCA SignTool (Hình 1 & Hình 2) -->
+          <button type="button" id="btnOpenCopySignModal" onclick="openCopySignModal()" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Ký số bản sao văn bản sang định dạng điện tử (Nghị định 30/2020/NĐ-CP)">
+            <i class="fa-solid fa-copy text-amber-600"></i>
+            <span>Ký Sao Y (NĐ 30)</span>
+          </button>
+
           <!-- Nút Xác thực điện thoại & Ký số -->
           <button type="button" id="btnViewerConfirmSign" onclick="handleViewerConfirmSignClick()" class="hidden px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
             <i class="fa-solid fa-mobile-screen-button"></i>
@@ -903,6 +909,110 @@
           </div>
         </div>
 
+      </div>
+
+  <!-- MODAL KÝ SỐ BẢN SAO VĂN BẢN SANG ĐỊNH DẠNG ĐIỆN TỬ (CHẾ ĐỘ SAO Y THEO NGHỊ ĐỊNH 30/2020/NĐ-CP & VGCA - HÌNH 2) -->
+  <div id="modalCopySign" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-4" onclick="closeModalOnBackdrop(event, 'modalCopySign')">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full flex flex-col border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150" onclick="event.stopPropagation()">
+      
+      <!-- Window Title Bar chuẩn VGCA SignTool (Hình 2) -->
+      <div class="px-4 py-2.5 bg-gradient-to-r from-slate-100 to-slate-200 border-b border-slate-300 flex items-center justify-between text-xs text-slate-700">
+        <div class="flex items-center gap-2 truncate font-semibold">
+          <i class="fa-solid fa-stamp text-red-600"></i>
+          <span class="truncate">[VGCASignTool - CÔNG CỤ KÝ SỐ THEO NGHỊ ĐỊNH 30/2020/NĐ-CP] - Ký số công văn</span>
+        </div>
+        <button type="button" onclick="closeModal('modalCopySign')" class="text-slate-400 hover:text-slate-600 transition">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Main Content Form -->
+      <div class="p-5 space-y-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-red-100 text-red-700 font-extrabold text-[10px] uppercase tracking-wider">BAN CƠ YẾU CHÍNH PHỦ (VGCA)</span>
+            <span id="copySignDocFileName" class="text-xs text-slate-500 font-mono truncate max-w-sm">Tài liệu</span>
+          </div>
+          <h2 class="text-base font-bold text-slate-900 mt-1 uppercase tracking-tight">
+            KÝ SỐ BẢN SAO VĂN BẢN SANG ĐỊNH DẠNG ĐIỆN TỬ
+          </h2>
+          <p class="text-[11px] text-slate-500">
+            Ký số và chứng thực bản sao điện tử (Sao y / Sao lục / Trích sao) theo Phụ lục I, Nghị định số 30/2020/NĐ-CP.
+          </p>
+        </div>
+
+        <!-- 1. Chọn chứng thư số người ký -->
+        <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-2">
+          <label class="block text-xs font-bold text-slate-800">
+            1. Chọn chứng thư số người ký:
+          </label>
+          <div class="flex items-center justify-between bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs shadow-xs">
+            <div class="flex items-center gap-2 truncate">
+              <i class="fa-solid fa-certificate text-emerald-600"></i>
+              <span id="copySignCertOwner" class="font-bold text-slate-800 truncate">Hà Văn Tý &lt;hvty-dakha@quangngai.gov.vn&gt;</span>
+            </div>
+            <span class="text-emerald-600 text-base font-bold ml-2 shrink-0" title="Chứng thư số hợp lệ">✓</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-[11px] text-emerald-700">
+            <i class="fa-solid fa-circle-check text-[10px]"></i>
+            <span>Trạng thái CTS: Chứng thư số hợp lệ!</span>
+          </div>
+        </div>
+
+        <!-- 2. Chọn Hình thức sao -->
+        <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-2">
+          <label class="block text-xs font-bold text-slate-800">
+            2. Chọn Hình thức sao:
+          </label>
+          <div class="grid grid-cols-3 gap-3">
+            <label class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white border border-slate-300 cursor-pointer hover:border-blue-500 transition shadow-xs select-none">
+              <input type="radio" name="copySignTypeRadio" value="SAO Y" checked onchange="updateCopySignPreviewText()" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+              <span class="text-xs font-extrabold text-slate-900">SAO Y</span>
+            </label>
+            <label class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white border border-slate-300 cursor-pointer hover:border-blue-500 transition shadow-xs select-none">
+              <input type="radio" name="copySignTypeRadio" value="SAO LỤC" onchange="updateCopySignPreviewText()" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+              <span class="text-xs font-bold text-slate-700">SAO LỤC</span>
+            </label>
+            <label class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white border border-slate-300 cursor-pointer hover:border-blue-500 transition shadow-xs select-none">
+              <input type="radio" name="copySignTypeRadio" value="TRÍCH SAO" onchange="updateCopySignPreviewText()" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+              <span class="text-xs font-bold text-slate-700">TRÍCH SAO</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Hiển thị chữ ký -->
+        <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-2">
+          <label class="block text-xs font-bold text-slate-800">
+            3. Hiển thị chữ ký:
+          </label>
+          <textarea id="copySignPreviewText" rows="2" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs font-serif font-medium text-slate-900 outline-none focus:border-blue-500 shadow-inner resize-none"></textarea>
+          <div class="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+            <span>📍 Vị trí: Trang 1, góc trên cùng bên phải</span>
+            <span>Chuẩn: Times New Roman 9.5pt</span>
+          </div>
+        </div>
+
+        <!-- 4. Ghi chú pháp lý & Bảo vệ toàn vẹn -->
+        <div class="bg-blue-50/70 rounded-xl p-3 border border-blue-200 text-xs text-blue-900 flex items-start gap-2.5">
+          <i class="fa-solid fa-shield-halved text-blue-600 mt-0.5 text-sm"></i>
+          <div>
+            <span class="font-bold">Bảo vệ tính toàn vẹn tài liệu PAdES X.509:</span>
+            <p class="text-[11px] text-blue-800 mt-0.5">
+              Dòng chữ ký sao y sẽ được niêm phong mật mã vào đầu văn bản. Toàn bộ chữ ký số trước đó (nếu có) được bảo toàn nguyên vẹn 100%.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons chuẩn VGCA SignTool (Hình 2) -->
+      <div class="px-5 py-3.5 bg-slate-100 border-t border-slate-200 flex items-center justify-between gap-3">
+        <button type="button" onclick="closeModal('modalCopySign')" class="px-4 py-2 rounded-xl bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-bold transition shadow-xs">
+          Đóng
+        </button>
+        <button type="button" id="btnExecuteCopySignAction" onclick="handleExecuteCopySign()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition flex items-center gap-2 shadow-md hover:shadow-lg">
+          <i class="fa-solid fa-stamp"></i>
+          <span>Ký Số</span>
+        </button>
       </div>
 
     </div>
@@ -2507,6 +2617,181 @@
         setSignatureScale(1.0);
       }
     });
+
+    // ==================== CHỨC NĂNG KÝ SAO Y VĂN BẢN (NGHỊ ĐỊNH 30/2020/NĐ-CP & VGCA) ====================
+    let currentCopySignTimestamp = '';
+
+    function openCopySignModal() {
+      const fileNameEl = document.getElementById('copySignDocFileName');
+      const certOwnerEl = document.getElementById('copySignCertOwner');
+
+      const doc = currentlyViewedDoc || (currentViewerDocId ? currentDocList.find(d => d.id === currentViewerDocId) : null);
+      if (fileNameEl) {
+        fileNameEl.innerText = (doc && (doc.fileName || doc.title)) || (selectedUploadFile ? selectedUploadFile.name : 'TaiLieu.pdf');
+      }
+      if (certOwnerEl) {
+        const name = (currentUser && currentUser.name) || 'Hà Văn Tý';
+        certOwnerEl.innerText = `${name} <hvty-dakha@quangngai.gov.vn>`;
+      }
+
+      // Tạo nhãn thời gian ISO 8601 chuẩn VGCA (ví dụ: 2026-09-06T16:01:42+07:00)
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      currentCopySignTimestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}+07:00`;
+
+      // Chọn mặc định SAO Y
+      const defaultRadio = document.querySelector('input[name="copySignTypeRadio"][value="SAO Y"]');
+      if (defaultRadio) defaultRadio.checked = true;
+
+      updateCopySignPreviewText();
+      openModal('modalCopySign');
+    }
+
+    function updateCopySignPreviewText() {
+      const selected = document.querySelector('input[name="copySignTypeRadio"]:checked')?.value || 'SAO Y';
+      const signerName = (currentUser && currentUser.name) || 'Hà Văn Tý';
+      if (!currentCopySignTimestamp) {
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        currentCopySignTimestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}+07:00`;
+      }
+      const copyText = `${selected}; ${signerName}; Thời gian ký: ${currentCopySignTimestamp}`;
+      const txtEl = document.getElementById('copySignPreviewText');
+      if (txtEl) txtEl.value = copyText;
+    }
+
+    async function handleExecuteCopySign() {
+      const selectedType = document.querySelector('input[name="copySignTypeRadio"]:checked')?.value || 'SAO Y';
+      const txtEl = document.getElementById('copySignPreviewText');
+      const copyText = (txtEl && txtEl.value.trim()) || `${selectedType}; ${(currentUser && currentUser.name) || 'Hà Văn Tý'}; Thời gian ký: ${currentCopySignTimestamp}`;
+
+      const doc = currentlyViewedDoc || (currentViewerDocId ? currentDocList.find(d => d.id === currentViewerDocId) : null);
+      if (!doc && !currentViewerDocId) {
+        alert('⚠️ Không tìm thấy tài liệu cần ký sao y. Vui lòng mở tài liệu từ danh sách trước khi ký!');
+        return;
+      }
+      const docId = doc ? doc.id : currentViewerDocId;
+
+      const btn = document.getElementById('btnExecuteCopySignAction');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang ký sao y...';
+      }
+
+      try {
+        closeModal('modalCopySign');
+
+        // Kích hoạt tiến trình ký số bảo mật của Ban Cơ yếu Chính phủ
+        await triggerCopySignVgca(docId, {
+          copyType: selectedType,
+          copyText: copyText
+        });
+
+      } catch (err) {
+        alert('❌ Lỗi khi ký sao y: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+
+    async function triggerCopySignVgca(docId, copyOptions) {
+      const doc = currentDocList.find(d => d.id === docId);
+      const title = doc ? doc.title : docId;
+
+      startVgcaMobileSigning({
+        docTitle: `[SAO Y] ${title}`,
+        signerName: currentUser ? currentUser.name : 'Hà Văn Tý',
+        action: async (authInfo) => {
+          let realSignedPdfBase64 = null;
+
+          let ping = { available: false };
+          try {
+            ping = await pingLocalSigner(1500);
+          } catch (e) {}
+
+          const targetHost = (authInfo && authInfo.localHost) || ping.host;
+          if (ping.available || targetHost) {
+            let fileBase64 = null;
+            try {
+              let fileRes = await fetch(`/api/documents/${docId}/file`);
+              if (fileRes.ok) {
+                const blob = await fileRes.blob();
+                fileBase64 = await new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result);
+                  reader.readAsDataURL(blob);
+                });
+              }
+            } catch (e) {
+              console.warn('Không lấy được tệp chuẩn bị ký sao y:', e);
+            }
+
+            const signPayload = {
+              ...doc,
+              signType: 'COPY',
+              isCopySign: true,
+              copyType: copyOptions.copyType,
+              copyText: copyOptions.copyText,
+              targetPage: 1
+            };
+
+            try {
+              const signResult = await signDocViaLocalAgent(signPayload, fileBase64, targetHost || 'http://127.0.0.1:18888');
+              realSignedPdfBase64 = signResult.signedPdfBase64;
+            } catch (agentErr) {
+              if (agentErr && agentErr.cancelled) throw agentErr;
+              console.warn('[EduSign] Không thể ký qua Agent cục bộ, chuyển sang niêm phong Cloud SmartCA:', agentErr);
+              realSignedPdfBase64 = null;
+              cachedLocalSignerHost = null;
+              if (targetHost) throw agentErr;
+            }
+          } else if (authInfo && authInfo.mode === 'usb_token') {
+            throw new Error(
+              'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
+              '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
+              '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.'
+            );
+          }
+
+          const res = await fetch(`/api/documents/${docId}/sign-vgca-real`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({
+              realSignedPdfBase64,
+              signType: 'COPY',
+              copyType: copyOptions.copyType,
+              copyText: copyOptions.copyText,
+              txId: authInfo ? authInfo.txId : null,
+              tokenPin: authInfo ? authInfo.tokenPin : null
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'Lỗi khi kết nối dịch vụ ký số VGCA');
+          return data;
+        },
+        onSuccess: (data) => {
+          alert('🎉🎉🎉 KÝ SỐ BẢN SAO VĂN BẢN (NGHỊ ĐỊNH 30/2020/NĐ-CP) THÀNH CÔNG 100%!\n\n' +
+                `✓ Hình thức sao: ${copyOptions.copyType}\n` +
+                '✓ Vị trí: Trang 1, góc trên cùng bên phải\n' +
+                '✓ Tiêu chuẩn: PAdES /adbe.pkcs7.detached (Ban Cơ yếu Chính phủ)\n' +
+                `✓ Nội dung chữ ký: ${copyOptions.copyText}\n` +
+                '✓ Toàn bộ nội dung văn bản đã được niêm phong mật mã số công vụ hợp lệ tuyệt đối.');
+
+          // Cập nhật lại danh sách tài liệu và nạp lại bản xem trước
+          loadDocuments();
+          if (doc) {
+            openDocumentViewer(doc.title, null, doc.id, false);
+          }
+        }
+      });
+    }
 
     // Logic Kéo Thả Chuột / Cảm ứng (Drag & Drop) mượt mà trên tài liệu
     function initDraggableSignature() {

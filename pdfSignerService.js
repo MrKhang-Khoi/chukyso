@@ -230,6 +230,32 @@ async function generateSignedPdf(doc) {
   const pdfDoc = await PDFDocument.load(sourcePdfBuffer);
   const sourcePages = pdfDoc.getPages();
   if (sourcePages.length > 0) {
+    const isCopySign = (doc.signType === 'COPY' || doc.isCopySign === true);
+    if (isCopySign) {
+      const copyType = doc.copyType || 'SAO Y';
+      const signerName = (doc.signatures && doc.signatures[0] && doc.signatures[0].signerName) || doc.author || 'Hà Văn Tý';
+      const nowIso = new Date().toISOString().replace('Z', '+07:00');
+      const copyText = doc.copyText || `${copyType}; ${signerName}; Thời gian ký: ${nowIso}`;
+
+      const firstPage = sourcePages[0];
+      const { width: p1W, height: p1H } = firstPage.getSize();
+      const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+      const fontSize = 9;
+      const textWidth = timesRoman.widthOfTextAtSize(copyText, fontSize);
+      const textX = p1W - textWidth - 40;
+      const textY = p1H - 28;
+
+      firstPage.drawText(copyText, {
+        x: textX,
+        y: textY,
+        size: fontSize,
+        font: timesRoman,
+        color: rgb(0, 0, 0)
+      });
+      console.log(`[Copy Sign] 📋 Đã in dòng chữ ký Sao y tại Trang 1 (${textX.toFixed(1)}, ${textY.toFixed(1)}): "${copyText}"`);
+      return await pdfDoc.save();
+    }
+
     const lastDocPage = sourcePages[sourcePages.length - 1];
     const { width: pW, height: pH } = lastDocPage.getSize();
     
@@ -486,7 +512,15 @@ async function signWithRealVgca(doc) {
 
       const result = await new Promise((resolve, reject) => {
         const { execFile } = require('child_process');
-        execFile(runner.command, [
+        const isCopy = (doc.signType === 'COPY' || doc.isCopySign === true);
+        const cliArgs = isCopy ? [
+          ...runner.argsPrefix,
+          '--copy-sign',
+          tempInput,
+          tempOutput,
+          doc.copyType || 'SAO Y',
+          signerName
+        ] : [
           ...runner.argsPrefix,
           '--sign',
           tempInput,
@@ -499,7 +533,8 @@ async function signWithRealVgca(doc) {
           `${signerName} đã ký số VGCA`,
           'Quảng Ngãi',
           sigImgPath
-        ], { timeout: signTimeout }, (error, stdout, stderr) => {
+        ];
+        execFile(runner.command, cliArgs, { timeout: signTimeout }, (error, stdout, stderr) => {
           if (error) {
             console.warn('[VGCA Signer] C# Runner gặp lỗi hoặc môi trường không có CSP:', stderr || error.message);
             return reject(error);

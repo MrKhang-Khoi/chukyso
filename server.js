@@ -577,8 +577,12 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
     }
 
-    const { realSignedPdfBase64, txId, tokenPin } = req.body || {};
+    const { realSignedPdfBase64, txId, tokenPin, signType, copyType, copyText } = req.body || {};
     let signedFilePath = null;
+
+    if (signType) doc.signType = signType;
+    if (copyType) doc.copyType = copyType;
+    if (copyText) doc.copyText = copyText;
 
     if (txId) {
       const session = vgcaSessions.get(txId);
@@ -614,6 +618,9 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
       realSignedPath: signedFilePath,
       realVgcaSigned: true,
       realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      signType: signType || doc.signType || 'STANDARD',
+      copyType: copyType || doc.copyType || null,
+      copyText: copyText || doc.copyText || null,
       vgcaInfo: {
         signer: (sessionObj && sessionObj.signerName) || 'Hà Văn Tý',
         issuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
@@ -644,7 +651,8 @@ app.post('/api/documents/:id/sign-vgca-real', requireAuth, async (req, res) => {
     res.json({
       success: true,
       message: 'Ký số mật mã thật VGCA thành công! File PDF đã được niêm phong mật mã X.509.',
-      data: updatedDoc
+      data: updatedDoc,
+      doc: updatedDoc
     });
   } catch (err) {
     console.error('Lỗi ký số VGCA thật:', err);
