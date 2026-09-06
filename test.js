@@ -395,6 +395,30 @@ async function runTests() {
     assert(driveUploadRes.status === 200 && driveUploadRes.body.success === true, 'Giáo viên lưu hồ sơ đã ký lên Google Drive thành công');
     assert(driveUploadRes.body.driveInfo && driveUploadRes.body.driveInfo.viewUrl.includes('drive.google.com'), 'Hệ thống sinh liên kết Google Drive trường chuẩn xác');
 
+    // 3.7e Kiểm tra tính năng Lưu trữ và đồng bộ Microsoft OneDrive (5TB) của nhà trường
+    const oneDriveConfigRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/onedrive/config',
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    });
+    assert(oneDriveConfigRes.status === 200 && oneDriveConfigRes.body.data && oneDriveConfigRes.body.data.storageQuota === '5 TB', 'Đọc cấu hình và nhận diện hạn mức OneDrive trường 5TB thành công');
+
+    const oneDriveSyncRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/api/documents/${createdDocId}/sync-onedrive`,
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    });
+    assert(oneDriveSyncRes.status === 200 && oneDriveSyncRes.body.oneDriveInfo && oneDriveSyncRes.body.oneDriveInfo.success, 'Nộp hồ sơ đã ký số vào thư mục chia sẻ OneDrive trường (5TB) thành công');
+    assert(oneDriveSyncRes.body.oneDriveInfo.category && oneDriveSyncRes.body.oneDriveInfo.category.includes('KẾ HOẠCH'), 'Hồ sơ được tự động phân loại đúng thư mục chuyên môn trên OneDrive');
+
     // 3.8 Kiểm tra API Xác thực chữ ký số
     const verifyHttpRes = await httpRequest({
       hostname: '127.0.0.1',

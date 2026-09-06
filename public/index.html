@@ -4655,6 +4655,11 @@
           <i class="fa-brands fa-google-drive text-amber-300 text-base"></i>
           <span>${doc.driveInfo ? 'Cập Nhật Lên Google Drive' : 'Lưu Lên Google Drive'}</span>
         </button>
+        <button onclick="handleSyncDocToOneDrive('${doc.id}')" id="btnSyncOneDrive_${doc.id}" 
+                class="px-4 py-2.5 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 hover:from-sky-700 hover:to-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-sky-500/20 transition flex items-center gap-2">
+          <i class="fa-brands fa-microsoft text-white text-base"></i>
+          <span>${doc.oneDriveInfo ? 'Đã Nộp OneDrive (Đồng Bộ Lại)' : 'Nộp Lên OneDrive Trường (5TB)'}</span>
+        </button>
         <button onclick="printCurrentDocWithSignatures()" class="px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
           <i class="fa-solid fa-print"></i>
           <span>In / Xuất PDF</span>
@@ -4720,6 +4725,46 @@
         openDocDetails(docId);
       } catch (err) {
         alert('⚠️ Không thể lưu lên Google Drive: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+
+    // Tự động nộp hồ sơ đã ký số vào OneDrive Trường (Dung lượng 5TB)
+    async function handleSyncDocToOneDrive(docId) {
+      const btn = document.getElementById(`btnSyncOneDrive_${docId}`);
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang nộp OneDrive...</span>';
+      }
+
+      try {
+        const res = await fetch(`/api/documents/${docId}/sync-onedrive`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Lỗi khi nộp lên OneDrive');
+
+        const info = data.oneDriveInfo;
+        alert(`🎉 ĐÃ NỘP HỒ SƠ THÀNH CÔNG LÊN ONEDRIVE TRƯỜNG (5TB)!\n\n` +
+              `📁 Thư mục lưu trữ: ${info.subFolder}\n` +
+              `📄 Tệp tin: ${info.destinationFileName}\n` +
+              `🏢 Thư mục chia sẻ: ${info.sharedFolder}\n` +
+              `⏰ Thời điểm nộp: ${info.syncedAt}\n\n` +
+              `Hệ thống đồng bộ trực tiếp với OneDrive máy tính và đám mây của nhà trường.`);
+
+        await loadDocuments();
+        openDocDetails(docId);
+      } catch (err) {
+        alert('⚠️ Không thể nộp lên OneDrive: ' + err.message);
       } finally {
         if (btn) {
           btn.disabled = false;

@@ -5,6 +5,7 @@ const fs = require('fs');
 const { execSync, execFile } = require('child_process');
 const dataStore = require('./dataStore');
 const googleDriveService = require('./googleDriveService');
+const oneDriveService = require('./oneDriveService');
 const pdfSignerService = require('./pdfSignerService');
 
 const app = express();
@@ -1783,6 +1784,69 @@ app.post('/api/drive/test', requireAdmin, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Kiểm thử kết nối thất bại: ' + err.message });
+  }
+});
+
+// ==================== CẤU HÌNH & ĐỒNG BỘ MICROSOFT ONEDRIVE 5TB ====================
+app.get('/api/onedrive/config', requireAuth, (req, res) => {
+  res.json({ success: true, data: oneDriveService.getOneDriveConfig() });
+});
+
+app.post('/api/onedrive/config', requireAdmin, (req, res) => {
+  const cfg = req.body;
+  oneDriveService.saveOneDriveConfig(cfg);
+  res.json({ success: true, message: 'Đã cập nhật cấu hình OneDrive!', data: cfg });
+});
+
+app.post('/api/documents/:id/sync-onedrive', requireAuth, async (req, res) => {
+  const doc = dataStore.getDocumentById(req.params.id);
+  if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+
+  const uploadDir = path.join(__dirname, 'uploads', 'documents');
+  const candidates = [
+    path.join(uploadDir, `signed_${doc.id}.pdf`),
+    doc.signedFilePath ? path.resolve(doc.signedFilePath) : '',
+    doc.filePath ? path.resolve(doc.filePath) : '',
+    path.join(__dirname, 'GiaoAn_DaKy_That.pdf')
+  ];
+  let pathToUpload = candidates.find(p => p && fs.existsSync(p) && fs.statSync(p).size > 100);
+
+  if (!pathToUpload) {
+    try {
+      const generatedBuf = await pdfSignerService.generateSignedPdf(doc);
+      const tempPath = path.join(uploadDir, `temp_sync_onedrive_${doc.id}.pdf`);
+      fs.writeFileSync(tempPath, generatedBuf);
+      pathToUpload = tempPath;
+    } catch (e) {
+      return res.status(500).json({ success: false, message: 'Không tạo được tệp PDF để nộp lên OneDrive: ' + e.message });
+    }
+  }
+
+  try {
+    const result = await oneDriveService.syncDocumentToOneDrive(doc, pathToUpload);
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    dataStore.updateDocument(doc.id, {
+      oneDriveSynced: true,
+      oneDrivePath: result.destinationPath,
+      oneDriveCategory: result.category,
+      oneDriveSyncedAt: now,
+      logs: [
+        ...(doc.logs || []),
+        {
+          time: now,
+          actor: `${req.user.name} (${req.user.role})`,
+          action: `Đã nộp thành công vào OneDrive trường (5TB): ${result.category} / ${result.fileName}`
+        }
+      ]
+    });
+    res.json({
+      success: true,
+      message: result.message,
+      data: result,
+      oneDriveInfo: result
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Lỗi đồng bộ OneDrive: ' + err.message });
   }
 });
 
