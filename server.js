@@ -1148,16 +1148,17 @@ app.post('/api/local-sign-doc', async (req, res) => {
 
 // Giáo viên nộp Kế hoạch bài dạy mới (Hỗ trợ Ký số Mật mã Thật VGCA qua điện thoại)
 app.post('/api/documents', requireAuth, async (req, res) => {
-  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage, signCoordinates, realVgcaSign, realSignedPdfBase64, txId, tokenPin } = req.body;
+  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage, signCoordinates, realVgcaSign, realSignedPdfBase64, txId, tokenPin, signType, copyType, copyText } = req.body;
   if (!title) {
     return res.status(400).json({ success: false, message: 'Vui lòng nhập Tên kế hoạch bài dạy!' });
   }
 
   const currentUser = req.user;
-  const activeSigImage = signatureImage || currentUser.signatureImage;
+  const isCopy = signType === 'COPY' || req.body.isCopySign;
+  const activeSigImage = signatureImage || currentUser.signatureImage || (isCopy ? '/uploads/signatures/sig_user_cvaty.png' : null);
 
-  // BẮT BUỘC PHẢI CÓ CHỮ KÝ HỢP LỆ TRƯỚC KHI NỘP
-  if (!activeSigImage) {
+  // BẮT BUỘC PHẢI CÓ CHỮ KÝ HỢP LỆ TRƯỚC KHI NỘP (ngoại trừ ký sao y)
+  if (!activeSigImage && !isCopy) {
     return res.status(400).json({
       success: false,
       message: 'Vui lòng thực hiện ký số vào kế hoạch bài dạy trước khi nộp!'
@@ -1214,21 +1215,24 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     fileType: fileType || 'pdf',
     filePath: savedFilePath,
     fileBase64: fileBase64 || null,
-    signPlacement: signPlacement || 'bottom-right',
+    signPlacement: signPlacement || (isCopy ? 'top-right' : 'bottom-right'),
     signCoordinates: signCoordinates || null,
+    signType: isCopy ? 'COPY' : (signType || 'STANDARD'),
+    copyType: isCopy ? (copyType || 'SAO Y') : null,
+    copyText: isCopy ? (copyText || null) : null,
     signatures: [
       {
         step: 1,
-        role: 'Giáo viên soạn thảo',
+        role: isCopy ? 'Người chứng thực bản sao' : 'Giáo viên soạn thảo',
         signerName: currentUser.name,
         signerUnit: currentUser.department,
         signedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-        signType: 'Ký duyệt cấp 1',
+        signType: isCopy ? `Ký số bản sao (${copyType || 'SAO Y'} - NĐ 30/2020/NĐ-CP)` : 'Ký duyệt cấp 1',
         status: 'VALID',
-        placement: signPlacement || 'bottom-right',
+        placement: signPlacement || (isCopy ? 'top-right' : 'bottom-right'),
         coordinates: signCoordinates || null,
         visualSignImage: activeSigImage,
-        visualSign: 'Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân'
+        visualSign: isCopy ? (copyText || `SAO Y; ${currentUser.name}`) : 'Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân'
       }
     ]
   }, currentUser);
@@ -1251,7 +1255,7 @@ app.post('/api/documents', requireAuth, async (req, res) => {
       if (signaturesCopy.length > 0) {
         signaturesCopy[0] = {
           ...signaturesCopy[0],
-          signType: 'Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)',
+          signType: isCopy ? `Ký số mật mã thật Bản sao (${copyType || 'SAO Y'} - VGCA X.509 PAdES)` : 'Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)',
           status: 'VALID'
         };
       }
@@ -1261,9 +1265,12 @@ app.post('/api/documents', requireAuth, async (req, res) => {
         signedPdfBase64: realSignedPdfBase64,
         realVgcaSigned: true,
         realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        signType: isCopy ? 'COPY' : (newDoc.signType || 'STANDARD'),
+        copyType: isCopy ? (copyType || newDoc.copyType || 'SAO Y') : null,
+        copyText: isCopy ? (copyText || newDoc.copyText) : null,
         signatures: signaturesCopy,
         vgcaInfo: {
-          signer: 'Hà Văn Tý',
+          signer: currentUser.name || 'Hà Văn Tý',
           issuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
           standard: 'PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)',
           verified: true
@@ -1295,7 +1302,7 @@ app.post('/api/documents', requireAuth, async (req, res) => {
       if (signaturesCopy.length > 0) {
         signaturesCopy[0] = {
           ...signaturesCopy[0],
-          signType: 'Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)',
+          signType: isCopy ? `Ký số mật mã thật Bản sao (${copyType || 'SAO Y'} - VGCA X.509 PAdES)` : 'Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)',
           status: 'VALID'
         };
       }
@@ -1305,9 +1312,12 @@ app.post('/api/documents', requireAuth, async (req, res) => {
         realSignedPath: signResult.signedFilePath,
         realVgcaSigned: true,
         realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        signType: isCopy ? 'COPY' : (newDoc.signType || 'STANDARD'),
+        copyType: isCopy ? (copyType || newDoc.copyType || 'SAO Y') : null,
+        copyText: isCopy ? (copyText || newDoc.copyText) : null,
         signatures: signaturesCopy,
         vgcaInfo: {
-          signer: (sessionObj && sessionObj.signerName) || 'Hà Văn Tý',
+          signer: (sessionObj && sessionObj.signerName) || currentUser.name || 'Hà Văn Tý',
           issuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
           standard: 'PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)',
           verified: true,
@@ -1354,7 +1364,8 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     message: realVgcaSign 
       ? '🎉 Ký số mật mã thật VGCA và nộp kế hoạch bài dạy thành công! Hồ sơ đã được niêm phong chữ ký số công vụ.' 
       : 'Ký số và nộp kế hoạch bài dạy thành công! Hồ sơ đã được chuyển đến Tổ trưởng chuyên môn duyệt.',
-    data: newDoc
+    data: newDoc,
+    doc: newDoc
   });
 });
 

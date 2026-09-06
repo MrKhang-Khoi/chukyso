@@ -797,6 +797,30 @@ async function runTests() {
     assert(saoyDocRes.status === 200 && saoyDocRes.body.success, 'API /api/documents/:id/sign-vgca-real thực hiện Ký Sao Y thành công');
     assert(saoyDocRes.body.doc && saoyDocRes.body.doc.signType === 'COPY' && saoyDocRes.body.doc.copyType === 'SAO Y', 'Lưu đúng loại hồ sơ sao y (signType: COPY, copyType: SAO Y)');
 
+    // 3.10d Kiểm tra Nộp hồ sơ mới với Ký Sao Y trực tiếp (POST /api/documents)
+    const newSaoyDocRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/documents',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      title: 'Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính',
+      fileName: 'KHGD_PL3_SaoY.pdf',
+      grade: 'Khối 9',
+      week: 'Tuần 12',
+      term: 'Học kỳ I',
+      signType: 'COPY',
+      copyType: 'SAO Y',
+      copyText: 'SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00',
+      realVgcaSign: false
+    });
+    assert(newSaoyDocRes.status === 200 && newSaoyDocRes.body.success, 'Giáo viên nộp hồ sơ mới kết hợp Ký Sao Y (POST /api/documents) thành công');
+    assert(newSaoyDocRes.body.doc && newSaoyDocRes.body.doc.signType === 'COPY', 'Hồ sơ mới tạo mang đúng cờ signType: COPY');
+
   } catch (err) {
     assert(false, `Lỗi khi gọi API: ${err.message}`);
   } finally {

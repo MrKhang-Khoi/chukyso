@@ -260,6 +260,9 @@ function createDocument(docData, currentUser) {
     signPlacement: docData.signPlacement || 'bottom-right',
     fileSize: docData.fileSize || '1.5 MB',
     pages: docData.pages || 10,
+    signType: docData.signType || 'STANDARD',
+    copyType: docData.copyType || null,
+    copyText: docData.copyText || null,
     signatures: docData.signatures || [],
     driveInfo: null,
     logs: [
