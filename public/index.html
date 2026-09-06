@@ -288,6 +288,13 @@
               <i class="fa-brands fa-microsoft text-white text-sm"></i>
               <span>Lưu vào OneDrive (5TB)</span>
             </button>
+            <button type="button" onclick="promptSelectOneDriveFolder(true)" id="btnOneDriveFolderConfig"
+              class="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 font-semibold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer"
+              title="Nhấn để chọn hoặc đổi thư mục lưu OneDrive trên máy tính (sẽ được tự động ghi nhớ cho các lần sau)">
+              <i class="fa-solid fa-folder-open text-sky-600"></i>
+              <span id="lblOneDriveFolderName">Thư mục: Chọn thư mục OneDrive</span>
+              <span class="text-[10px] text-sky-600 underline font-bold ml-0.5">[Đổi]</span>
+            </button>
             <span class="text-slate-500 font-medium text-[11px]">Đã chọn <strong class="text-blue-600 font-bold" id="selectedDocCountText">0</strong> bản ghi</span>
             <span class="hidden sm:inline-block h-4 w-px bg-slate-200"></span>
             <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-red-50/80 border border-red-200 text-red-700 font-bold shadow-xs">
@@ -2351,6 +2358,7 @@
         currentDocList = result.data || [];
         renderDocsTable(currentDocList);
         document.getElementById('docCountBadge').innerText = currentDocList.length;
+        initOneDriveFolderUI();
       } catch (err) {
         console.error('Lỗi tải danh sách hồ sơ:', err);
       }
@@ -4756,8 +4764,228 @@
       }
     }
 
-    // Tự động nộp hồ sơ đã ký số vào OneDrive Trường (Dung lượng 5TB)
+    // ==================== QUẢN LÝ & LƯU THƯ MỤC ONEDRIVE TRÊN MÁY TÍNH (5TB) ====================
+    let cachedOneDriveDirHandle = null;
+
+    function openEduSignStorageDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('EduSignOneDriveStorage', 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('config')) {
+            db.createObjectStore('config');
+          }
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    async function saveDirectoryHandle(handle) {
+      cachedOneDriveDirHandle = handle;
+      try {
+        const db = await openEduSignStorageDB();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction('config', 'readwrite');
+          tx.objectStore('config').put(handle, 'onedrive_folder_handle');
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = (e) => reject(e);
+        });
+      } catch (e) {
+        console.warn('Không thể lưu DirectoryHandle vào IndexedDB:', e);
+      }
+    }
+
+    async function getSavedDirectoryHandle() {
+      if (cachedOneDriveDirHandle) return cachedOneDriveDirHandle;
+      try {
+        const db = await openEduSignStorageDB();
+        const handle = await new Promise((resolve, reject) => {
+          const tx = db.transaction('config', 'readonly');
+          const req = tx.objectStore('config').get('onedrive_folder_handle');
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+        if (handle) {
+          cachedOneDriveDirHandle = handle;
+          return handle;
+        }
+      } catch (e) {
+        console.warn('Lỗi đọc DirectoryHandle từ IndexedDB:', e);
+      }
+      return null;
+    }
+
+    function updateOneDriveFolderUI(name) {
+      const lbl = document.getElementById('lblOneDriveFolderName');
+      if (lbl) {
+        if (name) {
+          lbl.innerHTML = `Thư mục: <strong class="text-sky-900">${name}</strong>`;
+        } else {
+          lbl.innerHTML = 'Thư mục: Chọn thư mục OneDrive';
+        }
+      }
+    }
+
+    async function initOneDriveFolderUI() {
+      const savedName = localStorage.getItem('edusign_onedrive_folder_name');
+      if (savedName) {
+        updateOneDriveFolderUI(savedName);
+      }
+      try {
+        const handle = await getSavedDirectoryHandle();
+        if (handle && handle.name) {
+          updateOneDriveFolderUI(handle.name);
+          localStorage.setItem('edusign_onedrive_folder_name', handle.name);
+        }
+      } catch (e) {}
+    }
+
+    // Hộp thoại chọn hoặc đổi thư mục lưu OneDrive trên máy tính
+    async function promptSelectOneDriveFolder(forcePick = false) {
+      if (!window.showDirectoryPicker) {
+        return null;
+      }
+
+      if (!forcePick) {
+        let savedHandle = await getSavedDirectoryHandle();
+        if (savedHandle) {
+          try {
+            const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
+            if (perm === 'granted') return savedHandle;
+            const requestPerm = await savedHandle.requestPermission({ mode: 'readwrite' });
+            if (requestPerm === 'granted') return savedHandle;
+          } catch (e) {
+            console.warn('Yêu cầu cấp lại quyền thư mục:', e);
+          }
+        }
+      }
+
+      try {
+        alert('📂 HƯỚNG DẪN CHỌN THƯ MỤC ONEDRIVE:\n\n' +
+              'Ở cửa sổ tiếp theo, Thầy vui lòng duyệt và chọn thư mục OneDrive trường trên máy tính\n' +
+              '(Ví dụ: "OneDrive - Sở GD&ĐT Quảng Ngãi" hoặc "15. HÀ VĂN TÝ 26-27").\n\n' +
+              '✅ Hệ thống sẽ tự động lưu lại đường dẫn này để các lần sau tự động lưu mà không cần chọn lại!');
+
+        const dirHandle = await window.showDirectoryPicker({
+          id: 'edusign_onedrive_picker',
+          mode: 'readwrite',
+          startIn: 'documents'
+        });
+
+        await saveDirectoryHandle(dirHandle);
+        localStorage.setItem('edusign_onedrive_folder_name', dirHandle.name);
+        updateOneDriveFolderUI(dirHandle.name);
+
+        alert(`🎉 ĐÃ LƯU ĐƯỜNG DẪN THƯ MỤC THÀNH CÔNG!\n\n` +
+              `📁 Thư mục đã chọn: "${dirHandle.name}"\n\n` +
+              `Hệ thống đã ghi nhớ đường dẫn này. Từ nay khi nhấn lưu, tài liệu sẽ tự động lưu vào đây!`);
+
+        return dirHandle;
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          alert('Không thể chọn thư mục: ' + err.message);
+        }
+        return null;
+      }
+    }
+
+    function resolveOneDriveSubCategory(title, fileName) {
+      const t = ((title || '') + ' ' + (fileName || '')).toLowerCase();
+      if (t.includes('giáo dục') || t.includes('phụ lục') || t.includes('khgd') || t.includes('pl3') || t.includes('pl')) {
+        return '1. KẾ HOẠCH GIÁO DỤC CÁ NHÂN';
+      }
+      if (t.includes('dự giờ') || t.includes('du_gio')) {
+        return '4. SỔ DỰ GIỜ';
+      }
+      if (t.includes('chủ nhiệm') || t.includes('chu_nhiem')) {
+        return '6. CÔNG TÁC CHỦ NHIỆM';
+      }
+      if (t.includes('chất lượng') || t.includes('chat_luong')) {
+        return '3. THEO DÕI CHẤT LƯỢNG DẠY HỌC';
+      }
+      return '2. KẾ HOẠCH BÀI DẠY';
+    }
+
+    async function saveSingleDocToLocalOneDrive(doc, dirHandle) {
+      let blob = null;
+      let usedExt = '.pdf';
+
+      // 1. Thử tải tệp đã ký số
+      try {
+        const signRes = await fetch(`/api/documents/${doc.id}/download-signed`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (signRes.ok) {
+          const b = await signRes.blob();
+          if (b && b.size > 500) blob = b;
+        }
+      } catch (e) {}
+
+      // 2. Thử tải tệp gốc nếu tệp ký chưa sẵn sàng
+      if (!blob || blob.size < 500) {
+        try {
+          const fileRes = await fetch(`/api/documents/${doc.id}/file`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          if (fileRes.ok) {
+            const b = await fileRes.blob();
+            if (b && b.size > 200) {
+              blob = b;
+              if (doc.fileName && doc.fileName.includes('.')) {
+                usedExt = '.' + doc.fileName.split('.').pop();
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (!blob || blob.size < 100) {
+        throw new Error('Hồ sơ chưa có tệp đính kèm hoặc không tải được nội dung');
+      }
+
+      const subCategory = resolveOneDriveSubCategory(doc.title, doc.fileName);
+      let targetFolder = dirHandle;
+      try {
+        targetFolder = await dirHandle.getDirectoryHandle(subCategory, { create: true });
+      } catch (e) {
+        targetFolder = dirHandle;
+      }
+
+      const cleanTitle = (doc.title || doc.id).replace(/[/\\?%*:|"<>]/g, '_').trim();
+      const weekStr = doc.week ? ('_' + doc.week.replace(/\s+/g, '_')) : '';
+      const finalFileName = `[${doc.department || 'To_Toan_Tin'}]${weekStr}_${cleanTitle}_DaKySo${usedExt}`;
+
+      const fileHandle = await targetFolder.getFileHandle(finalFileName, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+
+      try {
+        await fetch(`/api/documents/${doc.id}/mark-onedrive-synced`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            fileName: finalFileName,
+            category: subCategory,
+            folderName: dirHandle.name
+          })
+        });
+      } catch (e) {}
+
+      return {
+        fileName: finalFileName,
+        category: subCategory,
+        folderName: dirHandle.name
+      };
+    }
+
+    // Tự động nộp 1 hồ sơ vào OneDrive (hỗ trợ cả Render Cloud & Localhost)
     async function handleSyncDocToOneDrive(docId) {
+      const doc = currentDocList.find(d => d.id === docId);
       const btnModal = document.getElementById(`btnSyncOneDrive_${docId}`);
       const btnRow = document.getElementById(`btnRowSyncOneDrive_${docId}`);
       const origModalHtml = btnModal ? btnModal.innerHTML : '';
@@ -4773,6 +5001,32 @@
       }
 
       try {
+        if (window.showDirectoryPicker) {
+          const dirHandle = await promptSelectOneDriveFolder(false);
+          if (!dirHandle) {
+            // Người dùng hủy chọn thư mục
+            return;
+          }
+
+          const targetDoc = doc || { id: docId, title: 'Kế hoạch bài dạy' };
+          const result = await saveSingleDocToLocalOneDrive(targetDoc, dirHandle);
+
+          alert(`🎉 ĐÃ LƯU HỒ SƠ THÀNH CÔNG VÀO ONEDRIVE TRƯỜNG (5TB)!\n\n` +
+                `📁 Thư mục lưu trữ: ${result.category}\n` +
+                `📄 Tệp tin: ${result.fileName}\n` +
+                `🏢 Thư mục chia sẻ: "${result.folderName}"\n\n` +
+                `✅ Đường dẫn đã được lưu lại để tự động sử dụng cho các lần sau!\n` +
+                `Tệp đã nằm trong thư mục máy tính và OneDrive sẽ tự động đồng bộ lên đám mây nhà trường.`);
+
+          await loadDocuments();
+          const detailsModal = document.getElementById('modalDocDetails');
+          if (detailsModal && !detailsModal.classList.contains('hidden')) {
+            openDocDetails(docId);
+          }
+          return;
+        }
+
+        // Phương án dự phòng qua Backend API nếu không có showDirectoryPicker
         const res = await fetch(`/api/documents/${docId}/sync-onedrive`, {
           method: 'POST',
           headers: {
@@ -4781,15 +5035,14 @@
           }
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Lỗi khi nộp lên OneDrive');
+        if (!res.ok) throw new Error(data.message || 'Lỗi khi lưu lên OneDrive');
 
         const info = data.data || data.oneDriveInfo || {};
-        alert(`🎉 ĐÃ LƯU HỒ SƠ THÀNH CÔNG VÀO ONEDRIVE TRƯỜNG (5TB)!\n\n` +
-              `📁 Thư mục phân loại: ${info.category || info.subFolder || '2. KẾ HOẠCH BÀI DẠY'}\n` +
-              `📄 Tên tệp tin: ${info.fileName || info.destinationFileName}\n` +
-              `🏢 Thư mục chia sẻ: ${info.oneDriveRoot || info.sharedFolder || 'OneDrive Trường Chu Văn An'}\n` +
-              `⏰ Thời điểm lưu: ${info.syncedAt || new Date().toLocaleString('vi-VN')}\n\n` +
-              `Hệ thống đã lưu trực tiếp vào thư mục OneDrive máy tính và đồng bộ lên đám mây nhà trường.`);
+        alert(`🎉 ĐÃ LƯU HỒ SƠ THÀNH CÔNG VÀO ONEDRIVE (5TB)!\n\n` +
+              `📁 Thư mục: ${info.category || '2. KẾ HOẠCH BÀI DẠY'}\n` +
+              `📄 Tệp tin: ${info.fileName || 'GiaoAn_DaKySo.pdf'}\n` +
+              `🏢 Thư mục chia sẻ: ${info.oneDriveRoot || 'OneDrive Trường'}\n\n` +
+              `Hệ thống đã lưu vào thư mục máy tính và đồng bộ lên đám mây trường.`);
 
         await loadDocuments();
         const detailsModal = document.getElementById('modalDocDetails');
@@ -4829,9 +5082,16 @@
           alert('Chưa có kế hoạch bài dạy nào trong danh sách để lưu vào OneDrive!');
           return;
         }
-        const confirmAll = confirm(`Thầy chưa tích chọn hồ sơ cụ thể nào.\n\nThầy có muốn lưu toàn bộ ${currentDocList.length} hồ sơ trong danh sách vào OneDrive trường (5TB) không?`);
+        const confirmAll = confirm(`Thầy chưa tích chọn hồ sơ cụ thể nào.\n\nThầy có muốn lưu toàn bộ ${currentDocList.length} hồ sơ trong danh sách vào thư mục OneDrive trường (5TB) không?`);
         if (!confirmAll) return;
         docIds = currentDocList.map(d => d.id);
+      }
+
+      // 1. Kiểm tra và chọn thư mục OneDrive
+      let dirHandle = null;
+      if (window.showDirectoryPicker) {
+        dirHandle = await promptSelectOneDriveFolder(false);
+        if (!dirHandle) return; // Thầy hủy chọn
       }
 
       const btn = document.getElementById('btnBatchSyncOneDrive');
@@ -4846,20 +5106,26 @@
       let lastResult = null;
 
       for (const id of docIds) {
+        const d = currentDocList.find(x => x.id === id) || { id, title: 'Kế hoạch bài dạy' };
         try {
-          const res = await fetch(`/api/documents/${id}/sync-onedrive`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authToken}`
-            }
-          });
-          const data = await res.json();
-          if (res.ok) {
+          if (dirHandle) {
+            lastResult = await saveSingleDocToLocalOneDrive(d, dirHandle);
             successCount++;
-            lastResult = data.data || data.oneDriveInfo;
           } else {
-            failCount++;
+            const res = await fetch(`/api/documents/${id}/sync-onedrive`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+            const data = await res.json();
+            if (res.ok) {
+              successCount++;
+              lastResult = data.data || data.oneDriveInfo;
+            } else {
+              failCount++;
+            }
           }
         } catch (e) {
           failCount++;
@@ -4875,8 +5141,9 @@
 
       if (successCount > 0) {
         alert(`🎉 ĐÃ LƯU THÀNH CÔNG ${successCount} HỒ SƠ VÀO ONEDRIVE TRƯỜNG (5TB)!\n\n` +
-              (lastResult ? `📁 Thư mục lưu: ${lastResult.category || 'Kế hoạch bài dạy'}\n🏢 OneDrive: ${lastResult.oneDriveRoot || 'OneDrive Trường'}\n\n` : '') +
-              (failCount > 0 ? `⚠️ Có ${failCount} hồ sơ chưa lưu được do chưa đính kèm tệp.` : 'Tất cả hồ sơ đã được đồng bộ vào OneDrive máy tính và đám mây của trường.'));
+              (lastResult ? `📁 Thư mục lưu: "${lastResult.category || 'Kế hoạch bài dạy'}"\n🏢 Thư mục gốc: "${lastResult.folderName || lastResult.oneDriveRoot || 'OneDrive Trường'}"\n\n` : '') +
+              `✅ Đường dẫn đã được lưu lại để tự động sử dụng cho các lần sau!\n` +
+              (failCount > 0 ? `⚠️ Có ${failCount} hồ sơ chưa lưu được do chưa đính kèm tệp.` : 'Tất cả hồ sơ đã được lưu vào thư mục máy tính và đồng bộ lên đám mây trường.'));
       } else {
         alert('⚠️ Không thể lưu hồ sơ vào OneDrive. Thầy vui lòng kiểm tra xem hồ sơ đã có tệp đính kèm chưa!');
       }

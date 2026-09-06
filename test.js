@@ -419,6 +419,22 @@ async function runTests() {
     assert(oneDriveSyncRes.status === 200 && oneDriveSyncRes.body.oneDriveInfo && oneDriveSyncRes.body.oneDriveInfo.success, 'Nộp hồ sơ đã ký số vào thư mục chia sẻ OneDrive trường (5TB) thành công');
     assert(oneDriveSyncRes.body.oneDriveInfo.category && oneDriveSyncRes.body.oneDriveInfo.category.includes('KẾ HOẠCH'), 'Hồ sơ được tự động phân loại đúng thư mục chuyên môn trên OneDrive');
 
+    const oneDriveMarkRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/api/documents/${createdDocId}/mark-onedrive-synced`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      fileName: 'Test_GiaoAn_DaKySo.pdf',
+      category: '2. KẾ HOẠCH BÀI DẠY',
+      folderName: '15. HÀ VĂN TÝ 26-27'
+    });
+    assert(oneDriveMarkRes.status === 200 && oneDriveMarkRes.body.success, 'Ghi nhận lưu OneDrive từ trình duyệt (Web File System API) thành công');
+
     // 3.8 Kiểm tra API Xác thực chữ ký số
     const verifyHttpRes = await httpRequest({
       hostname: '127.0.0.1',

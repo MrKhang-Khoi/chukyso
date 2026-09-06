@@ -1851,6 +1851,40 @@ app.post('/api/documents/:id/sync-onedrive', requireAuth, async (req, res) => {
   }
 });
 
+app.post('/api/documents/:id/mark-onedrive-synced', requireAuth, (req, res) => {
+  const doc = dataStore.getDocumentById(req.params.id);
+  if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+
+  const { fileName, category, folderName } = req.body || {};
+  const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+  dataStore.updateDocument(doc.id, {
+    oneDriveSynced: true,
+    oneDriveCategory: category || '2. KẾ HOẠCH BÀI DẠY',
+    oneDriveSyncedAt: now,
+    logs: [
+      ...(doc.logs || []),
+      {
+        time: now,
+        actor: `${req.user.name} (${req.user.role})`,
+        action: `Đã lưu thành công vào OneDrive (5TB) máy tính: ${category || 'Kế hoạch bài dạy'} / ${fileName || (doc.title + '.pdf')}`
+      }
+    ]
+  });
+
+  res.json({
+    success: true,
+    message: 'Đã ghi nhận lưu OneDrive thành công!',
+    oneDriveInfo: {
+      success: true,
+      category: category || '2. KẾ HOẠCH BÀI DẠY',
+      fileName: fileName || (doc.title + '.pdf'),
+      sharedFolder: folderName || 'OneDrive Trường',
+      syncedAt: now
+    }
+  });
+});
+
 // ==================== 8. KÝ SỐ VGCA CHUYÊN DÙNG & KIỂM TRA MẬT MÃ ====================
 function getSignerExecution() {
   const candidates = [
