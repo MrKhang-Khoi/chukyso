@@ -15,50 +15,67 @@ using iText.Layout;
 using iText.Layout.Element;
 using iText.Signatures;
 
+using System.Net;
+using System.Text.RegularExpressions;
+using System.Threading;
+
 namespace RealPdfSigner
 {
-    // Lớp thực thi Chữ ký số từ xa qua Windows CNG (VGCA RSSP KSP v2.0)
-    public class VgcaEcdsaSignature : IExternalSignature
+    // Lớp thực thi Chữ ký số Mật mã Chuẩn Quốc tế (Hỗ trợ cả ECDSA và RSA của Ban Cơ yếu Chính phủ)
+    public class VgcaSignature : IExternalSignature
     {
-        private readonly X509Certificate2 _cert;
-        private readonly ECDsa _ecdsa;
+        protected readonly X509Certificate2 _cert;
+        protected readonly ECDsa? _ecdsa;
+        protected readonly RSA? _rsa;
 
-        public VgcaEcdsaSignature(X509Certificate2 cert)
+        public VgcaSignature(X509Certificate2 cert)
         {
             _cert = cert ?? throw new ArgumentNullException(nameof(cert));
-            _ecdsa = cert.GetECDsaPrivateKey() ?? throw new Exception("Không tìm thấy ECDsa Private Key trên chứng thư VGCA!");
+            _ecdsa = cert.GetECDsaPrivateKey();
+            if (_ecdsa == null)
+            {
+                _rsa = cert.GetRSAPrivateKey();
+            }
+
+            if (_ecdsa == null && _rsa == null)
+            {
+                throw new Exception("Chứng thư số không có Khóa riêng (Private Key) hợp lệ cho RSA hoặc ECDSA!");
+            }
         }
 
-        public string GetDigestAlgorithmName()
-        {
-            return "SHA-256";
-        }
+        public string GetDigestAlgorithmName() => "SHA-256";
 
-        public string GetSignatureAlgorithmName()
-        {
-            return "ECDSA";
-        }
+        public string GetSignatureAlgorithmName() => _ecdsa != null ? "ECDSA" : "RSA";
 
-        public ISignatureMechanismParams? GetSignatureMechanismParameters()
-        {
-            return null;
-        }
+        public ISignatureMechanismParams? GetSignatureMechanismParameters() => null;
 
         public byte[] Sign(byte[] message)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("===============================================================");
-            Console.WriteLine("📲 ĐANG KẾT NỐI MÁY CHỦ BAN CƠ YẾU CHÍNH PHỦ (VGCA)...");
-            Console.WriteLine("👉 ĐÃ GỬI THÔNG BÁO PUSH NOTIFICATION ĐẾN ĐIỆN THOẠI CỦA THẦY!");
-            Console.WriteLine("👉 XIN MỜI THẦY MỞ ỨNG DỤNG TRÊN ĐIỆN THOẠI ĐỂ XÁC NHẬN KÝ SỐ...");
+            Console.WriteLine($"📲 ĐANG KÍCH HOẠT KÝ SỐ MẬT MÃ ({GetSignatureAlgorithmName()}) QUA BAN CƠ YẾU CHÍNH PHỦ (VGCA)...");
+            Console.WriteLine("👉 ĐÃ GỬI TÍN HIỆU TỚI THIẾT BỊ / USB TOKEN CỦA THẦY!");
             Console.WriteLine("===============================================================");
             Console.ResetColor();
 
-            // Khi gọi lệnh này, Windows CNG sẽ kích hoạt VGCA RSSP KSP v2.0 đẩy lệnh về điện thoại.
-            // Định dạng chữ ký ECDSA trong PKCS#7 / PAdES chuẩn quốc tế (Adobe Acrobat) BẮT BUỘC là RFC 3279 DER Sequence.
-            byte[] signature = _ecdsa.SignData(message, HashAlgorithmName.SHA256, DSASignatureFormat.Rfc3279DerSequence);
-            return signature;
+            if (_ecdsa != null)
+            {
+                // Định dạng chữ ký ECDSA trong PKCS#7 / PAdES chuẩn quốc tế (Adobe Acrobat) BẮT BUỘC là RFC 3279 DER Sequence.
+                return _ecdsa.SignData(message, HashAlgorithmName.SHA256, DSASignatureFormat.Rfc3279DerSequence);
+            }
+            else if (_rsa != null)
+            {
+                // Định dạng chữ ký RSA PKCS#1 v1.5
+                return _rsa.SignData(message, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            }
+
+            throw new InvalidOperationException("Không tìm thấy thuật toán mã hóa phù hợp.");
         }
+    }
+
+    public class VgcaEcdsaSignature : VgcaSignature
+    {
+        public VgcaEcdsaSignature(X509Certificate2 cert) : base(cert) { }
     }
 
     class Program
@@ -87,25 +104,19 @@ namespace RealPdfSigner
                 return;
             }
 
-            // 1. Tìm chứng thư thật của Thầy Hà Văn Tý trong Windows Certificate Store
-            string thumbprint = "6398E3DC37E44EBBF976DFDE9F0143E1BDA5346D";
-            using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-            store.Open(OpenFlags.ReadOnly);
-
-            X509Certificate2? realCert = null;
-            foreach (var cert in store.Certificates)
+            if (args.Length == 0 || (args.Length == 1 && args[0].Equals("--agent", StringComparison.OrdinalIgnoreCase)))
             {
-                if (cert.Thumbprint.Equals(thumbprint, StringComparison.OrdinalIgnoreCase))
-                {
-                    realCert = cert;
-                    break;
-                }
+                RunDesktopAgent();
+                return;
             }
+
+            // 1. Tìm chứng thư thật của Giáo viên / Ban Cơ yếu trong Windows Certificate Store
+            X509Certificate2? realCert = FindVgcaCertificate();
 
             if (realCert == null)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("❌ Không tìm thấy chứng thư số của Thầy Hà Văn Tý trong kho Windows!");
+                Console.WriteLine("❌ Không tìm thấy chứng thư số Ban Cơ yếu Chính phủ hoặc USB Token trong kho Windows!");
                 Console.ResetColor();
                 return;
             }
@@ -115,7 +126,8 @@ namespace RealPdfSigner
             Console.WriteLine($"   - Chủ sở hữu: {realCert.Subject}");
             Console.WriteLine($"   - Cơ quan cấp: {realCert.Issuer}");
             Console.WriteLine($"   - Thời hạn đến: {realCert.NotAfter:dd/MM/yyyy HH:mm:ss}");
-            Console.WriteLine($"   - Thuật toán: {realCert.PublicKey.Oid.FriendlyName} (ECDSA)");
+            string algoName = realCert.GetECDsaPrivateKey() != null ? "ECDSA" : (realCert.GetRSAPrivateKey() != null ? "RSA" : "CryptoAPI");
+            Console.WriteLine($"   - Thuật toán: {realCert.PublicKey.Oid.FriendlyName} ({algoName})");
             Console.ResetColor();
             Console.WriteLine();
 
@@ -220,7 +232,7 @@ namespace RealPdfSigner
                     signer.SetSignerProperties(signerProperties);
 
                     // Nạp đối tượng ký VGCA
-                    IExternalSignature pks = new VgcaEcdsaSignature(realCert);
+                    IExternalSignature pks = new VgcaSignature(realCert);
 
                     // Chuyển đổi chứng thư X509 sang định dạng iText BouncyCastle
                     Org.BouncyCastle.X509.X509Certificate bcCert = new Org.BouncyCastle.X509.X509CertificateParser().ReadCertificate(realCert.RawData);
@@ -501,6 +513,298 @@ namespace RealPdfSigner
                 Console.WriteLine("[ANCHOR_RESULT_JSON]");
                 Console.WriteLine(JsonSerializer.Serialize(new { found = false, error = ex.Message }));
             }
+        }
+
+        public static X509Certificate2? FindVgcaCertificate()
+        {
+            try
+            {
+                using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                store.Open(OpenFlags.ReadOnly);
+
+                // 1. Ưu tiên chứng thư có khóa riêng và thuộc Ban Cơ yếu / Cơ quan Nhà nước
+                foreach (var cert in store.Certificates)
+                {
+                    if (!cert.HasPrivateKey) continue;
+                    string issuer = cert.Issuer ?? "";
+                    string subject = cert.Subject ?? "";
+                    if (issuer.Contains("Ban C") || issuer.Contains("VGCA") || issuer.Contains("Nhà nước") || issuer.Contains("Nha nuoc") ||
+                        subject.Contains("gov.vn") || subject.Contains("CHU VAN AN") || subject.Contains("Chu Văn An"))
+                    {
+                        return cert;
+                    }
+                }
+
+                // 2. Tìm theo thumbprint quen thuộc
+                string defaultThumbprint = "6398E3DC37E44EBBF976DFDE9F0143E1BDA5346D";
+                foreach (var cert in store.Certificates)
+                {
+                    if (cert.Thumbprint.Equals(defaultThumbprint, StringComparison.OrdinalIgnoreCase))
+                        return cert;
+                }
+
+                // 3. Fallback: Bất kỳ chứng thư nào có Khóa riêng và còn hạn
+                foreach (var cert in store.Certificates)
+                {
+                    if (cert.HasPrivateKey && cert.NotAfter > DateTime.Now)
+                        return cert;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location)
+        {
+            var cert = FindVgcaCertificate();
+            if (cert == null)
+                throw new Exception("Không tìm thấy chứng thư số Ban Cơ yếu có khóa riêng trong kho Windows! Xin vui lòng kiểm tra kết nối USB Token.");
+
+            using var reader = new PdfReader(new MemoryStream(inputPdfBytes));
+            using var outputStream = new MemoryStream();
+
+            var stampingProps = new StampingProperties();
+            stampingProps.UseAppendMode();
+
+            var signer = new PdfSigner(reader, outputStream, stampingProps);
+            var signerProps = new SignerProperties()
+                .SetFieldName("SignatureVGCA_" + DateTime.Now.Ticks)
+                .SetReason(reason)
+                .SetLocation(location);
+            signer.SetSignerProperties(signerProps);
+
+            IExternalSignature pks = new VgcaSignature(cert);
+            var bcCert = new Org.BouncyCastle.X509.X509CertificateParser().ReadCertificate(cert.RawData);
+            var bcCertWrapper = new X509CertificateBC(bcCert);
+            var chain = new IX509Certificate[] { bcCertWrapper };
+
+            signer.SignDetached(pks, chain, null, null, null, 0, PdfSigner.CryptoStandard.CADES);
+            return outputStream.ToArray();
+        }
+
+        public static void RunDesktopAgent()
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("╔══════════════════════════════════════════════════════════════════════╗");
+            Console.WriteLine("║        CÔNG CỤ KÝ SỐ CHUYÊN DỤNG EDUSIGN AGENT (VGCA DESKTOP)        ║");
+            Console.WriteLine("║            Trường THCS Chu Văn An - Tỉnh Quảng Ngãi                  ║");
+            Console.WriteLine("║            Phiên bản 2.0.0 - Chuẩn Nghị định 30/2020/NĐ-CP           ║");
+            Console.WriteLine("╚══════════════════════════════════════════════════════════════════════╝");
+            Console.ResetColor();
+
+            var cert = FindVgcaCertificate();
+            if (cert != null)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"\n✓ ĐÃ NHẬN DIỆN CHỨNG THƯ SỐ CÔNG VỤ:");
+                Console.WriteLine($"  - Chủ sở hữu: {cert.Subject}");
+                Console.WriteLine($"  - Cơ quan cấp: {cert.Issuer}");
+                Console.WriteLine($"  - Hạn dùng: {cert.NotAfter:dd/MM/yyyy HH:mm:ss} | Khóa riêng: {(cert.HasPrivateKey ? "CÓ SẴN (ĐÃ CẮM)" : "CHƯA NHẬN")}");
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("\n⚠️ CHƯA PHÁT HIỆN USB TOKEN BAN CƠ YẾU HOẶC CHỨNG THƯ SỐ");
+                Console.WriteLine("  Xin vui lòng cắm USB Token vào máy tính trước khi bấm ký trên web.");
+                Console.ResetColor();
+            }
+
+            var prefixes = new List<string> { "http://127.0.0.1:18888/", "http://localhost:18888/" };
+            try
+            {
+                var testListener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 3000);
+                testListener.Start();
+                testListener.Stop();
+                prefixes.Add("http://127.0.0.1:3000/");
+                prefixes.Add("http://localhost:3000/");
+            }
+            catch { }
+
+            using var listener = new HttpListener();
+            foreach (var prefix in prefixes)
+            {
+                try { listener.Prefixes.Add(prefix); } catch { }
+            }
+
+            try
+            {
+                listener.Start();
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("\n🚀 DỊCH VỤ KÝ SỐ CỤC BỘ ĐANG CHẠY...");
+                foreach (var p in prefixes) Console.WriteLine($"   👉 Lắng nghe kết nối an toàn tại: {p}");
+                Console.WriteLine("\n💡 Thầy hãy giữ cửa sổ này mở khi ký trên trang web (Local hoặc Render Cloud).");
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"❌ Không thể khởi động cổng lắng nghe: {ex.Message}");
+                Console.ResetColor();
+                return;
+            }
+
+            while (true)
+            {
+                try
+                {
+                    var context = listener.GetContext();
+                    ThreadPool.QueueUserWorkItem(_ => HandleAgentRequest(context));
+                }
+                catch (Exception) { break; }
+            }
+        }
+
+        private static void HandleAgentRequest(HttpListenerContext context)
+        {
+            var req = context.Request;
+            var res = context.Response;
+
+            // Thiết lập tiêu đề CORS & Private Network Access
+            res.AddHeader("Access-Control-Allow-Origin", "*");
+            res.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            res.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+            res.AddHeader("Access-Control-Allow-Private-Network", "true");
+
+            if (req.HttpMethod == "OPTIONS")
+            {
+                res.StatusCode = 204;
+                res.Close();
+                return;
+            }
+
+            res.ContentType = "application/json; charset=utf-8";
+            string path = req.Url?.AbsolutePath.ToLowerInvariant() ?? "";
+
+            try
+            {
+                if (path == "/api/ping-local-signer" || path == "/api/check-vgca-status")
+                {
+                    var cert = FindVgcaCertificate();
+                    var statusData = new
+                    {
+                        success = true,
+                        service = "EduSign-Desktop-Agent",
+                        version = "2.0.0",
+                        platform = "win32",
+                        appRunning = true,
+                        appName = "EduSign Desktop Agent (Ban Cơ yếu Chính phủ)",
+                        tokenConnected = cert != null && cert.HasPrivateKey,
+                        certInfo = cert != null ? new
+                        {
+                            subject = cert.Subject,
+                            issuer = cert.Issuer,
+                            notAfter = cert.NotAfter.ToString("yyyy-MM-dd HH:mm:ss"),
+                            thumbprint = cert.Thumbprint,
+                            hasPrivateKey = cert.HasPrivateKey,
+                            signerName = ExtractCn(cert.Subject),
+                            email = ExtractEmail(cert.Subject),
+                            school = ExtractOu(cert.Subject)
+                        } : null,
+                        details = (cert != null && cert.HasPrivateKey)
+                            ? "EduSign Agent đang hoạt động và đã nhận diện USB Token hợp lệ."
+                            : "EduSign Agent đang hoạt động nhưng chưa cắm USB Token."
+                    };
+
+                    byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(statusData));
+                    res.OutputStream.Write(jsonBytes, 0, jsonBytes.Length);
+                    res.Close();
+                    return;
+                }
+
+                if (path == "/api/local-sign-doc" && req.HttpMethod == "POST")
+                {
+                    using var streamReader = new StreamReader(req.InputStream, req.ContentEncoding);
+                    string body = streamReader.ReadToEnd();
+                    using var docJson = JsonDocument.Parse(body);
+                    var root = docJson.RootElement;
+
+                    string fileBase64 = root.TryGetProperty("fileBase64", out var fb64) ? fb64.GetString() ?? "" : "";
+                    string docTitle = "Kế hoạch bài dạy";
+                    string signerName = "Hà Văn Tý";
+
+                    if (root.TryGetProperty("doc", out var docElem))
+                    {
+                        if (docElem.TryGetProperty("title", out var t)) docTitle = t.GetString() ?? docTitle;
+                        if (docElem.TryGetProperty("author", out var a)) signerName = a.GetString() ?? signerName;
+                    }
+
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 📝 Nhận lệnh ký số từ Web: \"{docTitle}\" (Người ký: {signerName})");
+
+                    byte[] pdfBytes;
+                    if (!string.IsNullOrEmpty(fileBase64))
+                    {
+                        string cleanBase64 = Regex.Replace(fileBase64, @"^data:[^;]+;base64,", "");
+                        pdfBytes = Convert.FromBase64String(cleanBase64);
+                    }
+                    else
+                    {
+                        string samplePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "GiaoAn_CanKy.pdf");
+                        if (File.Exists(samplePath)) pdfBytes = File.ReadAllBytes(samplePath);
+                        else
+                        {
+                            string tempMau = System.IO.Path.GetTempFileName() + ".pdf";
+                            TaoFilePdfMau(tempMau);
+                            pdfBytes = File.ReadAllBytes(tempMau);
+                            try { File.Delete(tempMau); } catch { }
+                        }
+                    }
+
+                    byte[] signedBytes = KySoPdfBytes(pdfBytes, $"{signerName} đã ký số VGCA", "Quảng Ngãi");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎉 Niêm phong PAdES X.509 thành công! Dung lượng: {signedBytes.Length} bytes.");
+
+                    var resObj = new
+                    {
+                        success = true,
+                        message = "Ký số mật mã thật VGCA thành công 100%!",
+                        signedPdfBase64 = "data:application/pdf;base64," + Convert.ToBase64String(signedBytes),
+                        signer = signerName
+                    };
+                    byte[] resBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(resObj));
+                    res.OutputStream.Write(resBytes, 0, resBytes.Length);
+                    res.Close();
+                    return;
+                }
+
+                res.StatusCode = 404;
+                byte[] notFound = System.Text.Encoding.UTF8.GetBytes("{\"success\":false,\"message\":\"Endpoint not found\"}");
+                res.OutputStream.Write(notFound, 0, notFound.Length);
+                res.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"❌ Lỗi xử lý yêu cầu ký: {ex.Message}");
+                Console.ResetColor();
+
+                res.StatusCode = 500;
+                var errObj = new { success = false, message = ex.Message };
+                byte[] errBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(errObj));
+                res.OutputStream.Write(errBytes, 0, errBytes.Length);
+                res.Close();
+            }
+        }
+
+        private static string ExtractCn(string? subject)
+        {
+            if (string.IsNullOrEmpty(subject)) return "Giáo viên";
+            var m = Regex.Match(subject, @"CN=([^,]+)");
+            return m.Success ? m.Groups[1].Value.Trim() : subject;
+        }
+
+        private static string ExtractEmail(string? subject)
+        {
+            if (string.IsNullOrEmpty(subject)) return "";
+            var m = Regex.Match(subject, @"E=([^,]+)");
+            return m.Success ? m.Groups[1].Value.Trim() : "";
+        }
+
+        private static string ExtractOu(string? subject)
+        {
+            if (string.IsNullOrEmpty(subject)) return "THCS Chu Văn An";
+            var m = Regex.Match(subject, @"OU=([^,]+)");
+            return m.Success ? m.Groups[1].Value.Trim() : "THCS Chu Văn An";
         }
     }
 

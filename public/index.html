@@ -180,7 +180,14 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2.5">
+            <a href="/downloads/EduSign_Agent.exe" download
+              class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-sm transition"
+              title="Tải công cụ hỗ trợ ký số USB Token trực tiếp trên máy tính Windows">
+              <i class="fa-solid fa-download text-xs"></i>
+              <span>Tải EduSign Agent</span>
+            </a>
+
             <div class="flex items-center gap-2.5 bg-slate-100 py-1.5 px-3 rounded-xl border border-slate-200">
               <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
                 <span id="userAvatarText">GV</span>
@@ -1126,6 +1133,17 @@
                   </span>
                 </div>
               </div>
+            </div>
+
+            <!-- Hướng dẫn & Tải công cụ EduSign Desktop Agent -->
+            <div class="p-2.5 bg-blue-50/80 rounded-xl border border-blue-200 flex items-center justify-between text-[11px] text-blue-900">
+              <span class="flex items-center gap-1.5 font-medium">
+                <i class="fa-solid fa-laptop text-blue-600"></i>
+                <span>Cần công cụ kết nối USB Token?</span>
+              </span>
+              <a href="/downloads/EduSign_Agent.exe" download class="font-bold text-blue-700 hover:text-blue-900 bg-white px-2.5 py-1 rounded-lg border border-blue-300 shadow-xs flex items-center gap-1">
+                <i class="fa-solid fa-download text-[10px]"></i> Tải EduSign Agent
+              </a>
             </div>
 
             <div>
@@ -2698,8 +2716,13 @@
 
     // ==================== CẦU NỐI KÝ SỐ CỤC BỘ (LOCAL SIGNER BRIDGE) ====================
     // Phục vụ kết nối thiết bị ký số VGCA trên máy tính Thầy khi truy cập từ Render Cloud
-    async function pingLocalSigner(timeoutMs = 3000) {
-      const candidates = ['http://127.0.0.1:3000', 'http://localhost:3000'];
+    async function pingLocalSigner(timeoutMs = 2500) {
+      const candidates = [
+        'http://127.0.0.1:18888',
+        'http://localhost:18888',
+        'http://127.0.0.1:3000',
+        'http://localhost:3000'
+      ];
       for (const host of candidates) {
         try {
           const controller = new AbortController();
@@ -2862,6 +2885,13 @@
             if (ping.available) {
               const signResult = await signDocViaLocalAgent(payload, payload.fileBase64, ping.host);
               realSignedPdfBase64 = signResult.signedPdfBase64;
+            } else if (authInfo && authInfo.mode === 'usb_token') {
+              throw new Error(
+                'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
+                '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
+                '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.\n' +
+                '3. Hoặc Thầy có thể chọn [Ký nhanh nội bộ] bên dưới để nộp giáo án kịp tiến độ.'
+              );
             }
           }
 
@@ -3181,6 +3211,13 @@
 
               const signResult = await signDocViaLocalAgent(doc, fileBase64, ping.host);
               realSignedPdfBase64 = signResult.signedPdfBase64;
+            } else if (authInfo && authInfo.mode === 'usb_token') {
+              throw new Error(
+                'Chưa phát hiện công cụ Ký số EduSign trên máy tính của Thầy!\n\n' +
+                '1. Xin vui lòng mở công cụ "EduSign_Agent.exe" trên máy tính.\n' +
+                '2. Nếu chưa có, xin bấm nút [Tải EduSign Agent] trên thanh tiêu đề để tải về.\n' +
+                '3. Hoặc Thầy có thể chọn [Ký nhanh nội bộ] bên dưới để hoàn tất việc ký duyệt.'
+              );
             }
           }
 

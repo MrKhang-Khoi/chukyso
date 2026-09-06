@@ -627,7 +627,13 @@ function checkVgcaSystemStatus(forceRefresh = false) {
   if (process.platform === 'win32') {
     try {
       const output = execSync('tasklist /NH', { encoding: 'utf8', timeout: 3000 });
-      if (output.includes('vgca_vcsp_v2_mgr.exe')) {
+      if (output.includes('EduSign_Agent.exe')) {
+        result.appRunning = true;
+        result.appName = 'EduSign Desktop Agent (EduSign_Agent.exe)';
+      } else if (output.includes('RealPdfSigner.exe')) {
+        result.appRunning = true;
+        result.appName = 'EduSign RealPdfSigner Agent';
+      } else if (output.includes('vgca_vcsp_v2_mgr.exe')) {
         result.appRunning = true;
         result.appName = 'VGCA Virtual CSP v2.0 (vgca_vcsp_v2_mgr.exe)';
       } else if (output.includes('VGCASignTool.exe')) {
@@ -658,13 +664,17 @@ function checkVgcaSystemStatus(forceRefresh = false) {
     }
 
     if (result.appRunning && result.tokenConnected) {
-      result.details = 'Phần mềm VGCA đang hoạt động và đã nhận diện chứng thư số USB Token hợp lệ của Ban Cơ yếu.';
+      result.statusCode = 'CODE_READY';
+      result.details = 'Phần mềm ký số EduSign/VGCA đang hoạt động và đã nhận diện chứng thư số USB Token hợp lệ của Ban Cơ yếu.';
     } else if (result.appRunning && !result.tokenConnected) {
-      result.details = 'Phần mềm VGCA đang mở nhưng chưa phát hiện chứng thư số. Xin vui lòng cắm USB Token.';
+      result.statusCode = 'CODE_NO_TOKEN';
+      result.details = 'Phần mềm ký số đang mở nhưng chưa phát hiện chứng thư số. Xin vui lòng cắm USB Token.';
     } else {
-      result.details = 'Chưa phát hiện phần mềm VGCA hoặc chứng thư số trên máy tính này.';
+      result.statusCode = 'CODE_NO_AGENT';
+      result.details = 'Chưa phát hiện phần mềm ký số EduSign hoặc VGCA trên máy tính này.';
     }
   } else {
+    result.statusCode = 'CODE_CLOUD_READY';
     result.details = 'Hệ thống đang chạy trên đám mây (Render Linux). Hỗ trợ xác thực ký số di động SmartCA qua Internet hoặc USB Token qua Local Signer Bridge.';
   }
 
@@ -778,6 +788,33 @@ app.post('/api/vgca/cancel-session', (req, res) => {
     console.log(`[VGCA SmartCA] 🛑 Đã hủy phiên ký số: ${txId}`);
   }
   res.json({ success: true, message: 'Đã hủy phiên ký số.' });
+});
+
+// Phục vụ tải về công cụ EduSign Desktop Agent cho máy tính Windows
+app.get('/downloads/EduSign_Agent.exe', (req, res) => {
+  const candidates = [
+    path.join(__dirname, 'public', 'downloads', 'EduSign_Agent.exe'),
+    path.join(__dirname, 'public', 'downloads', 'RealPdfSigner.exe'),
+    path.join(__dirname, 'RealPdfSigner', 'bin', 'Release', 'net8.0', 'RealPdfSigner.exe')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) {
+      res.setHeader('Content-Disposition', 'attachment; filename="EduSign_Agent.exe"');
+      res.setHeader('Content-Type', 'application/vnd.microsoft.portable-executable');
+      return res.sendFile(path.resolve(c));
+    }
+  }
+  res.status(404).json({ success: false, message: 'Đang chuẩn bị gói cài đặt, vui lòng thử lại sau vài giây.' });
+});
+
+app.get('/downloads/Chay_EduSign_Agent.bat', (req, res) => {
+  const batPath = path.join(__dirname, 'public', 'downloads', 'Chay_EduSign_Agent.bat');
+  if (fs.existsSync(batPath)) {
+    res.setHeader('Content-Disposition', 'attachment; filename="Chay_EduSign_Agent.bat"');
+    res.setHeader('Content-Type', 'text/plain');
+    return res.sendFile(path.resolve(batPath));
+  }
+  res.status(404).send('Not found');
 });
 
 // Cầu nối Ký số Cục bộ (Local Signer Bridge) phục vụ khi truy cập từ Cloud Render

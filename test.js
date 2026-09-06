@@ -521,6 +521,18 @@ async function runTests() {
     });
     assert(checkVgcaRes.status === 200 && checkVgcaRes.body.success === true, 'API /api/check-vgca-status phản hồi thành công');
     assert('appRunning' in checkVgcaRes.body.data && 'tokenConnected' in checkVgcaRes.body.data, 'Kiểm tra chính xác trạng thái phần mềm VGCA và kết nối USB Token');
+    assert(checkVgcaRes.body.data.statusCode, 'Kiểm tra mã trạng thái chẩn đoán hệ thống (statusCode)');
+
+    // 3.14b Kiểm tra Tải về EduSign Desktop Agent cho máy tính
+    const downloadAgentRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/downloads/EduSign_Agent.exe',
+      method: 'GET'
+    }, null, true);
+    assert(downloadAgentRes.status === 200, 'Tải thành công tệp EduSign_Agent.exe (Mã 200)');
+    assert(downloadAgentRes.headers['content-type'].includes('msdownload') || downloadAgentRes.headers['content-type'].includes('octet-stream') || downloadAgentRes.headers['content-type'].includes('executable'), 'Đúng định dạng phần mềm thực thi Windows (.exe)');
+    assert(downloadAgentRes.body.length > 1000000, 'Dung lượng EduSign_Agent.exe hợp lệ (>1MB, Self-Contained)');
 
     // 3.15 Kiểm tra Quy trình Ký số 2 Bước SmartCA: Khởi tạo phiên & Chặn báo thành công giả định
     const initSessionRes = await httpRequest({
