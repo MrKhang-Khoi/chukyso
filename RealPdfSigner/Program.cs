@@ -758,6 +758,8 @@ namespace RealPdfSigner
             return SignBytesWithBouncyCastle(inputPdfBytes, cert, reason, location);
         }
 
+        private static EduSignWin32Tray? _activeTrayInstance;
+
         public static void RunDesktopAgent()
         {
             RunTrayAgent();
@@ -765,8 +767,9 @@ namespace RealPdfSigner
 
         public static void RunTrayAgent()
         {
-            var tray = new EduSignWin32Tray();
-            tray.Run();
+            _activeTrayInstance = new EduSignWin32Tray();
+            _activeTrayInstance.Run();
+            GC.KeepAlive(_activeTrayInstance);
         }
 
         public static void RunConsoleAgent()
@@ -823,14 +826,19 @@ namespace RealPdfSigner
                 return;
             }
 
-            while (true)
+            while (listener.IsListening)
             {
                 try
                 {
                     var context = listener.GetContext();
                     ThreadPool.QueueUserWorkItem(_ => HandleAgentRequest(context));
                 }
-                catch (Exception) { break; }
+                catch (HttpListenerException) { break; }
+                catch (ObjectDisposedException) { break; }
+                catch (Exception)
+                {
+                    Thread.Sleep(50);
+                }
             }
         }
 
@@ -1146,7 +1154,7 @@ namespace RealPdfSigner
 
         private IntPtr _hWnd;
         private NOTIFYICONDATA _nid;
-        private WndProcDelegate? _wndProc;
+        private static WndProcDelegate? _staticWndProc;
         private HttpListener? _listener;
         private Thread? _listenerThread;
         private static readonly IntPtr IDI_SHIELD = (IntPtr)32518;
@@ -1157,12 +1165,12 @@ namespace RealPdfSigner
             string className = "EduSignAgentTrayWin_" + Guid.NewGuid().ToString("N");
             IntPtr hInstance = GetModuleHandle(null);
 
-            _wndProc = CustomWndProc;
+            _staticWndProc = CustomWndProc;
             var wndClass = new WNDCLASSEX
             {
                 cbSize = (uint)Marshal.SizeOf<WNDCLASSEX>(),
                 style = 0,
-                lpfnWndProc = _wndProc,
+                lpfnWndProc = _staticWndProc,
                 cbClsExtra = 0,
                 cbWndExtra = 0,
                 hInstance = hInstance,
@@ -1353,14 +1361,19 @@ namespace RealPdfSigner
                     }
                     _listener.Start();
 
-                    while (_listener.IsListening)
+                    while (_listener != null && _listener.IsListening)
                     {
                         try
                         {
                             var context = _listener.GetContext();
                             ThreadPool.QueueUserWorkItem(_ => Program.HandleAgentRequest(context));
                         }
-                        catch { break; }
+                        catch (HttpListenerException) { break; }
+                        catch (ObjectDisposedException) { break; }
+                        catch (Exception)
+                        {
+                            Thread.Sleep(50);
+                        }
                     }
                 }
                 catch { }
