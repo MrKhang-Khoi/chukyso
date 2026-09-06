@@ -282,6 +282,12 @@
               <i class="fa-solid fa-file-signature text-blue-600"></i>
               <span>Ký duyệt giáo án</span>
             </button>
+            <button type="button" onclick="handleBatchSyncOneDrive()" id="btnBatchSyncOneDrive"
+              class="px-4 py-2 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 hover:from-sky-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+              title="Lưu hồ sơ đã chọn (hoặc tất cả) vào thư mục OneDrive (5TB) của trường">
+              <i class="fa-brands fa-microsoft text-white text-sm"></i>
+              <span>Lưu vào OneDrive (5TB)</span>
+            </button>
             <span class="text-slate-500 font-medium text-[11px]">Đã chọn <strong class="text-blue-600 font-bold" id="selectedDocCountText">0</strong> bản ghi</span>
             <span class="hidden sm:inline-block h-4 w-px bg-slate-200"></span>
             <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-red-50/80 border border-red-200 text-red-700 font-bold shadow-xs">
@@ -865,6 +871,12 @@
           <button type="button" id="btnViewerConfirmSign" onclick="handleViewerConfirmSignClick()" class="hidden px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md">
             <i class="fa-solid fa-mobile-screen-button"></i>
             <span>Ký Số (Xác thực Điện thoại)</span>
+          </button>
+
+          <!-- Nút Lưu vào OneDrive Trường (5TB) -->
+          <button type="button" id="btnViewerSyncOneDrive" onclick="handleViewerSyncOneDrive()" class="px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer" title="Lưu và nộp trực tiếp văn bản này vào thư mục OneDrive Trường (5TB)">
+            <i class="fa-brands fa-microsoft text-sky-600"></i>
+            <span>Lưu OneDrive (5TB)</span>
           </button>
 
           <button onclick="closeModal('modalDocViewer')" class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition">
@@ -2385,6 +2397,14 @@
         const isAuthor = currentUser && (d.authorId === currentUser.id || d.authorUsername === currentUser.username);
         const isAdmin = currentUser && currentUser.role === 'ADMIN';
 
+        const isOneDriveSynced = d.oneDriveSynced || d.oneDriveInfo;
+        const oneDriveRowBtn = `
+          <button onclick="handleSyncDocToOneDrive('${d.id}')" id="btnRowSyncOneDrive_${d.id}" title="${isOneDriveSynced ? 'Đã lưu vào OneDrive (5TB) - Bấm để đồng bộ lại' : 'Lưu vào OneDrive (5TB) của trường'}" class="px-2 py-1 rounded-lg ${isOneDriveSynced ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'} border font-bold transition text-xs flex items-center gap-1 cursor-pointer">
+            <i class="fa-brands fa-microsoft ${isOneDriveSynced ? 'text-sky-700' : 'text-sky-600'}"></i>
+            <span>${isOneDriveSynced ? 'OneDrive ✔' : 'OneDrive'}</span>
+          </button>
+        `;
+
         let actionBtns = `
           <button onclick="viewSignedDocument('${d.id}')" title="Xem văn bản đã ký số trực tiếp trên trình duyệt" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer">
             <i class="fa-solid fa-eye text-emerald-600"></i> Xem
@@ -2392,6 +2412,7 @@
           <button onclick="openDocDetails('${d.id}')" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold transition text-xs cursor-pointer">
             Chi tiết
           </button>
+          ${oneDriveRowBtn}
           <a href="/api/documents/${d.id}/download-signed" onclick="currentlyViewedDoc = currentDocList.find(x => x.id === '${d.id}') || currentlyViewedDoc" download title="Lưu / Tải văn bản đã ký về máy (.PDF)" class="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-xs">
             <i class="fa-solid fa-file-arrow-down"></i>
           </a>
@@ -2415,6 +2436,8 @@
           `;
         }
 
+        const oneDriveBadge = isOneDriveSynced ? '<div class="mt-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200 inline-flex items-center gap-1"><i class="fa-brands fa-microsoft text-sky-600"></i> OneDrive 5TB</span></div>' : '';
+
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50/80 transition';
         tr.innerHTML = `
@@ -2435,7 +2458,7 @@
           <td class="py-3 px-4 text-slate-700">${d.author}</td>
           <td class="py-3 px-4 text-slate-600">${d.department}</td>
           <td class="py-3 px-4 text-slate-600">${d.week || ''} — ${d.grade || ''}</td>
-          <td class="py-3 px-4">${statusBadge}</td>
+          <td class="py-3 px-4">${statusBadge}${oneDriveBadge}</td>
           <td class="py-3 px-4 text-center">
             <div class="flex items-center justify-center gap-1.5">
               ${actionBtns}
@@ -4735,11 +4758,18 @@
 
     // Tự động nộp hồ sơ đã ký số vào OneDrive Trường (Dung lượng 5TB)
     async function handleSyncDocToOneDrive(docId) {
-      const btn = document.getElementById(`btnSyncOneDrive_${docId}`);
-      const origHtml = btn ? btn.innerHTML : '';
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang nộp OneDrive...</span>';
+      const btnModal = document.getElementById(`btnSyncOneDrive_${docId}`);
+      const btnRow = document.getElementById(`btnRowSyncOneDrive_${docId}`);
+      const origModalHtml = btnModal ? btnModal.innerHTML : '';
+      const origRowHtml = btnRow ? btnRow.innerHTML : '';
+
+      if (btnModal) {
+        btnModal.disabled = true;
+        btnModal.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang lưu OneDrive...</span>';
+      }
+      if (btnRow) {
+        btnRow.disabled = true;
+        btnRow.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang lưu...</span>';
       }
 
       try {
@@ -4753,23 +4783,102 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Lỗi khi nộp lên OneDrive');
 
-        const info = data.oneDriveInfo;
-        alert(`🎉 ĐÃ NỘP HỒ SƠ THÀNH CÔNG LÊN ONEDRIVE TRƯỜNG (5TB)!\n\n` +
-              `📁 Thư mục lưu trữ: ${info.subFolder}\n` +
-              `📄 Tệp tin: ${info.destinationFileName}\n` +
-              `🏢 Thư mục chia sẻ: ${info.sharedFolder}\n` +
-              `⏰ Thời điểm nộp: ${info.syncedAt}\n\n` +
-              `Hệ thống đồng bộ trực tiếp với OneDrive máy tính và đám mây của nhà trường.`);
+        const info = data.data || data.oneDriveInfo || {};
+        alert(`🎉 ĐÃ LƯU HỒ SƠ THÀNH CÔNG VÀO ONEDRIVE TRƯỜNG (5TB)!\n\n` +
+              `📁 Thư mục phân loại: ${info.category || info.subFolder || '2. KẾ HOẠCH BÀI DẠY'}\n` +
+              `📄 Tên tệp tin: ${info.fileName || info.destinationFileName}\n` +
+              `🏢 Thư mục chia sẻ: ${info.oneDriveRoot || info.sharedFolder || 'OneDrive Trường Chu Văn An'}\n` +
+              `⏰ Thời điểm lưu: ${info.syncedAt || new Date().toLocaleString('vi-VN')}\n\n` +
+              `Hệ thống đã lưu trực tiếp vào thư mục OneDrive máy tính và đồng bộ lên đám mây nhà trường.`);
 
         await loadDocuments();
-        openDocDetails(docId);
-      } catch (err) {
-        alert('⚠️ Không thể nộp lên OneDrive: ' + err.message);
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = origHtml;
+        const detailsModal = document.getElementById('modalDocDetails');
+        if (detailsModal && !detailsModal.classList.contains('hidden')) {
+          openDocDetails(docId);
         }
+      } catch (err) {
+        alert('⚠️ Không thể lưu vào OneDrive: ' + err.message);
+      } finally {
+        if (btnModal) {
+          btnModal.disabled = false;
+          btnModal.innerHTML = origModalHtml;
+        }
+        if (btnRow) {
+          btnRow.disabled = false;
+          btnRow.innerHTML = origRowHtml;
+        }
+      }
+    }
+
+    // Nộp tài liệu đang xem trong Viewer vào OneDrive (5TB)
+    async function handleViewerSyncOneDrive() {
+      if (!currentlyViewedDoc || !currentlyViewedDoc.id) {
+        alert('Không tìm thấy tài liệu đang mở để lưu OneDrive!');
+        return;
+      }
+      await handleSyncDocToOneDrive(currentlyViewedDoc.id);
+    }
+
+    // Lưu hàng loạt hoặc nộp các hồ sơ đã chọn lên OneDrive Trường (5TB)
+    async function handleBatchSyncOneDrive() {
+      const checkedBoxes = Array.from(document.querySelectorAll('.doc-row-checkbox:checked'));
+      let docIds = checkedBoxes.map(cb => cb.value);
+
+      if (docIds.length === 0) {
+        if (!currentDocList || currentDocList.length === 0) {
+          alert('Chưa có kế hoạch bài dạy nào trong danh sách để lưu vào OneDrive!');
+          return;
+        }
+        const confirmAll = confirm(`Thầy chưa tích chọn hồ sơ cụ thể nào.\n\nThầy có muốn lưu toàn bộ ${currentDocList.length} hồ sơ trong danh sách vào OneDrive trường (5TB) không?`);
+        if (!confirmAll) return;
+        docIds = currentDocList.map(d => d.id);
+      }
+
+      const btn = document.getElementById('btnBatchSyncOneDrive');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang lưu vào OneDrive...</span>';
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+      let lastResult = null;
+
+      for (const id of docIds) {
+        try {
+          const res = await fetch(`/api/documents/${id}/sync-onedrive`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            successCount++;
+            lastResult = data.data || data.oneDriveInfo;
+          } else {
+            failCount++;
+          }
+        } catch (e) {
+          failCount++;
+        }
+      }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+
+      await loadDocuments();
+
+      if (successCount > 0) {
+        alert(`🎉 ĐÃ LƯU THÀNH CÔNG ${successCount} HỒ SƠ VÀO ONEDRIVE TRƯỜNG (5TB)!\n\n` +
+              (lastResult ? `📁 Thư mục lưu: ${lastResult.category || 'Kế hoạch bài dạy'}\n🏢 OneDrive: ${lastResult.oneDriveRoot || 'OneDrive Trường'}\n\n` : '') +
+              (failCount > 0 ? `⚠️ Có ${failCount} hồ sơ chưa lưu được do chưa đính kèm tệp.` : 'Tất cả hồ sơ đã được đồng bộ vào OneDrive máy tính và đám mây của trường.'));
+      } else {
+        alert('⚠️ Không thể lưu hồ sơ vào OneDrive. Thầy vui lòng kiểm tra xem hồ sơ đã có tệp đính kèm chưa!');
       }
     }
 

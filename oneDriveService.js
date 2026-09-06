@@ -121,11 +121,12 @@ async function syncDocumentToOneDrive(doc, pdfFilePath) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
 
+  const fileExt = path.extname(pdfFilePath) || '.pdf';
   const cleanTitle = (doc.title || 'GiaoAn')
     .replace(/[/\\?%*:|"<>]/g, '_')
     .trim();
   const weekInfo = doc.week ? ('_' + doc.week.replace(/\s+/g, '_')) : '';
-  const finalFileName = '[' + (doc.department || 'To_Toan_Tin') + ']' + weekInfo + '_' + cleanTitle + '_DaKySo.pdf';
+  const finalFileName = '[' + (doc.department || 'To_Toan_Tin') + ']' + weekInfo + '_' + cleanTitle + '_DaKySo' + fileExt;
   const destPath = path.join(targetDir, finalFileName);
 
   fs.copyFileSync(pdfFilePath, destPath);

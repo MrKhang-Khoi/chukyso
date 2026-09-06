@@ -1804,6 +1804,7 @@ app.post('/api/documents/:id/sync-onedrive', requireAuth, async (req, res) => {
 
   const uploadDir = path.join(__dirname, 'uploads', 'documents');
   const candidates = [
+    doc.realSignedPath ? path.resolve(doc.realSignedPath) : '',
     path.join(uploadDir, `signed_${doc.id}.pdf`),
     doc.signedFilePath ? path.resolve(doc.signedFilePath) : '',
     doc.filePath ? path.resolve(doc.filePath) : '',
