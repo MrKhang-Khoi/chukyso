@@ -387,10 +387,36 @@ app.get('/api/documents/:id', requireAuth, (req, res) => {
 });
 
 // Tải file gốc / File xem trước của hồ sơ
-app.get('/api/documents/:id/file', (req, res) => {
+app.get('/api/documents/:id/file', async (req, res) => {
   const doc = dataStore.getDocumentById(req.params.id);
-  if (doc && doc.filePath && fs.existsSync(doc.filePath)) {
-    const ext = path.extname(doc.filePath).toLowerCase();
+  if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
+  // 1. Kiểm tra filePath đã lưu (hỗ trợ cả Windows và Linux)
+  let resolvedPath = dataStore.resolveFilePath(doc.filePath);
+
+  // 2. Nếu file vật lý bị mất do restart container Render, khôi phục từ fileBase64
+  if ((!resolvedPath || !fs.existsSync(resolvedPath)) && doc.fileBase64) {
+    try {
+      const cleanBase64 = doc.fileBase64.replace(/^data:[^;]+;base64,/, '');
+      const rawBuffer = Buffer.from(cleanBase64, 'base64');
+      const uploadDir = path.join(__dirname, 'uploads', 'documents');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const ext = (doc.fileType === 'docx') ? '.docx' : '.pdf';
+      const recoveredPath = path.join(uploadDir, `recovered_${doc.id}${ext}`);
+      fs.writeFileSync(recoveredPath, rawBuffer);
+      resolvedPath = recoveredPath;
+      dataStore.updateDocument(doc.id, { filePath: `uploads/documents/recovered_${doc.id}${ext}` });
+    } catch (e) {
+      console.error('Lỗi khôi phục file gốc từ fileBase64:', e.message);
+    }
+  }
+
+  if (resolvedPath && fs.existsSync(resolvedPath)) {
+    const ext = path.extname(resolvedPath).toLowerCase();
     if (ext === '.pdf') {
       res.setHeader('Content-Type', 'application/pdf');
     } else if (ext === '.docx') {
@@ -398,16 +424,17 @@ app.get('/api/documents/:id/file', (req, res) => {
     } else {
       res.setHeader('Content-Type', 'application/octet-stream');
     }
-    return res.sendFile(doc.filePath);
+    return res.sendFile(resolvedPath);
   }
 
-  // Fallback nếu chưa tải file vật lý
-  const fallbackPdf = path.join(__dirname, 'GiaoAn_CanKy.pdf');
-  if (fs.existsSync(fallbackPdf)) {
+  // 3. Nếu không có file đính kèm, sinh PDF riêng biệt mang đúng tiêu đề và thông tin của hồ sơ này
+  try {
+    const generatedBuffer = await pdfSignerService.generateSignedPdf(doc);
     res.setHeader('Content-Type', 'application/pdf');
-    return res.sendFile(fallbackPdf);
+    return res.send(Buffer.from(generatedBuffer));
+  } catch (err) {
+    res.status(404).json({ success: false, message: 'Không tìm thấy file văn bản' });
   }
-  res.status(404).json({ success: false, message: 'Không tìm thấy file văn bản' });
 });
 
 // Chuẩn bị tệp PDF đã đóng dấu ảnh chữ ký trước khi đưa vào công cụ ký số mật mã thật
@@ -478,20 +505,41 @@ app.get('/api/documents/:id/download-signed', async (req, res) => {
     const isInline = req.query.inline === '1' || req.query.inline === 'true';
     const disposition = isInline ? `inline; filename="${downloadFileName}"` : `attachment; filename="${downloadFileName}"`;
 
-    // Nếu đã có file ký số mật mã thật VGCA và dung lượng hợp lệ, phục vụ trực tiếp file này
-    if (doc.realSignedPath && fs.existsSync(doc.realSignedPath) && fs.statSync(doc.realSignedPath).size > 1000) {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', disposition);
-      return res.sendFile(path.resolve(doc.realSignedPath));
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    // 1. Kiểm tra realSignedPath đã lưu (hỗ trợ cả Windows và Linux)
+    let resolvedSigned = dataStore.resolveFilePath(doc.realSignedPath);
+
+    // 2. Tự phục hồi tệp ký số nếu container Render bị restart
+    if ((!resolvedSigned || !fs.existsSync(resolvedSigned)) && doc.signedPdfBase64) {
+      try {
+        const cleanSigned = doc.signedPdfBase64.replace(/^data:[^;]+;base64,/, '');
+        const uploadDir = path.join(__dirname, 'uploads', 'documents');
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+        const recoveredPath = path.join(uploadDir, `recovered_signed_${doc.id}.pdf`);
+        fs.writeFileSync(recoveredPath, Buffer.from(cleanSigned, 'base64'));
+        resolvedSigned = recoveredPath;
+        dataStore.updateDocument(doc.id, { realSignedPath: `uploads/documents/recovered_signed_${doc.id}.pdf` });
+      } catch (e) {
+        console.error('Lỗi khôi phục tệp ký số từ Base64:', e.message);
+      }
     }
 
-    // Nếu chưa có file ký số mật mã thật, tiến hành niêm phong chữ ký số PAdES X.509
+    if (resolvedSigned && fs.existsSync(resolvedSigned) && fs.statSync(resolvedSigned).size > 1000) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', disposition);
+      return res.sendFile(resolvedSigned);
+    }
+
+    // 3. Nếu chưa có file ký số mật mã thật, tiến hành niêm phong chữ ký số PAdES X.509
     console.log(`[Download Signed] Hồ sơ ${doc.id} chưa có file ký số mật mã thật. Đang niêm phong chữ ký số PAdES X.509...`);
     try {
       const signResult = await pdfSignerService.signWithRealVgca(doc);
       if (signResult && signResult.signedFilePath && fs.existsSync(signResult.signedFilePath)) {
         dataStore.updateDocument(doc.id, {
-          realSignedPath: signResult.signedFilePath,
+          realSignedPath: dataStore.normalizeFilePath(signResult.signedFilePath),
           realVgcaSigned: true,
           realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
           vgcaInfo: {
@@ -1157,6 +1205,7 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     fileName: fileName || 'GiaoAn_Chuan.pdf',
     fileType: fileType || 'pdf',
     filePath: savedFilePath,
+    fileBase64: fileBase64 || null,
     signPlacement: signPlacement || 'bottom-right',
     signCoordinates: signCoordinates || null,
     signatures: [
@@ -1201,6 +1250,7 @@ app.post('/api/documents', requireAuth, async (req, res) => {
 
       const updatedDoc = dataStore.updateDocument(newDoc.id, {
         realSignedPath: signedFilePath,
+        signedPdfBase64: realSignedPdfBase64,
         realVgcaSigned: true,
         realSignedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
         signatures: signaturesCopy,

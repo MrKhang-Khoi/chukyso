@@ -105,14 +105,27 @@ async function embedImageToPdf(pdfDoc, imgBuffer) {
   }
 }
 
+const { resolveFilePath } = require('./dataStore');
+
 /**
  * Đóng dấu ảnh chữ ký & chứng nhận điện tử vào tệp PDF
  */
 async function generateSignedPdf(doc) {
   let sourcePdfBuffer = null;
 
+  // 0. Nếu đã có dữ liệu PDF ký số thật dạng Base64 lưu trong doc, ưu tiên dùng
+  if (doc.signedPdfBase64 && typeof doc.signedPdfBase64 === 'string') {
+    try {
+      const cleanSignedB64 = doc.signedPdfBase64.replace(/^data:[^;]+;base64,/, '');
+      const buf = Buffer.from(cleanSignedB64, 'base64');
+      if (buf.length > 50 && buf.toString('ascii', 0, 5).startsWith('%PDF')) {
+        sourcePdfBuffer = buf;
+      }
+    } catch (e) {}
+  }
+
   // 1. Đọc file nguồn từ fileBase64 nếu có
-  if (doc.fileBase64 && typeof doc.fileBase64 === 'string') {
+  if (!sourcePdfBuffer && doc.fileBase64 && typeof doc.fileBase64 === 'string') {
     try {
       const cleanB64 = doc.fileBase64.replace(/^data:[^;]+;base64,/, '');
       const buf = Buffer.from(cleanB64, 'base64');
@@ -124,28 +137,41 @@ async function generateSignedPdf(doc) {
     }
   }
 
-  // 2. Đọc file nguồn từ filePath nếu chưa có từ fileBase64
-  if (!sourcePdfBuffer && doc.filePath && fs.existsSync(doc.filePath)) {
-    const ext = path.extname(doc.filePath).toLowerCase();
-    if (ext === '.pdf') {
+  // 2. Đọc file nguồn từ realSignedPath nếu có (hỗ trợ cả Windows và Linux)
+  if (!sourcePdfBuffer && doc.realSignedPath) {
+    const resolvedSigned = resolveFilePath(doc.realSignedPath);
+    if (resolvedSigned && fs.existsSync(resolvedSigned)) {
       try {
-        sourcePdfBuffer = fs.readFileSync(doc.filePath);
-      } catch (err) {
-        console.error('Lỗi đọc file gốc:', err.message);
-      }
-    } else if (ext === '.docx' || ext === '.doc') {
-      try {
-        const convertedPdfPath = doc.filePath.replace(/\.[^.]+$/, '.pdf');
-        if (fs.existsSync(convertedPdfPath) && fs.statSync(convertedPdfPath).size > 100) {
-          sourcePdfBuffer = fs.readFileSync(convertedPdfPath);
-        } else {
-          await convertDocxToPdf(doc.filePath, convertedPdfPath);
-          if (fs.existsSync(convertedPdfPath)) {
-            sourcePdfBuffer = fs.readFileSync(convertedPdfPath);
-          }
+        sourcePdfBuffer = fs.readFileSync(resolvedSigned);
+      } catch (e) {}
+    }
+  }
+
+  // 3. Đọc file nguồn từ filePath nếu chưa có (hỗ trợ cả Windows và Linux)
+  if (!sourcePdfBuffer && doc.filePath) {
+    const resolvedPath = resolveFilePath(doc.filePath);
+    if (resolvedPath && fs.existsSync(resolvedPath)) {
+      const ext = path.extname(resolvedPath).toLowerCase();
+      if (ext === '.pdf') {
+        try {
+          sourcePdfBuffer = fs.readFileSync(resolvedPath);
+        } catch (err) {
+          console.error('Lỗi đọc file gốc:', err.message);
         }
-      } catch (e) {
-        console.error('Lỗi chuyển đổi Word sang PDF khi ký:', e.message);
+      } else if (ext === '.docx' || ext === '.doc') {
+        try {
+          const convertedPdfPath = resolvedPath.replace(/\.[^.]+$/, '.pdf');
+          if (fs.existsSync(convertedPdfPath) && fs.statSync(convertedPdfPath).size > 100) {
+            sourcePdfBuffer = fs.readFileSync(convertedPdfPath);
+          } else {
+            await convertDocxToPdf(resolvedPath, convertedPdfPath);
+            if (fs.existsSync(convertedPdfPath)) {
+              sourcePdfBuffer = fs.readFileSync(convertedPdfPath);
+            }
+          }
+        } catch (e) {
+          console.error('Lỗi chuyển đổi Word sang PDF khi ký:', e.message);
+        }
       }
     }
   }
@@ -168,16 +194,36 @@ async function generateSignedPdf(doc) {
     }
   }
 
-  // Nếu không có file PDF nguồn (hoặc file lỗi, rỗng), dùng file template chuẩn
+  // Nếu không có file PDF nguồn (hoặc file lỗi, rỗng), tạo tài liệu PDF chuẩn xác thực cho chính hồ sơ này
   if (!sourcePdfBuffer || sourcePdfBuffer.length < 50 || !sourcePdfBuffer.toString('ascii', 0, 5).startsWith('%PDF')) {
-    const defaultTemplate = path.join(__dirname, 'GiaoAn_CanKy.pdf');
-    if (fs.existsSync(defaultTemplate) && fs.statSync(defaultTemplate).size > 100) {
-      sourcePdfBuffer = fs.readFileSync(defaultTemplate);
-    } else {
-      const emptyDoc = await PDFDocument.create();
-      emptyDoc.addPage([595.28, 841.89]);
-      sourcePdfBuffer = await emptyDoc.save();
-    }
+    const newEmptyDoc = await PDFDocument.create();
+    const page = newEmptyDoc.addPage([595.28, 841.89]); // Khổ chuẩn A4 (595 x 842 pt)
+    const helveticaBold = await newEmptyDoc.embedFont(StandardFonts.HelveticaBold);
+    const helvetica = await newEmptyDoc.embedFont(StandardFonts.Helvetica);
+
+    const docTitleAscii = safeAscii(doc.title || 'KE HOACH BAI DAY').toUpperCase();
+    const docAuthorAscii = safeAscii(doc.author || 'Thầy Hà Văn Tý');
+    const docDeptAscii = safeAscii(doc.department || 'Tổ Toán - Tin');
+    const docWeekAscii = safeAscii(doc.week || 'Tuần 12');
+    const docGradeAscii = safeAscii(doc.grade || 'Khối 9');
+    const docIdText = safeAscii(doc.id || 'KHBD-2026');
+
+    page.drawText('TRUONG THCS CHU VAN AN', { x: 50, y: 790, size: 12, font: helveticaBold, color: rgb(0.1, 0.2, 0.4) });
+    page.drawText(`${docDeptAscii.toUpperCase()}`, { x: 50, y: 775, size: 10, font: helvetica, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText(`Ma ho so: ${docIdText}`, { x: 400, y: 790, size: 10, font: helvetica, color: rgb(0.4, 0.4, 0.4) });
+
+    page.drawLine({ start: { x: 50, y: 760 }, end: { x: 545, y: 760 }, thickness: 1.5, color: rgb(0.2, 0.4, 0.8) });
+
+    page.drawText(docTitleAscii.substring(0, 55), { x: 50, y: 720, size: 14, font: helveticaBold, color: rgb(0.08, 0.12, 0.2) });
+    page.drawText(`Giao vien thuc hien: ${docAuthorAscii}`, { x: 50, y: 690, size: 11, font: helveticaBold, color: rgb(0.2, 0.2, 0.2) });
+    page.drawText(`Phan phoi chuong trinh: ${docWeekAscii} - ${docGradeAscii}`, { x: 50, y: 670, size: 11, font: helvetica, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText(`Ngay khoi tao: ${doc.createdAt || new Date().toISOString().substring(0, 10)}`, { x: 50, y: 650, size: 10, font: helvetica, color: rgb(0.4, 0.4, 0.4) });
+
+    page.drawText('XAC NHAN KY DUYET GIAO AN DIEN TU', { x: 50, y: 320, size: 11, font: helveticaBold, color: rgb(0.1, 0.3, 0.6) });
+    page.drawText('GIAO VIEN SOAN THAO', { x: 400, y: 290, size: 10, font: helveticaBold, color: rgb(0.2, 0.2, 0.2) });
+    page.drawText(docAuthorAscii, { x: 400, y: 190, size: 10, font: helveticaBold, color: rgb(0.1, 0.1, 0.1) });
+
+    sourcePdfBuffer = await newEmptyDoc.save();
   }
 
   // 3. Nạp PDF bằng pdf-lib để đóng dấu ảnh chữ ký trực quan

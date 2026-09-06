@@ -203,6 +203,36 @@ function getDocumentById(id) {
   return getDocuments().find(d => d.id === id);
 }
 
+function normalizeFilePath(p) {
+  if (!p || typeof p !== 'string') return null;
+  const match = p.match(/[\\\/](uploads[\\\/].+)$/i);
+  if (match) {
+    return match[1].replace(/\\/g, '/');
+  }
+  if (p.startsWith('uploads/') || p.startsWith('uploads\\')) {
+    return p.replace(/\\/g, '/');
+  }
+  return p;
+}
+
+function resolveFilePath(filePath) {
+  if (!filePath || typeof filePath !== 'string') return null;
+  // 1. Nếu đường dẫn trực tiếp tồn tại trên hệ thống hiện tại
+  if (fs.existsSync(filePath)) return path.resolve(filePath);
+  // 2. Nếu là đường dẫn tương đối hoặc chứa 'uploads/'
+  const match = filePath.match(/[\\\/]?(uploads[\\\/].+)$/i);
+  if (match) {
+    const rel = match[1].replace(/\\/g, '/');
+    const local = path.join(__dirname, rel);
+    if (fs.existsSync(local)) return local;
+  }
+  // 3. Tìm theo tên tệp trong thư mục uploads/documents
+  const basename = path.basename(filePath);
+  const inUploads = path.join(__dirname, 'uploads', 'documents', basename);
+  if (fs.existsSync(inUploads)) return inUploads;
+  return null;
+}
+
 function createDocument(docData, currentUser) {
   const docs = getDocuments();
   const newId = 'KHBD-' + new Date().getFullYear() + '-' + Date.now().toString().slice(-6);
@@ -222,7 +252,11 @@ function createDocument(docData, currentUser) {
     currentSignerRole: 'Tổ trưởng Chuyên môn',
     fileName: docData.fileName || 'GiaoAn_Chuan.pdf',
     fileType: docData.fileType || 'pdf', // 'pdf', 'docx', 'doc'
-    filePath: docData.filePath || null,
+    filePath: normalizeFilePath(docData.filePath),
+    fileBase64: docData.fileBase64 || null,
+    customContentHtml: docData.customContentHtml || null,
+    realSignedPath: normalizeFilePath(docData.realSignedPath),
+    signedPdfBase64: docData.signedPdfBase64 || null,
     signPlacement: docData.signPlacement || 'bottom-right',
     fileSize: docData.fileSize || '1.5 MB',
     pages: docData.pages || 10,
@@ -247,7 +281,11 @@ function updateDocument(id, updates) {
   const index = docs.findIndex(d => d.id === id);
   if (index === -1) throw new Error('Không tìm thấy hồ sơ!');
 
-  Object.assign(docs[index], updates);
+  const cleanUpdates = { ...updates };
+  if (cleanUpdates.filePath) cleanUpdates.filePath = normalizeFilePath(cleanUpdates.filePath);
+  if (cleanUpdates.realSignedPath) cleanUpdates.realSignedPath = normalizeFilePath(cleanUpdates.realSignedPath);
+
+  Object.assign(docs[index], cleanUpdates);
   saveDocuments(docs);
   return docs[index];
 }
@@ -274,5 +312,7 @@ module.exports = {
   getDocumentById,
   createDocument,
   updateDocument,
-  deleteDocument
+  deleteDocument,
+  normalizeFilePath,
+  resolveFilePath
 };

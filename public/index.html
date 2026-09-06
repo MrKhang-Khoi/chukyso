@@ -1970,8 +1970,21 @@
       if (btnEdit) btnEdit.className = 'px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm';
       if (wordContent) wordContent.contentEditable = "false";
 
+      // Cập nhật ngay tài liệu đang xem để các nút chức năng (In, Tải về, Google Drive) hoạt động chính xác
+      const existingDoc = docId ? currentDocList.find(d => d.id === docId) : null;
+      if (existingDoc) {
+        currentlyViewedDoc = existingDoc;
+      }
+
       titleEl.innerText = title;
       spinner.classList.remove('hidden');
+
+      // Dọn dẹp iframe cũ để tránh Chrome lưu đệm (cache) PDF của tài liệu trước
+      if (window._currentPdfBlobUrl) {
+        try { URL.revokeObjectURL(window._currentPdfBlobUrl); } catch (e) {}
+        window._currentPdfBlobUrl = null;
+      }
+      pdfFrame.src = 'about:blank';
       pdfFrame.style.display = 'none';
       wordContainer.style.display = 'none';
       wordContent.innerHTML = '';
@@ -1981,14 +1994,12 @@
         let arrayBuffer = null;
         let ext = 'pdf';
 
-        const existingDoc = docId ? currentDocList.find(d => d.id === docId) : null;
-
         if (fileObject) {
           ext = fileObject.name.split('.').pop().toLowerCase();
           arrayBuffer = await fileObject.arrayBuffer();
         } else if (docId) {
           const isSigned = existingDoc && (existingDoc.realSignedPath || existingDoc.realVgcaSigned || (existingDoc.signatures && existingDoc.signatures.length > 0));
-          const targetUrl = isSigned ? `/api/documents/${docId}/download-signed?inline=1` : `/api/documents/${docId}/file`;
+          const targetUrl = (isSigned ? `/api/documents/${docId}/download-signed?inline=1` : `/api/documents/${docId}/file`) + `&_nocache=${Date.now()}`;
 
           const res = await fetch(targetUrl);
           if (!res.ok) throw new Error('Không thể tải file từ máy chủ');
@@ -2014,7 +2025,8 @@
           iconEl.className = 'fa-solid fa-file-pdf text-red-600 text-xl';
           const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
           const blobUrl = URL.createObjectURL(blob);
-          pdfFrame.src = blobUrl;
+          window._currentPdfBlobUrl = blobUrl;
+          pdfFrame.src = blobUrl + '#toolbar=1&navpanes=0';
           pdfFrame.style.display = 'block';
         } else {
           // Hiển thị tài liệu Word .docx chuẩn A4 và hỗ trợ chỉnh sửa
@@ -2106,7 +2118,7 @@
           <button onclick="openDocDetails('${d.id}')" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold transition text-xs cursor-pointer">
             Chi tiết
           </button>
-          <a href="/api/documents/${d.id}/download-signed" download title="Lưu / Tải văn bản đã ký về máy (.PDF)" class="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-xs">
+          <a href="/api/documents/${d.id}/download-signed" onclick="currentlyViewedDoc = currentDocList.find(x => x.id === '${d.id}') || currentlyViewedDoc" download title="Lưu / Tải văn bản đã ký về máy (.PDF)" class="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-xs">
             <i class="fa-solid fa-file-arrow-down"></i>
           </a>
         `;
@@ -2163,6 +2175,7 @@
     function viewSignedDocument(docId) {
       const doc = currentDocList.find(d => d.id === docId);
       if (!doc) return;
+      currentlyViewedDoc = doc;
       openDocumentViewer(doc.title, null, doc.id, false);
     }
 
