@@ -1,5 +1,1585 @@
 [
   {
+    "id": "KHBD-2026-921312",
+    "title": "Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:42:01",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "KHGD_PL3_SaoY.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-921312_1788766921345.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "top-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Người chứng thực bản sao",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:42:01",
+        "signType": "Ký số bản sao (SAO Y - NĐ 30/2020/NĐ-CP)",
+        "status": "VALID",
+        "placement": "top-right",
+        "coordinates": null,
+        "visualSignImage": null,
+        "visualSign": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-07 07:42:01",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính\" (File: KHGD_PL3_SaoY.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:42:03",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-914563",
+    "title": "Kế hoạch bài dạy đã xác thực điện thoại chuẩn",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 16",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:41:54",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-914563_1788766914817.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:41:54",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-07 07:41:54",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy đã xác thực điện thoại chuẩn\" (File: GiaoAn_Chuan.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:41:58",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": "VGCA-2026-TX716891"
+    }
+  },
+  {
+    "id": "KHBD-2026-912809",
+    "title": "Kế hoạch bài dạy ký qua Local Bridge",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 15",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:41:52",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/signed_vgca_KHBD-2026-912809_1788766912816.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:41:52",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1-RnjR0r80-alvpz1y93WgS669CPLEDO0",
+      "viewUrl": "https://drive.google.com/file/d/1-RnjR0r80-alvpz1y93WgS669CPLEDO0/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 15",
+      "uploadedAt": "2026-09-07 07:41:58"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:41:52",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy ký qua Local Bridge\" (File: GiaoAn_Chuan.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:41:52",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-900648",
+    "title": "Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:41:40",
+    "status": "APPROVED",
+    "currentSignerRole": null,
+    "fileName": "GiaoAn_Toan9_T12.pdf",
+    "fileType": "application/pdf",
+    "filePath": "uploads/documents/1788766900640_GiaoAn_Toan9_T12.pdf",
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-900648_1788766920263.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-left",
+    "fileSize": 342882,
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:01:42+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:41:40",
+        "signType": "Ký duyệt cấp 1",
+        "status": "VALID",
+        "placement": "bottom-left",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      },
+      {
+        "step": 2,
+        "role": "Tổ trưởng Tổ Toán - Tin",
+        "signerName": "Trần Văn Nam",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:41:40",
+        "signType": "PAdES Incremental Update",
+        "status": "VALID",
+        "placement": "middle-right",
+        "visualSignImage": null,
+        "visualSign": "Ký nháy duyệt chuyên môn: Đạt chuẩn phân phối chương trình"
+      },
+      {
+        "step": 3,
+        "role": "Hiệu trưởng / Ban Giám hiệu phê duyệt",
+        "signerName": "Ngô Thị Liền",
+        "signerUnit": "TRƯỜNG THCS CHU VĂN AN",
+        "certIssuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+        "certSerial": "025E056A3F133DA9",
+        "signedAt": "2026-09-07 07:41:40",
+        "signType": "PAdES LTV (VGCA Hardware USB Token)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "visualSignImage": "data:image/png;base64,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",
+        "visualSign": "Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ (Ngô Thị Liền)"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1wl387D4dNcrzaX98bRxtEucLPv00rP8c",
+      "viewUrl": "https://drive.google.com/file/d/1wl387D4dNcrzaX98bRxtEucLPv00rP8c/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12",
+      "uploadedAt": "2026-09-07 07:41:52"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:41:40",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)\" (File: GiaoAn_Toan9_T12.pdf)"
+      },
+      {
+        "time": "2026-09-07 07:41:40",
+        "actor": "Trần Văn Nam (Tổ trưởng)",
+        "action": "Ký nháy duyệt chuyên môn: \"Đạt chuẩn phân phối chương trình\" và chuyển trình Ban Giám hiệu phê duyệt"
+      },
+      {
+        "time": "2026-09-07 07:41:40",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Ký phê duyệt chính thức, đóng dấu số cơ quan và lưu trữ vào Kho hồ sơ số trường"
+      },
+      {
+        "time": "2026-09-07 07:41:52",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Đã tự động sao lưu và đồng bộ hồ sơ lên Google Drive trường: \"Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12\""
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:42:01",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": null
+    },
+    "oneDriveSynced": true,
+    "oneDrivePath": "C:\\Users\\HPZBook\\OneDrive - Sở GD&ĐT Quảng Ngãi\\Trường THCS Chu Văn An (Đăk Hà)'s files - 15. HÀ VĂN TÝ 26-27\\2. KẾ HOẠCH BÀI DẠY\\[Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf",
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-07 07:41:51"
+  },
+  {
+    "id": "KHBD-2026-479964",
+    "title": "Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:34:39",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "KHGD_PL3_SaoY.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-479964_1788766480007.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "top-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Người chứng thực bản sao",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:34:39",
+        "signType": "Ký số bản sao (SAO Y - NĐ 30/2020/NĐ-CP)",
+        "status": "VALID",
+        "placement": "top-right",
+        "coordinates": null,
+        "visualSignImage": null,
+        "visualSign": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-07 07:34:39",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính\" (File: KHGD_PL3_SaoY.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:34:41",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-471138",
+    "title": "Kế hoạch bài dạy đã xác thực điện thoại chuẩn",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 16",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:34:31",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-471138_1788766471528.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:34:31",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "19bFMb2eMxdqTx7Q6rxOv1YC2dJI-DF8V",
+      "viewUrl": "https://drive.google.com/file/d/19bFMb2eMxdqTx7Q6rxOv1YC2dJI-DF8V/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 16",
+      "uploadedAt": "2026-09-07 07:34:40"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:34:31",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy đã xác thực điện thoại chuẩn\" (File: GiaoAn_Chuan.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:34:35",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": "VGCA-2026-TX975279"
+    }
+  },
+  {
+    "id": "KHBD-2026-468322",
+    "title": "Kế hoạch bài dạy ký qua Local Bridge",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 15",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:34:28",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/signed_vgca_KHBD-2026-468322_1788766468329.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:34:28",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "14BNngp57GOGGFja0uPVgWQTZW5YYbpFU",
+      "viewUrl": "https://drive.google.com/file/d/14BNngp57GOGGFja0uPVgWQTZW5YYbpFU/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 15",
+      "uploadedAt": "2026-09-07 07:34:33"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:34:28",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy ký qua Local Bridge\" (File: GiaoAn_Chuan.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:34:28",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-453622",
+    "title": "Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:34:13",
+    "status": "APPROVED",
+    "currentSignerRole": null,
+    "fileName": "GiaoAn_Toan9_T12.pdf",
+    "fileType": "application/pdf",
+    "filePath": "uploads/documents/1788766453611_GiaoAn_Toan9_T12.pdf",
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-453622_1788766477395.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-left",
+    "fileSize": 342882,
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:01:42+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:34:13",
+        "signType": "Ký duyệt cấp 1",
+        "status": "VALID",
+        "placement": "bottom-left",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      },
+      {
+        "step": 2,
+        "role": "Tổ trưởng Tổ Toán - Tin",
+        "signerName": "Trần Văn Nam",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:34:13",
+        "signType": "PAdES Incremental Update",
+        "status": "VALID",
+        "placement": "middle-right",
+        "visualSignImage": null,
+        "visualSign": "Ký nháy duyệt chuyên môn: Đạt chuẩn phân phối chương trình"
+      },
+      {
+        "step": 3,
+        "role": "Hiệu trưởng / Ban Giám hiệu phê duyệt",
+        "signerName": "Ngô Thị Liền",
+        "signerUnit": "TRƯỜNG THCS CHU VĂN AN",
+        "certIssuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+        "certSerial": "025E056A3F133DA9",
+        "signedAt": "2026-09-07 07:34:13",
+        "signType": "PAdES LTV (VGCA Hardware USB Token)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "visualSignImage": "data:image/png;base64,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",
+        "visualSign": "Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ (Ngô Thị Liền)"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "18Cat9fdCs0YKo8tCFp3_Pf1F1olnp4wu",
+      "viewUrl": "https://drive.google.com/file/d/18Cat9fdCs0YKo8tCFp3_Pf1F1olnp4wu/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12",
+      "uploadedAt": "2026-09-07 07:34:26"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:34:13",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)\" (File: GiaoAn_Toan9_T12.pdf)"
+      },
+      {
+        "time": "2026-09-07 07:34:13",
+        "actor": "Trần Văn Nam (Tổ trưởng)",
+        "action": "Ký nháy duyệt chuyên môn: \"Đạt chuẩn phân phối chương trình\" và chuyển trình Ban Giám hiệu phê duyệt"
+      },
+      {
+        "time": "2026-09-07 07:34:13",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Ký phê duyệt chính thức, đóng dấu số cơ quan và lưu trữ vào Kho hồ sơ số trường"
+      },
+      {
+        "time": "2026-09-07 07:34:26",
+        "actor": "Hà Văn Tý",
+        "action": "Đã lưu trữ và đồng bộ tài liệu lên Google Drive: \"Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12\""
+      },
+      {
+        "time": "2026-09-07 07:34:26",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã nộp thành công vào OneDrive trường (5TB): 2. KẾ HOẠCH BÀI DẠY / [Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf"
+      },
+      {
+        "time": "2026-09-07 07:34:26",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / Test_GiaoAn_DaKySo.pdf"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:34:39",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": null
+    },
+    "oneDriveSynced": true,
+    "oneDrivePath": "C:\\Users\\HPZBook\\OneDrive - Sở GD&ĐT Quảng Ngãi\\Trường THCS Chu Văn An (Đăk Hà)'s files - 15. HÀ VĂN TÝ 26-27\\2. KẾ HOẠCH BÀI DẠY\\[Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf",
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-07 07:34:26"
+  },
+  {
+    "id": "KHBD-2026-037811",
+    "title": "Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:27:17",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "KHGD_PL3_SaoY.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-037811_1788766037958.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "top-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Người chứng thực bản sao",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:27:17",
+        "signType": "Ký số bản sao (SAO Y - NĐ 30/2020/NĐ-CP)",
+        "status": "VALID",
+        "placement": "top-right",
+        "coordinates": null,
+        "visualSignImage": null,
+        "visualSign": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-07 07:27:17",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính\" (File: KHGD_PL3_SaoY.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:27:19",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-028725",
+    "title": "Kế hoạch bài dạy đã xác thực điện thoại chuẩn",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 16",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:27:08",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-028725_1788766029180.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:27:08",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "156PfM5YRWXhKO53N1yiSr-hMIlyLV1yh",
+      "viewUrl": "https://drive.google.com/file/d/156PfM5YRWXhKO53N1yiSr-hMIlyLV1yh/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 16",
+      "uploadedAt": "2026-09-07 07:27:19"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:27:08",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy đã xác thực điện thoại chuẩn\" (File: GiaoAn_Chuan.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:27:13",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": "VGCA-2026-TX819718"
+    }
+  },
+  {
+    "id": "KHBD-2026-026506",
+    "title": "Kế hoạch bài dạy ký qua Local Bridge",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 15",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:27:06",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/signed_vgca_KHBD-2026-026506_1788766026513.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:27:06",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1yPYG_Ifv3ciwDhZ2QYFiuJTIy0sdSHfg",
+      "viewUrl": "https://drive.google.com/file/d/1yPYG_Ifv3ciwDhZ2QYFiuJTIy0sdSHfg/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 15",
+      "uploadedAt": "2026-09-07 07:27:11"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:27:06",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy ký qua Local Bridge\" (File: GiaoAn_Chuan.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:27:06",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-013567",
+    "title": "Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:26:53",
+    "status": "APPROVED",
+    "currentSignerRole": null,
+    "fileName": "GiaoAn_Toan9_T12.pdf",
+    "fileType": "application/pdf",
+    "filePath": "uploads/documents/1788766013551_GiaoAn_Toan9_T12.pdf",
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-013567_1788766035180.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-left",
+    "fileSize": 342882,
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:01:42+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:26:53",
+        "signType": "Ký duyệt cấp 1",
+        "status": "VALID",
+        "placement": "bottom-left",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      },
+      {
+        "step": 2,
+        "role": "Tổ trưởng Tổ Toán - Tin",
+        "signerName": "Trần Văn Nam",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:26:53",
+        "signType": "PAdES Incremental Update",
+        "status": "VALID",
+        "placement": "middle-right",
+        "visualSignImage": null,
+        "visualSign": "Ký nháy duyệt chuyên môn: Đạt chuẩn phân phối chương trình"
+      },
+      {
+        "step": 3,
+        "role": "Hiệu trưởng / Ban Giám hiệu phê duyệt",
+        "signerName": "Ngô Thị Liền",
+        "signerUnit": "TRƯỜNG THCS CHU VĂN AN",
+        "certIssuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+        "certSerial": "025E056A3F133DA9",
+        "signedAt": "2026-09-07 07:26:53",
+        "signType": "PAdES LTV (VGCA Hardware USB Token)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "visualSignImage": "data:image/png;base64,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",
+        "visualSign": "Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ (Ngô Thị Liền)"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1hBIIMXGjanbpHB2Aw25RppYHenOT8emT",
+      "viewUrl": "https://drive.google.com/file/d/1hBIIMXGjanbpHB2Aw25RppYHenOT8emT/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12",
+      "uploadedAt": "2026-09-07 07:27:04"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:26:53",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)\" (File: GiaoAn_Toan9_T12.pdf)"
+      },
+      {
+        "time": "2026-09-07 07:26:53",
+        "actor": "Trần Văn Nam (Tổ trưởng)",
+        "action": "Ký nháy duyệt chuyên môn: \"Đạt chuẩn phân phối chương trình\" và chuyển trình Ban Giám hiệu phê duyệt"
+      },
+      {
+        "time": "2026-09-07 07:26:53",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Ký phê duyệt chính thức, đóng dấu số cơ quan và lưu trữ vào Kho hồ sơ số trường"
+      },
+      {
+        "time": "2026-09-07 07:27:04",
+        "actor": "Hà Văn Tý",
+        "action": "Đã lưu trữ và đồng bộ tài liệu lên Google Drive: \"Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12\""
+      },
+      {
+        "time": "2026-09-07 07:27:04",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã nộp thành công vào OneDrive trường (5TB): 2. KẾ HOẠCH BÀI DẠY / [Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf"
+      },
+      {
+        "time": "2026-09-07 07:27:04",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / Test_GiaoAn_DaKySo.pdf"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:27:17",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": null
+    },
+    "oneDriveSynced": true,
+    "oneDrivePath": "C:\\Users\\HPZBook\\OneDrive - Sở GD&ĐT Quảng Ngãi\\Trường THCS Chu Văn An (Đăk Hà)'s files - 15. HÀ VĂN TÝ 26-27\\2. KẾ HOẠCH BÀI DẠY\\[Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf",
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-07 07:27:04"
+  },
+  {
+    "id": "KHBD-2026-647766",
+    "title": "Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:20:47",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "KHGD_PL3_SaoY.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-647766_1788765647824.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "top-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Người chứng thực bản sao",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:20:47",
+        "signType": "Ký số bản sao (SAO Y - NĐ 30/2020/NĐ-CP)",
+        "status": "VALID",
+        "placement": "top-right",
+        "coordinates": null,
+        "visualSignImage": null,
+        "visualSign": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-07 07:20:47",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính\" (File: KHGD_PL3_SaoY.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:20:49",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-638166",
+    "title": "Kế hoạch bài dạy đã xác thực điện thoại chuẩn",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 16",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:20:38",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-638166_1788765638472.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:20:38",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1acYaJgLxNMEmaijqTZAUftYHq8P3jpZy",
+      "viewUrl": "https://drive.google.com/file/d/1acYaJgLxNMEmaijqTZAUftYHq8P3jpZy/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 16",
+      "uploadedAt": "2026-09-07 07:20:47"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:20:38",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy đã xác thực điện thoại chuẩn\" (File: GiaoAn_Chuan.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:20:42",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": "VGCA-2026-TX524983"
+    }
+  },
+  {
+    "id": "KHBD-2026-636334",
+    "title": "Kế hoạch bài dạy ký qua Local Bridge",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 15",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:20:36",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/signed_vgca_KHBD-2026-636334_1788765636344.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:20:36",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1u-cipHAp3fJtN4A4nzbkKO9ZiwCFRYey",
+      "viewUrl": "https://drive.google.com/file/d/1u-cipHAp3fJtN4A4nzbkKO9ZiwCFRYey/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 15",
+      "uploadedAt": "2026-09-07 07:20:43"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:20:36",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy ký qua Local Bridge\" (File: GiaoAn_Chuan.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:20:36",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-625668",
+    "title": "Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:20:25",
+    "status": "APPROVED",
+    "currentSignerRole": null,
+    "fileName": "GiaoAn_Toan9_T12.pdf",
+    "fileType": "application/pdf",
+    "filePath": "uploads/documents/1788765625658_GiaoAn_Toan9_T12.pdf",
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-625668_1788765644302.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-left",
+    "fileSize": 342882,
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:01:42+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:20:25",
+        "signType": "Ký duyệt cấp 1",
+        "status": "VALID",
+        "placement": "bottom-left",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      },
+      {
+        "step": 2,
+        "role": "Tổ trưởng Tổ Toán - Tin",
+        "signerName": "Trần Văn Nam",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:20:25",
+        "signType": "PAdES Incremental Update",
+        "status": "VALID",
+        "placement": "middle-right",
+        "visualSignImage": null,
+        "visualSign": "Ký nháy duyệt chuyên môn: Đạt chuẩn phân phối chương trình"
+      },
+      {
+        "step": 3,
+        "role": "Hiệu trưởng / Ban Giám hiệu phê duyệt",
+        "signerName": "Ngô Thị Liền",
+        "signerUnit": "TRƯỜNG THCS CHU VĂN AN",
+        "certIssuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+        "certSerial": "025E056A3F133DA9",
+        "signedAt": "2026-09-07 07:20:25",
+        "signType": "PAdES LTV (VGCA Hardware USB Token)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "visualSignImage": "data:image/png;base64,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",
+        "visualSign": "Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ (Ngô Thị Liền)"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "15XSiEPwNwBTw8FJGN6DucGdKsAXyZVs0",
+      "viewUrl": "https://drive.google.com/file/d/15XSiEPwNwBTw8FJGN6DucGdKsAXyZVs0/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12",
+      "uploadedAt": "2026-09-07 07:20:37"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:20:25",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)\" (File: GiaoAn_Toan9_T12.pdf)"
+      },
+      {
+        "time": "2026-09-07 07:20:25",
+        "actor": "Trần Văn Nam (Tổ trưởng)",
+        "action": "Ký nháy duyệt chuyên môn: \"Đạt chuẩn phân phối chương trình\" và chuyển trình Ban Giám hiệu phê duyệt"
+      },
+      {
+        "time": "2026-09-07 07:20:25",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Ký phê duyệt chính thức, đóng dấu số cơ quan và lưu trữ vào Kho hồ sơ số trường"
+      },
+      {
+        "time": "2026-09-07 07:20:37",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Đã tự động sao lưu và đồng bộ hồ sơ lên Google Drive trường: \"Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12\""
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:20:47",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": null
+    },
+    "oneDriveSynced": true,
+    "oneDrivePath": "C:\\Users\\HPZBook\\OneDrive - Sở GD&ĐT Quảng Ngãi\\Trường THCS Chu Văn An (Đăk Hà)'s files - 15. HÀ VĂN TÝ 26-27\\2. KẾ HOẠCH BÀI DẠY\\[Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf",
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-07 07:20:35"
+  },
+  {
+    "id": "KHBD-2026-158207",
+    "title": "Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:12:38",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "KHGD_PL3_SaoY.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-158207_1788765158257.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "top-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Người chứng thực bản sao",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:12:38",
+        "signType": "Ký số bản sao (SAO Y - NĐ 30/2020/NĐ-CP)",
+        "status": "VALID",
+        "placement": "top-right",
+        "coordinates": null,
+        "visualSignImage": null,
+        "visualSign": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-07 07:12:38",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính\" (File: KHGD_PL3_SaoY.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:12:39",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-150073",
+    "title": "Kế hoạch bài dạy đã xác thực điện thoại chuẩn",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 16",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:12:30",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-150073_1788765150395.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:12:30",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1S0hCRC0yMDI2LTE1MDA3MzE3ODg3",
+      "viewUrl": "https://drive.google.com/file/d/1S0hCRC0yMDI2LTE1MDA3MzE3ODg3/view?usp=sharing",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 16",
+      "uploadedAt": "2026-09-07 07:12:34"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:12:30",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy đã xác thực điện thoại chuẩn\" (File: GiaoAn_Chuan.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:12:34",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": "VGCA-2026-TX801752"
+    }
+  },
+  {
+    "id": "KHBD-2026-148242",
+    "title": "Kế hoạch bài dạy ký qua Local Bridge",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 15",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:12:28",
+    "status": "WAITING_LEADER_APPROVAL",
+    "currentSignerRole": "Tổ trưởng Chuyên môn",
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/signed_vgca_KHBD-2026-148242_1788765148252.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:12:28",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1S0hCRC0yMDI2LTE0ODI0MjE3ODg3",
+      "viewUrl": "https://drive.google.com/file/d/1S0hCRC0yMDI2LTE0ODI0MjE3ODg3/view?usp=sharing",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 15",
+      "uploadedAt": "2026-09-07 07:12:28"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:12:28",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy ký qua Local Bridge\" (File: GiaoAn_Chuan.pdf)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:12:28",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-142546",
+    "title": "Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-07 07:12:22",
+    "status": "APPROVED",
+    "currentSignerRole": null,
+    "fileName": "GiaoAn_Toan9_T12.pdf",
+    "fileType": "application/pdf",
+    "filePath": "uploads/documents/1788765142538_GiaoAn_Toan9_T12.pdf",
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-142546_1788765155738.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-left",
+    "fileSize": 342882,
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:01:42+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:12:22",
+        "signType": "Ký duyệt cấp 1",
+        "status": "VALID",
+        "placement": "bottom-left",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      },
+      {
+        "step": 2,
+        "role": "Tổ trưởng Tổ Toán - Tin",
+        "signerName": "Trần Văn Nam",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-07 07:12:22",
+        "signType": "PAdES Incremental Update",
+        "status": "VALID",
+        "placement": "middle-right",
+        "visualSignImage": null,
+        "visualSign": "Ký nháy duyệt chuyên môn: Đạt chuẩn phân phối chương trình"
+      },
+      {
+        "step": 3,
+        "role": "Hiệu trưởng / Ban Giám hiệu phê duyệt",
+        "signerName": "Ngô Thị Liền",
+        "signerUnit": "TRƯỜNG THCS CHU VĂN AN",
+        "certIssuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+        "certSerial": "025E056A3F133DA9",
+        "signedAt": "2026-09-07 07:12:22",
+        "signType": "PAdES LTV (VGCA Hardware USB Token)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "visualSignImage": "data:image/png;base64,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",
+        "visualSign": "Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ (Ngô Thị Liền)"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1S0hCRC0yMDI2LTE0MjU0NjE3ODg3",
+      "viewUrl": "https://drive.google.com/file/d/1S0hCRC0yMDI2LTE0MjU0NjE3ODg3/view?usp=sharing",
+      "folderPath": "Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12",
+      "uploadedAt": "2026-09-07 07:12:38"
+    },
+    "logs": [
+      {
+        "time": "2026-09-07 07:12:22",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp kế hoạch bài dạy \"Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)\" (File: GiaoAn_Toan9_T12.pdf)"
+      },
+      {
+        "time": "2026-09-07 07:12:22",
+        "actor": "Trần Văn Nam (Tổ trưởng)",
+        "action": "Ký nháy duyệt chuyên môn: \"Đạt chuẩn phân phối chương trình\" và chuyển trình Ban Giám hiệu phê duyệt"
+      },
+      {
+        "time": "2026-09-07 07:12:22",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Ký phê duyệt chính thức, đóng dấu số cơ quan và lưu trữ vào Kho hồ sơ số trường"
+      },
+      {
+        "time": "2026-09-07 07:12:26",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Đã tự động sao lưu và đồng bộ hồ sơ lên Google Drive trường: \"Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12\""
+      },
+      {
+        "time": "2026-09-07 07:12:26",
+        "actor": "Hà Văn Tý",
+        "action": "Đã lưu trữ và đồng bộ tài liệu lên Google Drive: \"Năm học 2026 - 2027 / Học kỳ I / Tổ Toán - Tin / Tuần 12\""
+      },
+      {
+        "time": "2026-09-07 07:12:26",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã nộp thành công vào OneDrive trường (5TB): 2. KẾ HOẠCH BÀI DẠY / [Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf"
+      },
+      {
+        "time": "2026-09-07 07:12:27",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / Test_GiaoAn_DaKySo.pdf"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-07 07:12:38",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": null
+    },
+    "oneDriveSynced": true,
+    "oneDrivePath": "C:\\Users\\HPZBook\\OneDrive - Sở GD&ĐT Quảng Ngãi\\Trường THCS Chu Văn An (Đăk Hà)'s files - 15. HÀ VĂN TÝ 26-27\\2. KẾ HOẠCH BÀI DẠY\\[Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf",
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-07 07:12:27"
+  },
+  {
     "id": "KHBD-2026-907035",
     "title": "Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính",
     "author": "Hà Văn Tý",

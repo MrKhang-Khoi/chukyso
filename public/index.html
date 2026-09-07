@@ -18,14 +18,35 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Mammoth.js để đọc và xem trước file Word .docx trực tiếp trên web -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <!-- Smart Cloud Router: Tự động điều hướng API tới Render khi chạy trên GitHub Pages -->
+  <script>
+    (function() {
+      const isGitHubPages = window.location.hostname.includes('github.io');
+      const BACKEND_URL = 'https://edusign-vgca.onrender.com';
+      window.API_BASE = isGitHubPages ? BACKEND_URL : '';
+
+      // Tự động điều hướng mọi fetch('/api/...') sang Render khi ở trên GitHub Pages
+      const originalFetch = window.fetch;
+      window.fetch = function(resource, init) {
+        if (typeof resource === 'string') {
+          if (resource.startsWith('/api/')) {
+            resource = (isGitHubPages ? BACKEND_URL : '') + resource;
+          } else if (isGitHubPages && resource.startsWith('/downloads/')) {
+            resource = BACKEND_URL + resource;
+          }
+        }
+        return originalFetch(resource, init);
+      };
+    })();
+  </script>
   <!-- html2pdf.js để chuyển đổi tài liệu Word sang PDF chuẩn xác ngay trên trình duyệt (hoạt động trên Render Linux) -->
-  <script src="/html2pdf.bundle.min.js"></script>
+  <script src="./html2pdf.bundle.min.js"></script>
   <!-- Google Firebase SDK v10 (Compat version cho Vanilla JS) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="/firebase-config.js"></script>
-  <script src="/js/firebaseClient.js"></script>
+  <script src="./firebase-config.js"></script>
+  <script src="./js/firebaseClient.js"></script>
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
