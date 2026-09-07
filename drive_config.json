@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "autoUploadOnSign": true,
+  "schoolFolderId": "THCS_CHU_VAN_AN_ARCHIVE_2026",
+  "schoolFolderName": "KHO_HO_SO_SO_TRUONG_THCS_CHU_VAN_AN",
+  "gasWebhookUrl": "https://script.google.com/macros/s/AKfycbwoMCdjRZjaSme1o5xF6gDrEcDFqvRPsWo3YNUY5NLI0FoKr-qkfflXhhFcnH2VmBNv/exec",
+  "backupLocalStorage": true
+}
