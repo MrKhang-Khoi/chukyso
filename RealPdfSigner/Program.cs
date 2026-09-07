@@ -128,6 +128,15 @@ namespace RealPdfSigner
             string debugLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_debug.log");
             try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Main entered with args: '{string.Join(" ", args)}'\n"); } catch { }
 
+            // Nếu chạy ứng dụng mà không truyền tham số CLI, hoặc có cờ --tray/--agent:
+            // TỰ ĐỘNG CHẠY NGẦM KHAY HỆ THỐNG (SYSTEM TRAY) - KHÔNG ATTACH CONSOLE ĐỂ TRÁNH BỊ TẮT KHI TIẾN TRÌNH GỌI THOÁT
+            if (args.Length == 0 || (args.Length == 1 && (args[0].Equals("--tray", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--agent", StringComparison.OrdinalIgnoreCase))))
+            {
+                try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Calling RunTrayAgent...\n"); } catch { }
+                RunTrayAgent();
+                return;
+            }
+
             try { AttachConsole(ATTACH_PARENT_PROCESS); } catch { }
             try
             {
@@ -144,15 +153,6 @@ namespace RealPdfSigner
                 Console.OutputEncoding = System.Text.Encoding.UTF8;
             }
             catch { }
-
-            // Nếu chạy ứng dụng mà không truyền tham số CLI, hoặc có cờ --tray/--agent:
-            // TỰ ĐỘNG CHẠY NGẦM KHAY HỆ THỐNG (SYSTEM TRAY) - KHÔNG MỞ MÀN HÌNH ĐEN
-            if (args.Length == 0 || (args.Length == 1 && (args[0].Equals("--tray", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--agent", StringComparison.OrdinalIgnoreCase))))
-            {
-                try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Calling RunTrayAgent...\n"); } catch { }
-                RunTrayAgent();
-                return;
-            }
 
             if (args.Length == 1 && args[0].Equals("--console", StringComparison.OrdinalIgnoreCase))
             {
@@ -1217,11 +1217,40 @@ namespace RealPdfSigner
             RunTrayAgent();
         }
 
+        private static Mutex? _agentMutex;
         public static void RunTrayAgent()
         {
-            _activeTrayInstance = new EduSignWin32Tray();
-            _activeTrayInstance.Run();
-            GC.KeepAlive(_activeTrayInstance);
+            bool isFirst = true;
+            try
+            {
+                _agentMutex = new Mutex(true, @"EduSign_Agent_SingleInstance_2_0", out isFirst);
+                if (!isFirst)
+                {
+                    string debugLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_debug.log");
+                    try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Another EduSign Agent instance is already active. Exiting.\n"); } catch { }
+                    return;
+                }
+            }
+            catch
+            {
+                isFirst = true;
+            }
+
+            try
+            {
+                _activeTrayInstance = new EduSignWin32Tray();
+                _activeTrayInstance.Run();
+                GC.KeepAlive(_activeTrayInstance);
+            }
+            catch (Exception ex)
+            {
+                string debugLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_debug.log");
+                try { File.AppendAllText(debugLog, $"[{DateTime.Now}] RunTrayAgent error: {ex}\n"); } catch { }
+            }
+            finally
+            {
+                _agentMutex?.Dispose();
+            }
         }
 
         public static void RunConsoleAgent()
@@ -1253,7 +1282,7 @@ namespace RealPdfSigner
                 ResetColor();
             }
 
-            var prefixes = new List<string> { "http://127.0.0.1:18888/", "http://localhost:18888/" };
+            var prefixes = new List<string> { "http://127.0.0.1:18888/" };
 
             using var listener = new HttpListener();
             foreach (var prefix in prefixes)
@@ -2066,16 +2095,23 @@ namespace RealPdfSigner
 
         private IntPtr CustomWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
         {
-            if (msg == WM_TRAYICON)
+            try
             {
-                int lp = lParam.ToInt32();
-                if (lp == WM_RBUTTONUP || lp == WM_LBUTTONDBLCLK)
+                if (msg == WM_TRAYICON)
                 {
-                    ShowTrayMenu();
+                    long lp = (long)lParam & 0xFFFF;
+                    if (lp == WM_RBUTTONUP || lp == WM_LBUTTONDBLCLK)
+                    {
+                        ShowTrayMenu();
+                    }
+                    return IntPtr.Zero;
                 }
-                return IntPtr.Zero;
+                return DefWindowProc(hWnd, msg, wParam, lParam);
             }
-            return DefWindowProc(hWnd, msg, wParam, lParam);
+            catch
+            {
+                return DefWindowProc(hWnd, msg, wParam, lParam);
+            }
         }
 
         private void ShowTrayMenu()
@@ -2132,7 +2168,7 @@ namespace RealPdfSigner
             {
                 try
                 {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("http://localhost:3000") { UseShellExecute = true });
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://mrkhang-khoi.github.io/chukyso/") { UseShellExecute = true });
                 }
                 catch { }
             }
@@ -2199,7 +2235,7 @@ namespace RealPdfSigner
         {
             _listenerThread = new Thread(() =>
             {
-                var prefixes = new List<string> { "http://127.0.0.1:18888/", "http://localhost:18888/" };
+                var prefixes = new List<string> { "http://127.0.0.1:18888/" };
 
                 try
                 {

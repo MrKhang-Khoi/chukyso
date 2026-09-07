@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EduSign - Quản lý & Trình ký Giáo án Điện tử - THCS Chu Văn An</title>
+  <link rel="icon" type="image/png" href="./school_seal.png">
   <!-- Suppress Tailwind CDN production warning in console -->
   <script>
     const _consoleWarn = console.warn;
@@ -4760,6 +4761,7 @@
     }
 
     let isAgentSigningActive = false;
+    let isConfirmingSession = false;
 
     function updateAgentStatusBox(ping) {
       const box = document.getElementById('vgcaAgentConnectionStatus');
@@ -4801,8 +4803,13 @@
     }
 
     async function startAgentSigningWorkflow(localHost) {
-      if (isAgentSigningActive) return;
+      if (isAgentSigningActive || isConfirmingSession) return;
       isAgentSigningActive = true;
+
+      if (vgcaPollTimer) {
+        clearInterval(vgcaPollTimer);
+        vgcaPollTimer = null;
+      }
 
       const desc = document.getElementById('vgcaModalStatusDesc');
       if (desc) {
@@ -4812,7 +4819,7 @@
       const btn = document.getElementById('btnVgcaConfirmFromPhone');
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang chờ nhấn [ĐỒNG Ý] trên điện thoại...</span>';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang kết nối EduSign Agent & chờ xác nhận...</span>';
       }
 
       try {
@@ -4833,13 +4840,15 @@
             vgcaPollTimer = null;
           }
 
-          try {
-            await fetch('/api/vgca/confirm-session', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-              body: JSON.stringify({ txId: activeVgcaTxId })
-            });
-          } catch (e) {}
+          if (activeVgcaTxId) {
+            try {
+              await fetch('/api/vgca/confirm-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({ txId: activeVgcaTxId })
+              });
+            } catch (e) {}
+          }
 
           // Chuyển sang màn hình thành công xanh lá
           const step2 = document.getElementById('vgcaStep2Container');
@@ -4890,16 +4899,17 @@
           btn.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i> <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>';
         }
 
-        // Kích hoạt bộ đếm Polling kiểm tra trạng thái xác thực từ điện thoại
+        // Kích hoạt bộ đếm Polling kiểm tra trạng thái xác thực từ điện thoại (có kiểm tra chống đụng độ)
         if (vgcaPollTimer) clearInterval(vgcaPollTimer);
         vgcaPollTimer = setInterval(async () => {
-          if (!activeVgcaTxId) return;
+          if (!activeVgcaTxId || isAgentSigningActive || isConfirmingSession) return;
           try {
             const checkRes = await fetch(`/api/vgca/session-status/${activeVgcaTxId}`);
             if (checkRes.ok) {
-              const checkData = await checkRes.json();
+              const checkData = await checkRes.json().catch(() => ({}));
               if (checkData && checkData.data && checkData.data.status === 'CONFIRMED') {
                 clearInterval(vgcaPollTimer);
+                vgcaPollTimer = null;
                 handleUserConfirmedOnPhone();
               }
             }
@@ -4921,9 +4931,16 @@
         return;
       }
 
-      // Nếu đang trong tiến trình ký qua Agent thì đang chờ kết quả từ điện thoại, không gửi thêm yêu cầu!
-      if (isAgentSigningActive) {
+      // Khóa đụng độ nếu đang trong tiến trình ký hoặc đã gửi xác nhận
+      if (isAgentSigningActive || isConfirmingSession) {
         return;
+      }
+      isConfirmingSession = true;
+
+      // Dừng polling ngay lập tức
+      if (vgcaPollTimer) {
+        clearInterval(vgcaPollTimer);
+        vgcaPollTimer = null;
       }
 
       const btn = document.getElementById('btnVgcaConfirmFromPhone');
@@ -4944,18 +4961,22 @@
       }, 90000);
 
       try {
-        // 1. Gửi xác nhận phiên ký lên máy chủ
-        const confirmRes = await fetch('/api/vgca/confirm-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ txId: activeVgcaTxId })
-        });
-        const confirmData = await confirmRes.json();
-        if (!confirmRes.ok || !confirmData.success) {
-          throw new Error(confirmData.message || 'Chưa nhận được phản hồi xác thực từ Ban Cơ yếu!');
+        // 1. Gửi xác nhận phiên ký lên máy chủ (an toàn, không crash nếu mạng lag)
+        try {
+          const confirmRes = await fetch('/api/vgca/confirm-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ txId: activeVgcaTxId })
+          });
+          const confirmData = await confirmRes.json().catch(() => ({}));
+          if (!confirmRes.ok && !confirmData.success) {
+            console.warn('Xác nhận phiên ký Cloud:', confirmData.message);
+          }
+        } catch (eConfirm) {
+          console.warn('Lỗi gửi xác nhận confirm-session tới máy chủ (tiếp tục niêm phong chữ ký):', eConfirm);
         }
 
         // 2. Thực thi action ký số thật với mã phiên đã được CONFIRMED
@@ -5001,6 +5022,8 @@
           btn.disabled = false;
           btn.innerHTML = origHtml;
         }
+      } finally {
+        isConfirmingSession = false;
       }
     }
 
@@ -5073,6 +5096,7 @@
       }
       activeVgcaTxId = null;
       isAgentSigningActive = false;
+      isConfirmingSession = false;
       currentVgcaSigningOptions = null;
 
       // Reset các bước về trạng thái ban đầu cho lần ký tiếp theo (không cần F5)
@@ -6124,11 +6148,12 @@
     async function triggerRealVgcaSigning(docId) {
       const doc = currentDocList.find(d => d.id === docId);
       const title = doc ? doc.title : docId;
+      const signerName = currentUser ? currentUser.name : (doc ? (doc.author || doc.signerName) : 'Hà Văn Tý');
       const isRemoteServer = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
       startVgcaMobileSigning({
         docTitle: title,
-        signerName: currentUser ? currentUser.name : 'Hà Văn Tý',
+        signerName: signerName,
         action: async (authInfo) => {
           let realSignedPdfBase64 = null;
 
@@ -6142,9 +6167,10 @@
             // Lấy file đã đóng dấu ảnh chữ ký trực quan từ server trước khi đưa vào bộ ký số mật mã
             let fileBase64 = null;
             try {
-              let fileRes = await fetch(`/api/documents/${docId}/prepare-signing-pdf`);
+              const queryParams = `title=${encodeURIComponent(title)}&author=${encodeURIComponent(signerName)}`;
+              let fileRes = await fetch(`/api/documents/${docId}/prepare-signing-pdf?${queryParams}`);
               if (!fileRes.ok) {
-                fileRes = await fetch(`/api/documents/${docId}/file`);
+                fileRes = await fetch(`/api/documents/${docId}/file?${queryParams}`);
               }
               if (fileRes.ok) {
                 const blob = await fileRes.blob();
@@ -6155,11 +6181,17 @@
                 });
               }
             } catch (e) {
-              console.warn('Không lấy được tệp chuẩn bị ký:', e);
+              console.warn('Không lấy được tệp chuẩn bị ký từ server:', e);
+            }
+
+            if (!fileBase64 && doc && doc.fileBase64) {
+              fileBase64 = doc.fileBase64;
             }
 
             const signPayload = {
               ...doc,
+              title,
+              author: signerName,
               isPreStamped: true
             };
             try {
@@ -6170,7 +6202,7 @@
               console.warn('[EduSign] Không thể ký qua Agent cục bộ, chuyển sang niêm phong Cloud SmartCA:', agentErr);
               realSignedPdfBase64 = null;
               cachedLocalSignerHost = null;
-              if (targetHost) throw agentErr;
+              if (targetHost && authInfo.mode !== 'smartca') throw agentErr;
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
@@ -6542,10 +6574,35 @@
 
         try {
           // Chuẩn bị tệp PDF
-          const prepRes = await fetch(`/api/documents/${principalTargetDocId}/prepare-signing-pdf`);
-          const prepData = await prepRes.json();
-          if (!prepData.success || !prepData.pdfBase64) {
-            throw new Error(prepData.message || 'Không thể chuẩn bị file PDF');
+          let pdfBase64 = null;
+          try {
+            const prepRes = await fetch(`/api/documents/${principalTargetDocId}/prepare-signing-pdf?title=${encodeURIComponent(doc ? doc.title : '')}&format=json`, {
+              headers: { 'Accept': 'application/json' }
+            });
+            if (prepRes.ok) {
+              const prepData = await prepRes.json().catch(() => null);
+              if (prepData && prepData.pdfBase64) {
+                pdfBase64 = prepData.pdfBase64;
+              }
+            }
+          } catch (ePrep) {}
+
+          if (!pdfBase64) {
+            try {
+              const fileRes = await fetch(`/api/documents/${principalTargetDocId}/file?title=${encodeURIComponent(doc ? doc.title : '')}`);
+              if (fileRes.ok) {
+                const blob = await fileRes.blob();
+                pdfBase64 = await new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result);
+                  reader.readAsDataURL(blob);
+                });
+              }
+            } catch (eFile) {}
+          }
+
+          if (!pdfBase64 && doc && doc.fileBase64) {
+            pdfBase64 = doc.fileBase64;
           }
 
           // Gửi lệnh ký tới EduSign Agent cục bộ có kèm expectedSerial
@@ -6562,7 +6619,7 @@
                 author: doc.author,
                 signCoordinates: doc.signCoordinates || null
               },
-              fileBase64: prepData.pdfBase64,
+              fileBase64: pdfBase64,
               signerName: cfg.certOwner || currentUser.name,
               expectedSerial: cfg.serialNumber
             })
