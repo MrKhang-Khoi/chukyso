@@ -25,6 +25,7 @@ uploads/signatures/*
 # .NET Build artifacts
 **/bin/
 **/obj/
+**/publish/
 *.user
 *.suo
 *.pdb

@@ -926,14 +926,31 @@ namespace RealPdfSigner
             }
         }
 
-        public static X509Certificate2? FindVgcaCertificate()
+        public static X509Certificate2? FindVgcaCertificate(string? expectedSerial = null)
         {
             try
             {
                 using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
                 store.Open(OpenFlags.ReadOnly);
 
-                // 1. Ưu tiên chứng thư có khóa riêng và thuộc Ban Cơ yếu / Cơ quan Nhà nước
+                // 1. Nếu có chỉ định số Serial (Certificate Pinning của Ban Giám hiệu / USB Token):
+                if (!string.IsNullOrWhiteSpace(expectedSerial))
+                {
+                    string cleanExpected = expectedSerial.Replace(" ", "").Replace(":", "").Trim();
+                    foreach (var cert in store.Certificates)
+                    {
+                        if (!cert.HasPrivateKey) continue;
+                        string cleanCertSerial = cert.SerialNumber.Replace(" ", "").Replace(":", "").Trim();
+                        if (cleanCertSerial.Equals(cleanExpected, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return cert;
+                        }
+                    }
+                    // Nếu đã chỉ định Serial cụ thể mà không tìm thấy trong kho, trả về null để cảnh báo đúng
+                    return null;
+                }
+
+                // 2. Ưu tiên chứng thư có khóa riêng và thuộc Ban Cơ yếu / Cơ quan Nhà nước
                 foreach (var cert in store.Certificates)
                 {
                     if (!cert.HasPrivateKey) continue;
@@ -946,7 +963,7 @@ namespace RealPdfSigner
                     }
                 }
 
-                // 2. Tìm theo thumbprint quen thuộc
+                // 3. Tìm theo thumbprint quen thuộc
                 string defaultThumbprint = "6398E3DC37E44EBBF976DFDE9F0143E1BDA5346D";
                 foreach (var cert in store.Certificates)
                 {
@@ -954,7 +971,7 @@ namespace RealPdfSigner
                         return cert;
                 }
 
-                // 3. Fallback: Bất kỳ chứng thư nào có Khóa riêng và còn hạn
+                // 4. Fallback: Bất kỳ chứng thư nào có Khóa riêng và còn hạn
                 foreach (var cert in store.Certificates)
                 {
                     if (cert.HasPrivateKey && cert.NotAfter > DateTime.Now)
@@ -1103,9 +1120,13 @@ namespace RealPdfSigner
             return outputStream.ToArray();
         }
 
-        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location, bool strict = false, byte[]? visualSignImageBytes = null, Rectangle? signRect = null, int targetPage = 0)
+        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location, bool strict = false, byte[]? visualSignImageBytes = null, Rectangle? signRect = null, int targetPage = 0, string? expectedSerial = null)
         {
-            var cert = FindVgcaCertificate();
+            var cert = FindVgcaCertificate(expectedSerial);
+            if (!string.IsNullOrWhiteSpace(expectedSerial) && cert == null)
+            {
+                throw new InvalidOperationException($"Không tìm thấy USB Token khớp với số Serial [{expectedSerial}] đã đăng ký của Ban Giám hiệu! Vui lòng cắm đúng thiết bị USB Token.");
+            }
 
             bool isTest = Environment.GetEnvironmentVariable("EDUSIGN_TEST_MODE") == "1" ||
                           Environment.GetEnvironmentVariable("NODE_ENV") == "test";
@@ -1303,11 +1324,35 @@ namespace RealPdfSigner
 
             try
             {
-                if (path == "/api/ping-local-signer" || path == "/api/check-vgca-status")
+                if (path == "/api/ping-local-signer" || path == "/api/check-vgca-status" || path == "/api/list-certificates")
                 {
-                    var cert = FindVgcaCertificate();
+                    string? checkSerial = req.QueryString["serial"];
+                    var cert = FindVgcaCertificate(checkSerial);
                     string detectedCccd = cert != null ? ExtractCccdOrUid(cert.Subject) : "";
                     string certSigner = cert != null ? ExtractCn(cert.Subject) : "";
+
+                    var availableCerts = new List<object>();
+                    try
+                    {
+                        using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                        store.Open(OpenFlags.ReadOnly);
+                        foreach (var c in store.Certificates)
+                        {
+                            if (c.HasPrivateKey)
+                            {
+                                availableCerts.Add(new
+                                {
+                                    serialNumber = c.SerialNumber,
+                                    signerName = ExtractCn(c.Subject),
+                                    subject = c.Subject,
+                                    issuer = c.Issuer,
+                                    notAfter = c.NotAfter.ToString("yyyy-MM-dd HH:mm:ss")
+                                });
+                            }
+                        }
+                    }
+                    catch { }
+
                     var statusData = new
                     {
                         success = true,
@@ -1330,9 +1375,10 @@ namespace RealPdfSigner
                             school = ExtractOu(cert.Subject),
                             cccd = detectedCccd
                         } : null,
+                        availableCerts = availableCerts,
                         details = (cert != null && cert.HasPrivateKey)
-                            ? $"EduSign Agent đang hoạt động và đã nhận diện chứng thư Ban Cơ yếu: {certSigner}."
-                            : "EduSign Agent đang hoạt động nhưng chưa cắm USB Token."
+                            ? $"EduSign Agent đang hoạt động và đã nhận diện chứng thư: {certSigner} (Serial: {cert.SerialNumber})."
+                            : "EduSign Agent đang hoạt động nhưng chưa cắm đúng USB Token."
                     };
 
                     byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(statusData));
@@ -1522,14 +1568,38 @@ namespace RealPdfSigner
                         }
                     }
 
-                    var localVgcaCert = FindVgcaCertificate();
+                    string? expectedSerial = null;
+                    if (root.TryGetProperty("expectedSerial", out var esProp) && !string.IsNullOrWhiteSpace(esProp.GetString()))
+                    {
+                        expectedSerial = esProp.GetString();
+                    }
+                    else if (root.TryGetProperty("doc", out var docElemSerial) && docElemSerial.TryGetProperty("expectedSerial", out var dEsProp) && !string.IsNullOrWhiteSpace(dEsProp.GetString()))
+                    {
+                        expectedSerial = dEsProp.GetString();
+                    }
+
+                    var localVgcaCert = FindVgcaCertificate(expectedSerial);
+                    if (!string.IsNullOrWhiteSpace(expectedSerial) && localVgcaCert == null)
+                    {
+                        res.StatusCode = 400;
+                        string errJson = JsonSerializer.Serialize(new
+                        {
+                            success = false,
+                            message = $"Không tìm thấy USB Token khớp với số Serial [{expectedSerial}] của Ban Giám hiệu! Vui lòng cắm đúng USB Token vào máy tính."
+                        });
+                        byte[] errData = System.Text.Encoding.UTF8.GetBytes(errJson);
+                        res.OutputStream.Write(errData, 0, errData.Length);
+                        res.Close();
+                        return;
+                    }
+
                     string localVgcaSigner = localVgcaCert != null ? ExtractCn(localVgcaCert.Subject) : "";
                     if (!string.IsNullOrEmpty(localVgcaSigner) && localVgcaSigner != "Giáo viên")
                     {
                         signerName = localVgcaSigner;
                     }
 
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 📝 Nhận lệnh ký số: \"{docTitle}\" (Chủ thể chứng thư: {signerName})");
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 📝 Nhận lệnh ký số: \"{docTitle}\" (Chủ thể chứng thư: {signerName}{(expectedSerial != null ? $", Serial yêu cầu: {expectedSerial}" : "")})");
 
                     byte[] pdfBytes;
                     if (!string.IsNullOrEmpty(fileBase64))
@@ -1653,7 +1723,7 @@ namespace RealPdfSigner
 
                     try
                     {
-                        byte[] signedBytes = KySoPdfBytes(pdfBytes, signReason, "Quảng Ngãi", strict: true, visualSignImageBytes: sigImgBytes, signRect: signRect, targetPage: targetPage);
+                        byte[] signedBytes = KySoPdfBytes(pdfBytes, signReason, "Quảng Ngãi", strict: true, visualSignImageBytes: sigImgBytes, signRect: signRect, targetPage: targetPage, expectedSerial: expectedSerial);
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎉 Niêm phong PAdES X.509 thành công! Dung lượng: {signedBytes.Length} bytes.");
 
                         var resObj = new

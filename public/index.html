@@ -219,6 +219,12 @@
               <span id="userRoleBadge" class="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">GV</span>
             </div>
 
+            <button id="btnBghSignConfig" onclick="openBghSignConfigModal()" title="Cấu hình thông tin Chữ ký số Ban Giám hiệu (USB Token / SmartCA)"
+              class="hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-xl transition shadow-sm">
+              <i class="fa-solid fa-usb-drive text-amber-700"></i>
+              <span>Chữ ký số BGH</span>
+            </button>
+
             <button onclick="openChangePasswordModal()" title="Đổi mật khẩu"
               class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
               <i class="fa-solid fa-key text-xs"></i>
@@ -1134,8 +1140,29 @@
           <div class="space-y-0.5">
             <div class="font-bold text-red-900">TRƯỜNG THCS CHU VĂN AN</div>
             <div class="text-[11px] text-red-700 font-medium">Chứng thư số: Ban Cơ yếu Chính phủ (VGCA)</div>
-            <div class="text-[10px] text-slate-600">Tiêu chuẩn: PAdES LTV X.509 v3 • Thuật toán RSA-SHA256</div>
+            <div class="text-[10px] text-slate-600">Tiêu chuẩn: PAdES LTV X.509 v3 • Thuật toán RSA/ECDSA</div>
           </div>
+        </div>
+      </div>
+
+      <!-- Khung Cấu hình Chữ ký số BGH & Trạng thái USB Token Đối soát -->
+      <div id="bghSignConfigSummary" class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 font-bold text-amber-900">
+            <i id="bghApproveIcon" class="fa-solid fa-usb-drive text-amber-600"></i>
+            <span id="bghApproveModeLabel">Ký số qua Thiết bị USB Token Ban Cơ yếu</span>
+          </div>
+          <button type="button" onclick="openBghSignConfigModal()" class="text-[11px] text-blue-700 font-semibold underline hover:text-blue-900 flex items-center gap-1">
+            <i class="fa-solid fa-gear"></i> Chỉnh sửa
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-700 bg-white/70 p-2 rounded-lg border border-amber-200/60">
+          <div>Chủ thể: <strong id="bghApproveOwner">Ngô Thị Liền</strong></div>
+          <div>Số Serial: <strong id="bghApproveSerial" class="font-mono text-indigo-700">025E056A3F133DA9</strong></div>
+        </div>
+        <div id="bghApproveUsbStatus" class="text-[11px] flex items-center gap-1.5 font-medium text-slate-600">
+          <i class="fa-solid fa-circle-notch fa-spin text-amber-600"></i>
+          <span>Đang kiểm tra kết nối thiết bị USB Token...</span>
         </div>
       </div>
 
@@ -1148,9 +1175,9 @@
 
       <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
         <button type="button" onclick="closeModal('modalPrincipalApprove')" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 text-xs">Hủy</button>
-        <button type="button" id="btnConfirmPrincipalApprove" onclick="executePrincipalApproveWithVgca()" class="px-5 py-2 bg-gradient-to-r from-red-600 to-blue-700 hover:from-red-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-md flex items-center gap-1.5 text-xs">
-          <i class="fa-solid fa-mobile-screen-button"></i>
-          <span>Xác Thực Điện Thoại & Đóng Dấu Số</span>
+        <button type="button" id="btnConfirmPrincipalApprove" onclick="executePrincipalApprove()" class="px-5 py-2 bg-gradient-to-r from-red-600 to-blue-700 hover:from-red-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-md flex items-center gap-1.5 text-xs">
+          <i id="btnConfirmPrincipalApproveIcon" class="fa-solid fa-key"></i>
+          <span id="btnConfirmPrincipalApproveText">Ký Bằng USB Token & Đóng Dấu Số</span>
         </button>
       </div>
     </div>
@@ -1801,6 +1828,86 @@
     </div>
   </div>
 
+  <!-- MODAL CHỈNH SỬA THÔNG TIN CHỮ KÝ SỐ (BAN GIÁM HIỆU - CHUẨN HỌC BẠ SỐ) -->
+  <div id="modalBghSignConfig" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModalOnBackdrop(event, 'modalBghSignConfig')">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden my-auto" onclick="event.stopPropagation()">
+      <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-900 flex items-center justify-center text-base font-bold shadow">
+            <i class="fa-solid fa-usb-drive"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-sm">Chỉnh Sửa Thông Tin Chữ Ký Số</h4>
+            <p class="text-[10px] text-blue-200">Học bạ số Bộ GD&ĐT • Quản lý thiết bị & đối soát USB Token Ban Giám hiệu</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modalBghSignConfig')" class="text-white/70 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="formBghSignConfig" onsubmit="handleSaveBghSignConfig(event)" class="p-6 space-y-4 text-xs">
+        <!-- 1. Loại chữ ký số -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1.5">Loại chữ ký số <span class="text-rose-500">*</span></label>
+          <select id="bghCfgSignType" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-semibold text-slate-800" onchange="toggleBghSignTypeFields()">
+            <option value="USB_TOKEN">Ký số qua thiết bị phần cứng USB Token (Ban Cơ yếu / Bit4id)</option>
+            <option value="SMART_CA">Ký số từ xa qua ứng dụng SmartCA (Xác thực di động)</option>
+          </select>
+          <p class="text-[10px] text-slate-500 mt-1">Phương thức ký số chứng thực công vụ Ban Giám hiệu theo chuẩn Thông tư Bộ GD&ĐT.</p>
+        </div>
+
+        <!-- 2. Số Serial Chứng Thư Số -->
+        <div id="bghCfgSerialGroup">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block font-bold text-slate-700">Số Serial Chứng Thư Số <span class="text-rose-500">*</span></label>
+            <button type="button" onclick="detectUsbSerialFromAgent()" class="text-blue-600 hover:text-blue-800 font-bold text-[11px] flex items-center gap-1">
+              <i class="fa-solid fa-arrows-rotate"></i> Lấy số Serial từ USB đang cắm
+            </button>
+          </div>
+          <div class="relative">
+            <input type="text" id="bghCfgSerialNumber" required placeholder="Ví dụ: 025E056A3F133DA9"
+              class="w-full px-3 py-2.5 font-mono uppercase bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 text-slate-800 font-bold tracking-wider">
+          </div>
+          <div id="bghUsbDetectFeedback" class="text-[11px] mt-1 text-slate-500">
+            Số Serial duy nhất trong chip bảo mật phần cứng USB Token để đối soát khi phê duyệt.
+          </div>
+        </div>
+
+        <!-- 3. Tên chủ sở hữu chứng thư số -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1.5">Tên chủ sở hữu chứng thư số <span class="text-rose-500">*</span></label>
+          <input type="text" id="bghCfgCertOwner" required placeholder="Ví dụ: Ngô Thị Liền"
+            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 text-slate-800 font-semibold">
+        </div>
+
+        <!-- 4. Đơn vị công tác -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1.5">Đơn vị / Trường học</label>
+          <input type="text" id="bghCfgSchool" readonly value="TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN"
+            class="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-medium cursor-not-allowed">
+        </div>
+
+        <!-- Hộp cảnh báo đối soát pháp lý chuẩn Học bạ số -->
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex gap-2.5 text-[11px] text-amber-900 leading-relaxed">
+          <i class="fa-solid fa-shield-halved text-amber-600 text-base mt-0.5 shrink-0"></i>
+          <div>
+            <strong class="font-bold block text-amber-950">Quy định đối soát chữ ký số Ban Giám hiệu:</strong>
+            Khi thực hiện "Phê duyệt & Đóng dấu số", EduSign Agent sẽ kiểm tra trực tiếp số Serial của USB Token cắm ở máy tính. Nếu số Serial không trùng khớp với số Serial đăng ký ở đây, lệnh ký số sẽ bị chặn ngay lập tức để phòng chống việc dùng sai thiết bị hoặc ký thay trái phép.
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeModal('modalBghSignConfig')" class="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50">
+            Hủy
+          </button>
+          <button type="submit" id="btnSaveBghConfig" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Lưu Cấu Hình</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ============================================================== -->
   <!-- 4. JAVASCRIPT ĐIỀU HÀNH ỨNG DỤNG (APP LOGIC)                   -->
   <!-- ============================================================== -->
@@ -1936,6 +2043,8 @@
       }
 
       const isAdmin = currentUser.role === 'ADMIN';
+      const btnBgh = document.getElementById('btnBghSignConfig');
+      if (btnBgh) btnBgh.classList.toggle('hidden', !isAdmin);
       document.getElementById('navTabUsers').classList.toggle('hidden', !isAdmin);
       document.getElementById('navTabStats').classList.toggle('hidden', !isAdmin);
       document.getElementById('navTabDrive').classList.toggle('hidden', !isAdmin);
@@ -6028,22 +6137,228 @@
       executeLeaderApproveWithVgca();
     }
 
+    // ==================== CẤU HÌNH & ĐỐI SOÁT CHỮ KÝ SỐ BAN GIÁM HIỆU ====================
+    let cachedBghConfig = null;
+
+    async function loadBghSigningConfig() {
+      try {
+        const res = await fetch('/api/bgh/signing-config', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (data && data.config) {
+          cachedBghConfig = data.config;
+          return data.config;
+        }
+      } catch (e) {
+        console.warn('Lỗi tải cấu hình chữ ký số BGH:', e.message);
+      }
+      return {
+        signType: 'USB_TOKEN',
+        serialNumber: '025E056A3F133DA9',
+        certOwner: 'Ngô Thị Liền',
+        school: 'TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN'
+      };
+    }
+
+    async function openBghSignConfigModal() {
+      const cfg = await loadBghSigningConfig();
+      document.getElementById('bghCfgSignType').value = cfg.signType || 'USB_TOKEN';
+      document.getElementById('bghCfgSerialNumber').value = cfg.serialNumber || '';
+      document.getElementById('bghCfgCertOwner').value = cfg.certOwner || (currentUser ? currentUser.name : 'Ngô Thị Liền');
+      document.getElementById('bghCfgSchool').value = cfg.school || 'TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN';
+      toggleBghSignTypeFields();
+      document.getElementById('bghUsbDetectFeedback').className = 'text-[11px] mt-1 text-slate-500';
+      document.getElementById('bghUsbDetectFeedback').innerText = 'Số Serial duy nhất trong chip bảo mật phần cứng USB Token để đối soát khi phê duyệt.';
+      openModal('modalBghSignConfig');
+    }
+
+    function toggleBghSignTypeFields() {
+      const signType = document.getElementById('bghCfgSignType').value;
+      const serialGroup = document.getElementById('bghCfgSerialGroup');
+      const serialInput = document.getElementById('bghCfgSerialNumber');
+      if (signType === 'SMART_CA') {
+        serialGroup.classList.add('opacity-50');
+        serialInput.removeAttribute('required');
+      } else {
+        serialGroup.classList.remove('opacity-50');
+        serialInput.setAttribute('required', 'required');
+      }
+    }
+
+    async function detectUsbSerialFromAgent() {
+      const feedback = document.getElementById('bghUsbDetectFeedback');
+      feedback.className = 'text-[11px] mt-1 text-blue-600 flex items-center gap-1 font-medium';
+      feedback.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang truy vấn thiết bị USB Token từ EduSign Agent (cổng 18888)...';
+
+      try {
+        const res = await fetch('http://127.0.0.1:18888/api/check-vgca-status', {
+          headers: { 'Access-Control-Request-Private-Network': 'true' }
+        });
+        const data = await res.json();
+        
+        let foundSerial = '';
+        let foundSigner = '';
+
+        if (data.certInfo && data.certInfo.serialNumber) {
+          foundSerial = data.certInfo.serialNumber;
+          foundSigner = data.certInfo.signerName || '';
+        } else if (Array.isArray(data.availableCerts) && data.availableCerts.length > 0) {
+          foundSerial = data.availableCerts[0].serialNumber;
+          foundSigner = data.availableCerts[0].signerName || '';
+        }
+
+        if (foundSerial) {
+          document.getElementById('bghCfgSerialNumber').value = foundSerial;
+          if (foundSigner && !document.getElementById('bghCfgCertOwner').value) {
+            document.getElementById('bghCfgCertOwner').value = foundSigner;
+          }
+          feedback.className = 'text-[11px] mt-1 text-emerald-600 font-bold flex items-center gap-1';
+          feedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã tìm thấy USB Token: ${foundSigner || 'Ban Giám hiệu'} (Serial: ${foundSerial})`;
+        } else {
+          feedback.className = 'text-[11px] mt-1 text-amber-600 font-medium flex items-center gap-1';
+          feedback.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> EduSign Agent đang chạy nhưng chưa phát hiện thiết bị USB Token cắm vào máy.';
+        }
+      } catch (err) {
+        feedback.className = 'text-[11px] mt-1 text-rose-600 font-medium flex items-center gap-1';
+        feedback.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Không kết nối được EduSign Agent trên cổng 18888. Vui lòng mở ứng dụng EduSign Agent.';
+      }
+    }
+
+    async function handleSaveBghSignConfig(e) {
+      e.preventDefault();
+      const signType = document.getElementById('bghCfgSignType').value;
+      const serialNumber = document.getElementById('bghCfgSerialNumber').value.trim();
+      const certOwner = document.getElementById('bghCfgCertOwner').value.trim();
+      const school = document.getElementById('bghCfgSchool').value.trim();
+
+      try {
+        const res = await fetch('/api/bgh/signing-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ signType, serialNumber, certOwner, school })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        cachedBghConfig = data.config;
+        alert('🎉 Cập nhật thông tin chữ ký số Ban Giám hiệu thành công!');
+        closeModal('modalBghSignConfig');
+
+        const modalApprove = document.getElementById('modalPrincipalApprove');
+        if (modalApprove && !modalApprove.classList.contains('hidden')) {
+          updatePrincipalApproveUi(data.config);
+          checkBghUsbTokenStatus(data.config);
+        }
+      } catch (err) {
+        alert('Lỗi lưu cấu hình: ' + err.message);
+      }
+    }
+
+    function updatePrincipalApproveUi(cfg) {
+      if (!cfg) return;
+      document.getElementById('bghApproveOwner').innerText = cfg.certOwner || 'Ngô Thị Liền';
+      document.getElementById('bghApproveSerial').innerText = cfg.serialNumber || '(Chưa cấu hình)';
+
+      const isUsb = cfg.signType === 'USB_TOKEN';
+      document.getElementById('bghApproveModeLabel').innerText = isUsb
+        ? 'Ký số qua Thiết bị USB Token Ban Cơ yếu'
+        : 'Ký số từ xa qua SmartCA (Điện thoại)';
+      document.getElementById('bghApproveIcon').className = isUsb
+        ? 'fa-solid fa-usb-drive text-amber-600'
+        : 'fa-solid fa-mobile-screen-button text-blue-600';
+
+      const btnConfirm = document.getElementById('btnConfirmPrincipalApprove');
+      const btnIcon = document.getElementById('btnConfirmPrincipalApproveIcon');
+      const btnText = document.getElementById('btnConfirmPrincipalApproveText');
+      if (btnConfirm && btnIcon && btnText) {
+        if (isUsb) {
+          btnIcon.className = 'fa-solid fa-key';
+          btnText.innerText = 'Ký Bằng USB Token & Đóng Dấu Số';
+        } else {
+          btnIcon.className = 'fa-solid fa-mobile-screen-button';
+          btnText.innerText = 'Xác Thực Điện Thoại & Đóng Dấu Số';
+        }
+      }
+    }
+
+    async function checkBghUsbTokenStatus(cfg) {
+      const statusEl = document.getElementById('bghApproveUsbStatus');
+      if (!statusEl) return;
+
+      if (!cfg || cfg.signType !== 'USB_TOKEN') {
+        statusEl.className = 'text-[11px] flex items-center gap-1.5 font-medium text-blue-700';
+        statusEl.innerHTML = '<i class="fa-solid fa-mobile-screen"></i> Sẵn sàng xác thực qua ứng dụng di động SmartCA';
+        return;
+      }
+
+      statusEl.className = 'text-[11px] flex items-center gap-1.5 font-medium text-slate-500';
+      statusEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-amber-600"></i> Đang đối soát với USB Token cắm ở máy tính...';
+
+      try {
+        const queryUrl = cfg.serialNumber
+          ? `http://127.0.0.1:18888/api/check-vgca-status?serial=${encodeURIComponent(cfg.serialNumber)}`
+          : 'http://127.0.0.1:18888/api/check-vgca-status';
+        const res = await fetch(queryUrl, {
+          headers: { 'Access-Control-Request-Private-Network': 'true' }
+        });
+        const data = await res.json();
+
+        const cleanExpected = (cfg.serialNumber || '').replace(/[\s:]/g, '').toLowerCase();
+        let matched = false;
+        let detectedOwner = '';
+
+        if (data.certInfo && data.certInfo.serialNumber) {
+          const s = data.certInfo.serialNumber.replace(/[\s:]/g, '').toLowerCase();
+          if (s === cleanExpected) {
+            matched = true;
+            detectedOwner = data.certInfo.signerName;
+          }
+        }
+        if (!matched && Array.isArray(data.availableCerts)) {
+          for (const c of data.availableCerts) {
+            const s = (c.serialNumber || '').replace(/[\s:]/g, '').toLowerCase();
+            if (s === cleanExpected) {
+              matched = true;
+              detectedOwner = c.signerName;
+              break;
+            }
+          }
+        }
+
+        if (matched) {
+          statusEl.className = 'text-[11px] flex items-center gap-1.5 font-bold text-emerald-700';
+          statusEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> Đã nhận diện USB Token khớp số Serial [${cfg.serialNumber}] (${detectedOwner || cfg.certOwner})`;
+        } else {
+          statusEl.className = 'text-[11px] flex items-center gap-1.5 font-bold text-rose-600';
+          statusEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-500"></i> Chưa cắm USB Token đúng số Serial [${cfg.serialNumber}]. Vui lòng cắm USB Token.`;
+        }
+      } catch (e) {
+        statusEl.className = 'text-[11px] flex items-center gap-1.5 font-medium text-amber-700';
+        statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Chưa phát hiện EduSign Agent chạy ngầm (cổng 18888). Vui lòng mở ứng dụng.';
+      }
+    }
+
     let principalTargetDocId = null;
-    function openPrincipalApproveModal(docId) {
+    async function openPrincipalApproveModal(docId) {
       principalTargetDocId = docId;
       const doc = currentDocList.find(d => d.id === docId);
       if (!doc) return;
 
       document.getElementById('principalApproveDocTitle').innerText = doc.title;
       document.getElementById('principalApproveDocId').innerText = doc.id;
+      
+      const cfg = await loadBghSigningConfig();
+      updatePrincipalApproveUi(cfg);
       openModal('modalPrincipalApprove');
+      checkBghUsbTokenStatus(cfg);
     }
 
     function executePrincipalApproveWithVgca() {
       const doc = currentDocList.find(d => d.id === principalTargetDocId);
       startVgcaMobileSigning({
         docTitle: doc ? doc.title : 'Kế hoạch bài dạy',
-        signerName: currentUser ? currentUser.name : 'Hiệu trưởng / Ban Giám hiệu',
+        signerName: (cachedBghConfig && cachedBghConfig.certOwner) || (currentUser ? currentUser.name : 'Ban Giám hiệu'),
         action: async () => {
           const comment = document.getElementById('principalApproveComment').value.trim();
           const res = await fetch(`/api/documents/${principalTargetDocId}/approve-principal`, {
@@ -6066,7 +6381,110 @@
     }
 
     async function executePrincipalApprove() {
-      executePrincipalApproveWithVgca();
+      const doc = currentDocList.find(d => d.id === principalTargetDocId);
+      if (!doc) return;
+
+      const cfg = await loadBghSigningConfig();
+
+      if (cfg.signType === 'USB_TOKEN') {
+        const cleanExpected = (cfg.serialNumber || '').replace(/[\s:]/g, '').toLowerCase();
+        let usbMatched = false;
+
+        try {
+          const res = await fetch(`http://127.0.0.1:18888/api/check-vgca-status?serial=${encodeURIComponent(cfg.serialNumber)}`, {
+            headers: { 'Access-Control-Request-Private-Network': 'true' }
+          });
+          const status = await res.json();
+          if (status.certInfo && status.certInfo.serialNumber) {
+            const s = status.certInfo.serialNumber.replace(/[\s:]/g, '').toLowerCase();
+            if (s === cleanExpected) usbMatched = true;
+          }
+          if (!usbMatched && Array.isArray(status.availableCerts)) {
+            for (const c of status.availableCerts) {
+              if ((c.serialNumber || '').replace(/[\s:]/g, '').toLowerCase() === cleanExpected) {
+                usbMatched = true;
+                break;
+              }
+            }
+          }
+        } catch (e) {
+          alert('⚠️ Không thể kết nối tới EduSign Agent chạy ngầm trên máy tính!\n\nVui lòng kiểm tra biểu tượng EduSign Agent tại khay hệ thống (System Tray) hoặc khởi chạy từ Desktop.');
+          return;
+        }
+
+        if (!usbMatched) {
+          alert(`⚠️ TỪ CHỐI KÝ SỐ VÀ ĐÓNG DẤU!\n\nKhông tìm thấy thiết bị USB Token có số Serial khớp với cấu hình:\n• Số Serial yêu cầu: ${cfg.serialNumber}\n• Chủ sở hữu: ${cfg.certOwner}\n\nTheo quy định của Bộ GD&ĐT về Học bạ số, Ban Giám hiệu bắt buộc phải cắm đúng thiết bị USB Token đã đăng ký để niêm phong văn bản.`);
+          return;
+        }
+
+        const btn = document.getElementById('btnConfirmPrincipalApprove');
+        const oldHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang ký qua USB Token...';
+
+        try {
+          // Chuẩn bị tệp PDF
+          const prepRes = await fetch(`/api/documents/${principalTargetDocId}/prepare-signing-pdf`);
+          const prepData = await prepRes.json();
+          if (!prepData.success || !prepData.pdfBase64) {
+            throw new Error(prepData.message || 'Không thể chuẩn bị file PDF');
+          }
+
+          // Gửi lệnh ký tới EduSign Agent cục bộ có kèm expectedSerial
+          const localSignRes = await fetch('http://127.0.0.1:18888/api/local-sign-doc', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Request-Private-Network': 'true'
+            },
+            body: JSON.stringify({
+              doc: {
+                id: doc.id,
+                title: doc.title,
+                author: doc.author,
+                signCoordinates: doc.signCoordinates || null
+              },
+              fileBase64: prepData.pdfBase64,
+              signerName: cfg.certOwner || currentUser.name,
+              expectedSerial: cfg.serialNumber
+            })
+          });
+
+          const localData = await localSignRes.json();
+          if (!localData.success || !localData.signedPdfBase64) {
+            throw new Error(localData.message || 'Lỗi từ EduSign Agent');
+          }
+
+          // Gửi kết quả ký số phần cứng lên máy chủ để cập nhật hồ sơ
+          const comment = document.getElementById('principalApproveComment').value.trim();
+          const approveRes = await fetch(`/api/documents/${principalTargetDocId}/approve-principal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({
+              comment,
+              realSignedPdfBase64: localData.signedPdfBase64,
+              signPlacement: currentStampPlacement || 'bottom-right'
+            })
+          });
+
+          const approveData = await approveRes.json();
+          if (!approveRes.ok) throw new Error(approveData.message);
+
+          alert(`🎉 Ký số bằng USB Token Ban Giám hiệu thành công!\n\n• Chủ thể ký: ${cfg.certOwner}\n• Số Serial Token: ${cfg.serialNumber}\n• Hồ sơ đã được đóng dấu số và niêm phong mật mã X.509 PAdES.`);
+          closeModal('modalPrincipalApprove');
+          closeModal('modalDocDetails');
+          closeModal('modalDocViewer');
+          loadDocuments();
+        } catch (err) {
+          alert('❌ Thất bại khi ký số qua USB Token: ' + err.message);
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = oldHtml;
+        }
+      } else {
+        // Phương thức SmartCA di động
+        executePrincipalApproveWithVgca();
+      }
     }
 
     // In hoặc xuất PDF kèm đầy đủ chữ ký số
@@ -6516,7 +6934,7 @@
     // Lắng nghe phím Escape để đóng nhanh bất kỳ modal nào đang mở
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        const modals = ['modalInstallGuide', 'modalAppNotice', 'modalVgcaLogin', 'modalVgcaAccountInfo', 'modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalChangePass'];
+        const modals = ['modalInstallGuide', 'modalAppNotice', 'modalVgcaLogin', 'modalVgcaAccountInfo', 'modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalChangePass', 'modalBghSignConfig'];
         for (const id of modals) {
           const el = document.getElementById(id);
           if (el && !el.classList.contains('hidden')) {

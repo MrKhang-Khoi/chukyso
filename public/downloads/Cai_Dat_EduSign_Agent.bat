@@ -11,7 +11,7 @@ echo Dang tien hanh cai dat, tao bieu tuong Desktop va khoi chay ngam...
 if exist "%~dp0Cai_Dat_EduSign.ps1" (
     powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Cai_Dat_EduSign.ps1"
 ) else (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $code = (New-Object Net.WebClient).DownloadString('http://localhost:3000/downloads/Cai_Dat_EduSign.ps1'); Invoke-Expression $code } catch { try { $code = (New-Object Net.WebClient).DownloadString('http://127.0.0.1:3000/downloads/Cai_Dat_EduSign.ps1'); Invoke-Expression $code } catch {} }"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $code = (New-Object Net.WebClient).DownloadString('https://edusign-vgca.onrender.com/downloads/Cai_Dat_EduSign.ps1'); Invoke-Expression $code } catch { try { $code = (New-Object Net.WebClient).DownloadString('http://localhost:3000/downloads/Cai_Dat_EduSign.ps1'); Invoke-Expression $code } catch { try { $code = (New-Object Net.WebClient).DownloadString('http://127.0.0.1:3000/downloads/Cai_Dat_EduSign.ps1'); Invoke-Expression $code } catch {} } }"
 )
 
 echo.

@@ -892,6 +892,49 @@ async function runTests() {
     assert(prepSaoyRes.status === 200 && prepSaoyRes.body.success, 'API prepare-signing-pdf cho Ký Sao Y xử lý thành công không bị lỗi font WinAnsi');
     assert(prepSaoyRes.body.pdfBase64 && prepSaoyRes.body.pdfBase64.startsWith('data:application/pdf;base64,'), 'Trả về dữ liệu Base64 PDF bản sao hợp lệ');
 
+    console.log('\n📌 5. Kiểm tra Cấu hình & Đối soát Chữ ký số USB Token Ban Giám hiệu:');
+    const getBghCfgRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/bgh/signing-config',
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${adminToken}` }
+    });
+    assert(getBghCfgRes.status === 200 && getBghCfgRes.body.success, 'Truy xuất cấu hình chữ ký số Ban Giám hiệu (Mã 200)');
+    assert(getBghCfgRes.body.config.signType === 'USB_TOKEN', 'Mặc định cấu hình ký qua phần cứng USB Token');
+    assert(getBghCfgRes.body.config.serialNumber === '025E056A3F133DA9', 'Nhận diện đúng số Serial Token BGH (025E056A3F133DA9)');
+
+    const updateBghCfgRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/bgh/signing-config',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminToken}`
+      }
+    }, {
+      signType: 'USB_TOKEN',
+      serialNumber: '025E056A3F133DA9',
+      certOwner: 'Ngô Thị Liền'
+    });
+    assert(updateBghCfgRes.status === 200 && updateBghCfgRes.body.success, 'Cập nhật cấu hình chữ ký số Ban Giám hiệu thành công');
+
+    const teacherUpdateCfgRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/api/bgh/signing-config',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${teacherToken}`
+      }
+    }, {
+      signType: 'USB_TOKEN',
+      serialNumber: '1111222233334444'
+    });
+    assert(teacherUpdateCfgRes.status === 403, 'Hệ thống CHẶN giáo viên thường sửa cấu hình USB Token của Ban Giám hiệu (Mã 403)');
+
   } catch (err) {
     assert(false, `Lỗi khi gọi API: ${err.message}`);
   } finally {

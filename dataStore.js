@@ -304,6 +304,34 @@ function deleteDocument(id) {
   return true;
 }
 
+const BGH_CONFIG_FILE = path.join(DATA_DIR, 'bgh_signing_config.json');
+
+function getBghSigningConfig() {
+  try {
+    if (fs.existsSync(BGH_CONFIG_FILE)) {
+      return JSON.parse(fs.readFileSync(BGH_CONFIG_FILE, 'utf8'));
+    }
+  } catch (err) {}
+  return {
+    signType: 'USB_TOKEN', // 'USB_TOKEN' hoặc 'SMART_CA'
+    serialNumber: '025E056A3F133DA9', // USB Token Ban Giám hiệu (Cô Ngô Thị Liền)
+    certOwner: 'Ngô Thị Liền',
+    school: 'TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN',
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function saveBghSigningConfig(config) {
+  const current = getBghSigningConfig();
+  const updated = {
+    ...current,
+    ...config,
+    updatedAt: new Date().toISOString()
+  };
+  saveJsonSafe(BGH_CONFIG_FILE, updated);
+  return updated;
+}
+
 module.exports = {
   DEPARTMENTS,
   getUsers,
@@ -321,5 +349,7 @@ module.exports = {
   updateDocument,
   deleteDocument,
   normalizeFilePath,
-  resolveFilePath
+  resolveFilePath,
+  getBghSigningConfig,
+  saveBghSigningConfig
 };

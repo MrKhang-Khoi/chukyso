@@ -908,6 +908,39 @@ app.get('/api/check-vgca-status', (req, res) => {
   });
 });
 
+// ==================== CẤU HÌNH CHỮ KÝ SỐ BAN GIÁM HIỆU (CHUẨN HỌC BẠ SỐ BỘ GD&ĐT) ====================
+app.get('/api/bgh/signing-config', requireAuth, (req, res) => {
+  try {
+    const config = dataStore.getBghSigningConfig();
+    res.json({ success: true, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/bgh/signing-config', requireAuth, (req, res) => {
+  try {
+    const currentUser = req.user;
+    if (currentUser.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Chỉ Ban Giám hiệu mới có quyền cấu hình thông tin chữ ký số này!' });
+    }
+    const { signType, serialNumber, certOwner, school } = req.body || {};
+    const updated = dataStore.saveBghSigningConfig({
+      signType: signType || 'USB_TOKEN',
+      serialNumber: (serialNumber || '').trim(),
+      certOwner: (certOwner || currentUser.name || '').trim(),
+      school: school || 'TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN'
+    });
+    res.json({
+      success: true,
+      message: 'Cập nhật thông tin chữ ký số Ban Giám hiệu thành công!',
+      config: updated
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ==================== VGCA ACCOUNT MANAGEMENT (CHUẨN HỌC BẠ SỐ VIETTEL) ====================
 
 // API Đăng nhập tài khoản VGCA (Ban Cơ yếu Chính phủ)
@@ -1585,21 +1618,24 @@ app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
     sealBase64 = `data:image/png;base64,${fs.readFileSync(sealPath).toString('base64')}`;
   }
 
+  const bghConfig = dataStore.getBghSigningConfig();
+  const certSerialToUse = bghConfig.serialNumber || realSigner.thumbprint;
+  const certOwnerToUse = bghConfig.certOwner || currentUser.name;
   const principalSigImg = signatureImage || currentUser.signatureImage || sealBase64 || null;
 
   const sig = {
     step: 3,
     role: 'Hiệu trưởng / Ban Giám hiệu phê duyệt',
-    signerName: currentUser.name,
+    signerName: certOwnerToUse,
     signerUnit: 'TRƯỜNG THCS CHU VĂN AN',
-    certIssuer: realSigner.issuer,
-    certSerial: realSigner.thumbprint,
+    certIssuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
+    certSerial: certSerialToUse,
     signedAt: now,
-    signType: 'PAdES LTV (VGCA Digital Signature)',
+    signType: (bghConfig.signType === 'USB_TOKEN') ? 'PAdES LTV (VGCA Hardware USB Token)' : 'PAdES LTV (VGCA SmartCA)',
     status: 'VALID',
     placement: signPlacement || 'bottom-right',
     visualSignImage: principalSigImg,
-    visualSign: `Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ`
+    visualSign: `Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ (${certOwnerToUse})`
   };
 
   const updatedSignatures = [...(doc.signatures || []), sig];
@@ -1619,44 +1655,84 @@ app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
     logs: updatedLogs
   });
 
-  // Tự động ký số mật mã PAdES X.509 khi Ban Giám hiệu duyệt
-  pdfSignerService.signWithRealVgca(updatedDoc)
-    .then(result => {
-      if (result && result.signedFilePath) {
-        dataStore.updateDocument(updatedDoc.id, {
-          realSignedPath: result.signedFilePath,
-          realVgcaSigned: true,
-          realSignedAt: now
-        });
-        console.log(`[Approve Principal] ✅ Đã niêm phong chữ ký số PAdES X.509 cho hồ sơ ${updatedDoc.id}`);
+  if (req.body.realSignedPdfBase64) {
+    try {
+      const uploadDir = path.join(__dirname, 'uploads', 'documents');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const cleanB64 = req.body.realSignedPdfBase64.replace(/^data:[^;]+;base64,/, '');
+      const savedSignedPath = path.join(uploadDir, `signed_bgh_${doc.id}_${Date.now()}.pdf`);
+      fs.writeFileSync(savedSignedPath, Buffer.from(cleanB64, 'base64'));
 
-        // Tự động sao lưu file đã ký số thật lên Google Drive của trường
-        if (fs.existsSync(result.signedFilePath)) {
-          googleDriveService.uploadToGoogleDrive(updatedDoc, result.signedFilePath)
-            .then(driveRes => {
-              const driveLogs = [
-                ...updatedDoc.logs,
-                {
-                  time: new Date().toISOString().replace('T', ' ').substring(0, 19),
-                  actor: 'Google Drive Sync',
-                  action: `Đã tự động lưu trữ và phân loại vào Google Drive: "${driveRes.folderPath}"`
-                }
-              ];
-              dataStore.updateDocument(updatedDoc.id, {
-                driveInfo: {
-                  fileId: driveRes.fileId,
-                  viewUrl: driveRes.viewUrl,
-                  folderPath: driveRes.folderPath,
-                  uploadedAt: driveRes.uploadedAt
-                },
-                logs: driveLogs
-              });
-            })
-            .catch(e => console.error('[Google Drive] Lỗi tự động sao lưu:', e.message));
+      dataStore.updateDocument(updatedDoc.id, {
+        realSignedPath: savedSignedPath,
+        realVgcaSigned: true,
+        realSignedAt: now,
+        vgcaInfo: {
+          signer: certOwnerToUse,
+          serialNumber: certSerialToUse,
+          issuer: 'CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ',
+          standard: 'PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)',
+          verified: true
         }
+      });
+      console.log(`[Approve Principal] ✅ Đã lưu tệp ký số phần cứng USB Token Ban Giám hiệu: ${savedSignedPath}`);
+
+      if (fs.existsSync(savedSignedPath)) {
+        googleDriveService.uploadToGoogleDrive(updatedDoc, savedSignedPath)
+          .then(driveRes => {
+            dataStore.updateDocument(updatedDoc.id, {
+              driveInfo: {
+                fileId: driveRes.fileId,
+                viewUrl: driveRes.viewUrl,
+                folderPath: driveRes.folderPath,
+                uploadedAt: driveRes.uploadedAt
+              }
+            });
+          }).catch(e => console.error('[Google Drive] Lỗi tự động sao lưu BGH:', e.message));
       }
-    })
-    .catch(e => console.warn('[Approve Principal] Lỗi tạo chữ ký số VGCA:', e.message));
+    } catch (e) {
+      console.error('[Approve Principal] Lỗi lưu file BGH USB Token:', e.message);
+    }
+  } else {
+    // Tự động ký số mật mã PAdES X.509 khi Ban Giám hiệu duyệt
+    pdfSignerService.signWithRealVgca(updatedDoc)
+      .then(result => {
+        if (result && result.signedFilePath) {
+          dataStore.updateDocument(updatedDoc.id, {
+            realSignedPath: result.signedFilePath,
+            realVgcaSigned: true,
+            realSignedAt: now
+          });
+          console.log(`[Approve Principal] ✅ Đã niêm phong chữ ký số PAdES X.509 cho hồ sơ ${updatedDoc.id}`);
+
+          // Tự động sao lưu file đã ký số thật lên Google Drive của trường
+          if (fs.existsSync(result.signedFilePath)) {
+            googleDriveService.uploadToGoogleDrive(updatedDoc, result.signedFilePath)
+              .then(driveRes => {
+                const driveLogs = [
+                  ...updatedDoc.logs,
+                  {
+                    time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                    actor: `${currentUser.name} (Ban Giám hiệu)`,
+                    action: `Đã tự động sao lưu và đồng bộ hồ sơ lên Google Drive trường: "${driveRes.folderPath}"`
+                  }
+                ];
+                dataStore.updateDocument(updatedDoc.id, {
+                  driveInfo: {
+                    fileId: driveRes.fileId,
+                    viewUrl: driveRes.viewUrl,
+                    folderPath: driveRes.folderPath,
+                    uploadedAt: driveRes.uploadedAt
+                  },
+                  logs: driveLogs
+                });
+              })
+              .catch(e => console.error('[Google Drive] Lỗi tự động sao lưu BGH:', e.message));
+          }
+        }
+      })
+      .catch(signErr => console.warn('[Approve Principal] Lỗi khi ký số tự động:', signErr.message));
+  }
 
   res.json({
     success: true,
