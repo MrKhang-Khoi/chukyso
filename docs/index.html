@@ -218,219 +218,217 @@
   <!-- ============================================================== -->
   <div id="mainDashboard" class="hidden min-h-screen flex flex-col bg-slate-50">
     
-    <!-- THANH ĐIỀU HƯỚNG TRÊN CÙNG (HEADER) -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <!-- THANH ĐIỀU HƯỚNG TOÀN TRƯỜNG CHUẨN APPLE HIG & MATERIAL 3 (56PX SLIM APP BAR) -->
+    <header class="bg-white/95 backdrop-blur border-b border-slate-200/80 sticky top-0 z-30 shadow-xs">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
+        <div class="flex justify-between items-center h-14">
           
+          <!-- Logo & Trường học -->
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-md shadow-blue-500/20">
+            <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base font-bold shadow-md shadow-blue-500/20">
               <i class="fa-solid fa-graduation-cap"></i>
             </div>
             <div>
-              <span class="text-xs font-extrabold uppercase tracking-wider text-blue-600 block">THCS CHU VĂN AN</span>
-              <h2 class="text-sm font-bold text-slate-900">EduSign — Quản lý Hồ sơ Giáo dục</h2>
+              <div class="flex items-center gap-1.5 leading-none">
+                <span class="text-sm font-black text-slate-900 tracking-tight">EduSign</span>
+                <span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">CVA</span>
+              </div>
+              <span class="text-[10px] text-slate-500 hidden sm:block mt-0.5">THCS Chu Văn An</span>
             </div>
           </div>
 
-          <div class="flex items-center gap-2.5">
-            <button type="button" onclick="openInstallGuideModal()"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition border border-slate-300 shadow-xs cursor-pointer"
-              title="Xem hướng dẫn cài đặt trên máy tính khác & cách ký số">
-              <i class="fa-solid fa-circle-question text-blue-600"></i>
-              <span>Hướng Dẫn</span>
+          <!-- Menu điều hướng chính (Flat Pill Tabs) -->
+          <nav class="hidden md:flex items-center gap-1 text-xs font-semibold text-slate-600">
+            <button id="navTabDocs" onclick="switchMainTab('docs')"
+              class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 bg-blue-50 text-blue-700 font-bold cursor-pointer">
+              <i class="fa-solid fa-book-bookmark text-xs"></i>
+              <span id="navTabDocsTitle">Hồ sơ</span>
+              <span id="docCountBadge" class="ml-0.5 px-1.5 py-0.2 rounded-full bg-blue-200 text-blue-800 text-[10px]">0</span>
             </button>
 
-            <a href="/downloads/EduSign_Agent_v2.0_Setup.zip" download
-              class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-sm transition"
-              title="Tải EduSign Agent 2.0 chuẩn Windows (Gói nén .ZIP chống chặn, tự tạo icon Desktop)">
-              <i class="fa-solid fa-file-zipper text-xs"></i>
-              <span>Tải EduSign Agent 2.0 (.ZIP)</span>
-            </a>
+            <button id="navTabUsers" onclick="switchMainTab('users')"
+              class="hidden px-3 py-1.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-users-gear text-xs"></i>
+              <span>Giáo viên</span>
+            </button>
 
-            <div class="flex items-center gap-2.5 bg-slate-100 py-1.5 px-3 rounded-xl border border-slate-200">
-              <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
-                <span id="userAvatarText">GV</span>
+            <button id="navTabStats" onclick="switchMainTab('stats')"
+              class="hidden px-3 py-1.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-chart-pie text-xs"></i>
+              <span>Báo cáo</span>
+            </button>
+
+            <button id="navTabDrive" onclick="switchMainTab('drive')"
+              class="hidden px-3 py-1.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-brands fa-google-drive text-emerald-600 text-xs"></i>
+              <span>Kho Drive</span>
+            </button>
+
+            <button id="navTabSign" onclick="switchMainTab('sign')" class="hidden"></button>
+          </nav>
+
+          <!-- Khu vực tiện ích: Trạng thái VGCA/Token & Profile Avatar Menu -->
+          <div class="flex items-center gap-2 sm:gap-3">
+            
+            <!-- Trạng thái chữ ký số thích ứng (VGCA hoặc USB Token) -->
+            <div id="vgcaBarActionArea" class="flex items-center">
+              <button type="button" id="btnVgcaBarLogin" onclick="handleAdaptiveLoginSigner()"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer shadow-2xs">
+                <i id="headerSignIcon" class="fa-solid fa-shield-halved text-blue-600 text-[11px]"></i>
+                <span id="headerSignButtonText" class="hidden sm:inline">VGCA / Token</span>
+              </button>
+
+              <div id="vgcaBarLoggedIn" class="hidden items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-xl text-xs font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                <span class="truncate max-w-[110px]" id="vgcaBarSignerName">Hà Văn Tý</span>
+                <button type="button" onclick="openVgcaAccountInfoModal()" title="Xem chứng thư số" class="text-blue-700 hover:underline text-[10px] font-bold">
+                  [Xem]
+                </button>
+                <button type="button" onclick="handleVgcaLogout()" title="Đăng xuất VGCA" class="text-slate-400 hover:text-rose-600 text-xs ml-0.5">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
               </div>
-              <div class="text-left leading-tight">
-                <div class="text-xs font-bold text-slate-900" id="userNameHeader">Họ và Tên</div>
-                <div class="text-[10px] text-slate-500" id="userRoleHeader">Giáo viên</div>
-              </div>
-              <span id="userRoleBadge" class="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">GV</span>
             </div>
 
-            <!-- Nút trạng thái Cloud Firestore Realtime Sync -->
-            <button id="firebaseStatusBadge" onclick="openModal('modalFirebaseStatus')" title="Trạng thái kết nối Cloud Firestore Realtime Sync"
-              class="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition shadow-sm cursor-pointer">
-              <i class="fa-solid fa-server text-slate-400"></i>
-              <span>Local Server Mode</span>
-            </button>
+            <!-- Profile Dropdown (Gọn gàng theo chuẩn Apple HIG) -->
+            <div class="relative">
+              <button type="button" onclick="toggleUserDropdownMenu()" id="btnUserDropdown"
+                class="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-slate-100 transition cursor-pointer border border-transparent hover:border-slate-200">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                  <span id="userAvatarText">GV</span>
+                </div>
+                <div class="hidden lg:block text-left leading-tight">
+                  <div class="text-xs font-bold text-slate-800" id="userNameHeader">Họ và Tên</div>
+                  <div class="text-[10px] text-slate-500" id="userRoleHeader">Giáo viên</div>
+                </div>
+                <span id="userRoleBadge" class="hidden">GV</span>
+                <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+              </button>
 
-            <button id="btnBghSignConfig" onclick="openBghSignConfigModal()" title="Cấu hình thông tin Chữ ký số Ban Giám hiệu (USB Token / SmartCA)"
-              class="hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-xl transition shadow-sm">
-              <i class="fa-solid fa-usb-drive text-amber-700"></i>
-              <span>Chữ ký số BGH</span>
-            </button>
+              <!-- Floating Menu Dropdown -->
+              <div id="userProfileDropdownMenu" class="hidden absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs">
+                <div class="px-3.5 py-2.5 border-b border-slate-100">
+                  <p class="font-bold text-slate-900" id="menuUserName">Họ và Tên</p>
+                  <p class="text-[11px] text-slate-500" id="menuUserRole">Tổ chuyên môn</p>
+                </div>
+                <div class="py-1">
+                  <button type="button" onclick="closeUserDropdownMenu(); openUploadSignatureModal()" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 cursor-pointer">
+                    <i class="fa-solid fa-signature text-indigo-600 w-4"></i>
+                    <span>Tải ảnh chữ ký số cá nhân</span>
+                  </button>
+                  <button type="button" id="btnBghSignConfig" onclick="closeUserDropdownMenu(); openBghSignConfigModal()" class="hidden w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 text-amber-700 cursor-pointer">
+                    <i class="fa-solid fa-usb-drive text-amber-600 w-4"></i>
+                    <span>Cấu hình Chữ ký số BGH</span>
+                  </button>
+                  <a href="/downloads/EduSign_Agent_v2.0_Setup.zip" download onclick="closeUserDropdownMenu()" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 cursor-pointer">
+                    <i class="fa-solid fa-file-zipper text-emerald-600 w-4"></i>
+                    <span>Tải EduSign Agent 2.0 (.ZIP)</span>
+                  </a>
+                  <button type="button" onclick="closeUserDropdownMenu(); openInstallGuideModal()" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 cursor-pointer">
+                    <i class="fa-solid fa-circle-question text-blue-600 w-4"></i>
+                    <span>Hướng dẫn cài đặt & ký số</span>
+                  </button>
+                  <button type="button" id="firebaseStatusBadge" onclick="closeUserDropdownMenu(); openModal('modalFirebaseStatus')" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 cursor-pointer">
+                    <i class="fa-solid fa-server text-slate-400 w-4"></i>
+                    <span>Trạng thái kết nối Cloud</span>
+                  </button>
+                  <button type="button" onclick="closeUserDropdownMenu(); openChangePasswordModal()" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 cursor-pointer">
+                    <i class="fa-solid fa-key text-slate-500 w-4"></i>
+                    <span>Đổi mật khẩu</span>
+                  </button>
+                </div>
+                <div class="border-t border-slate-100 pt-1">
+                  <button type="button" onclick="closeUserDropdownMenu(); handleLogout()" class="w-full px-3.5 py-2 text-left hover:bg-red-50 flex items-center gap-2.5 text-red-600 font-semibold cursor-pointer">
+                    <i class="fa-solid fa-arrow-right-from-bracket w-4"></i>
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
-            <button onclick="openChangePasswordModal()" title="Đổi mật khẩu"
-              class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
-              <i class="fa-solid fa-key text-xs"></i>
-            </button>
-
-            <button onclick="handleLogout()" title="Đăng xuất"
-              class="w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition">
-              <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
-            </button>
           </div>
 
         </div>
-
-        <!-- THANH TAB CHỨC NĂNG THEO PHÂN QUYỀN -->
-        <nav class="flex gap-2 overflow-x-auto py-2 border-t border-slate-100 text-xs font-semibold text-slate-600">
-          <button id="navTabDocs" onclick="switchMainTab('docs')"
-            class="px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-blue-50 text-blue-700 font-bold">
-            <i class="fa-solid fa-book-bookmark"></i>
-            <span id="navTabDocsTitle">Hồ sơ Kế hoạch bài dạy</span>
-            <span id="docCountBadge" class="ml-1 px-1.5 py-0.2 rounded-full bg-blue-200 text-blue-800 text-[10px]">0</span>
-          </button>
-
-          <button id="navTabUsers" onclick="switchMainTab('users')"
-            class="hidden px-3.5 py-1.5 rounded-lg hover:bg-slate-100 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-users-gear"></i>
-            <span>Quản lý Giáo viên & Phân quyền</span>
-          </button>
-
-          <button id="navTabStats" onclick="switchMainTab('stats')"
-            class="hidden px-3.5 py-1.5 rounded-lg hover:bg-slate-100 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-chart-pie"></i>
-            <span>Báo cáo Toàn trường</span>
-          </button>
-
-          <button id="navTabDrive" onclick="switchMainTab('drive')"
-            class="hidden px-3.5 py-1.5 rounded-lg hover:bg-slate-100 transition flex items-center gap-1.5">
-            <i class="fa-brands fa-google-drive text-emerald-600"></i>
-            <span>Google Drive Kho trường</span>
-          </button>
-
-          <button id="navTabSign" onclick="switchMainTab('sign')"
-            class="px-3.5 py-1.5 rounded-lg hover:bg-slate-100 transition flex items-center gap-1.5 ml-auto">
-            <i class="fa-solid fa-shield-halved text-red-600"></i>
-            <span>Chứng Thư Số VGCA & Di Động</span>
-          </button>
-        </nav>
-
       </div>
     </header>
 
     <!-- NỘI DUNG CHÍNH (MAIN CONTAINER) -->
-    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1">
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex-1">
       
       <!-- ==================== TAB 1 & 2: HỒ SƠ CÁ NHÂN & KÝ BÁO CÁO LUÂN CHUYỂN ==================== -->
       <section id="tabContentDocs" class="space-y-4">
 
-        <!-- THANH PHÂN CHIA 2 TAB CHUYÊN BIỆT THEO CHUẨN QUY TRÌNH NHÀ TRƯỜNG -->
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200 shadow-sm">
-          <div class="flex items-center gap-2">
+        <!-- TIER 2: THANH ĐIỀU KHIỂN ĐỒNG NHẤT (UNIFIED ACTION BAR - APPLE HIG SEGMENTED CONTROL) -->
+        <div class="bg-white px-3 sm:px-4 py-2.5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-wrap items-center justify-between gap-3">
+          
+          <!-- iOS Segmented Control: Tab 1 & Tab 2 -->
+          <div class="inline-flex p-1 bg-slate-100/90 rounded-xl text-xs font-semibold select-none border border-slate-200/60">
             <button type="button" id="tabBtnPersonalDocs" onclick="switchDocCategoryTab('PERSONAL')"
-              class="px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-sm cursor-pointer">
-              <i class="fa-solid fa-folder-user text-sm"></i>
-              <span>Tab 1: Hồ sơ cá nhân (Tự ký)</span>
-              <span id="badgePersonalCount" class="px-2 py-0.5 rounded-full bg-blue-700 text-white text-[10px]">0</span>
+              class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-white text-blue-700 shadow-xs cursor-pointer">
+              <i class="fa-solid fa-folder-user text-xs"></i>
+              <span>Hồ sơ cá nhân</span>
+              <span id="badgePersonalCount" class="px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">0</span>
             </button>
 
             <button type="button" id="tabBtnReportDocs" onclick="switchDocCategoryTab('REPORT')"
-              class="px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-slate-600 hover:bg-slate-100 cursor-pointer">
-              <i class="fa-solid fa-file-signature text-sm text-indigo-600"></i>
-              <span>Tab 2: Ký báo cáo & Luân chuyển</span>
-              <span id="badgeReportCount" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px]">0</span>
+              class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer">
+              <i class="fa-solid fa-file-signature text-xs text-indigo-600"></i>
+              <span>Ký báo cáo & Luân chuyển</span>
+              <span id="badgeReportCount" class="px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px] font-semibold">0</span>
             </button>
           </div>
 
-          <div class="flex items-center gap-2.5 text-xs flex-wrap">
-            <label class="flex items-center gap-1.5 cursor-pointer select-none text-slate-600 font-medium px-2 py-1 rounded-lg hover:bg-slate-50 transition border border-transparent hover:border-slate-200">
-              <input type="checkbox" id="toggleShowArchived" onchange="onToggleArchived(this.checked)" class="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer">
-              <span class="text-[11px] font-semibold text-slate-700">Xem hồ sơ đã lưu trữ (Drive)</span>
+          <!-- Thông tin tiêu đề tinh giản (ẩn trên mobile để tối ưu diện tích) -->
+          <div class="hidden xl:flex items-center gap-2 text-xs text-slate-500">
+            <span id="docsViewHeading" class="font-bold text-slate-800">Hồ sơ cá nhân (Tự ký số)</span>
+            <span class="text-slate-300">•</span>
+            <span id="docsViewSubHeading" class="truncate max-w-[280px]">Ký số và lưu trữ hồ sơ</span>
+          </div>
+
+          <!-- Các tác vụ bổ trợ & Nút Tạo mới -->
+          <div class="flex items-center gap-2 text-xs flex-wrap">
+            <label class="flex items-center gap-1.5 cursor-pointer select-none text-slate-600 font-medium px-2 py-1.5 rounded-lg hover:bg-slate-50 transition">
+              <input type="checkbox" id="toggleShowArchived" onchange="onToggleArchived(this.checked)" class="w-3.5 h-3.5 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer">
+              <span class="text-[11px] text-slate-600 font-medium hidden sm:inline">Lưu trữ Drive</span>
             </label>
 
-            <button type="button" id="btnWebPushToggle" onclick="handleToggleWebPush()" title="Nhận thông báo tự động khi đồng nghiệp/tổ trưởng/BGH ký duyệt hoặc chuyển báo cáo"
-              class="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold flex items-center gap-1.5 text-xs transition cursor-pointer">
+            <button type="button" id="btnWebPushToggle" onclick="handleToggleWebPush()" title="Nhận thông báo khi có báo cáo cần ký"
+              class="p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5 text-xs cursor-pointer">
               <i id="webPushIcon" class="fa-regular fa-bell text-blue-600"></i>
-              <span id="webPushText">Bật thông báo ĐT</span>
+              <span id="webPushText" class="hidden md:inline">Bật thông báo</span>
+            </button>
+
+            <button onclick="loadDocuments()" class="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition cursor-pointer" title="Làm mới">
+              <i class="fa-solid fa-rotate-right text-xs"></i>
+            </button>
+
+            <button onclick="openNewDocModal()" id="btnActionCreateDoc"
+              class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-plus text-xs"></i>
+              <span id="btnActionCreateDocText">Nộp & Ký Mới</span>
             </button>
           </div>
         </div>
-        
-        <!-- THANH ĐIỀU KHIỂN & TÁC VỤ KHOA HỌC -->
-        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
-          <!-- Hàng 1: Tiêu đề & Nút tác vụ chính -->
-          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-            <div>
-              <div class="flex items-center gap-2">
-                <h2 class="text-base sm:text-lg font-bold text-slate-900" id="docsViewHeading">Hồ sơ cá nhân (Tự ký số)</h2>
-                <span id="docCountBadge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">0</span>
-              </div>
-              <p class="text-xs text-slate-500" id="docsViewSubHeading">Giáo viên ký số hoàn tất hồ sơ, tự do tải về hoặc lưu trữ OneDrive (5TB)</p>
-            </div>
 
-            <div class="flex items-center gap-2">
-              <button onclick="loadDocuments()" class="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition cursor-pointer" title="Làm mới dữ liệu">
-                <i class="fa-solid fa-rotate-right text-xs"></i>
-              </button>
-
-              <button type="button" onclick="openUploadSignatureModal()"
-                class="px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-xs"
-                title="Tải ảnh chữ ký số cá nhân lên hệ thống (tự động bóc tách nền trong suốt)">
-                <i class="fa-solid fa-signature text-indigo-600 text-sm"></i>
-                <span class="hidden sm:inline">Tải Chữ Ký Số Lên</span>
-                <span class="sm:hidden">Ảnh Ký</span>
-              </button>
-
-              <button onclick="openNewDocModal()" id="btnActionCreateDoc"
-                class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                <span id="btnActionCreateDocText">+ Nộp & Ký Giáo Án Mới</span>
-              </button>
-            </div>
+        <!-- THANH TÁC VỤ NỔI KHI CHỌN VĂN BẢN (FLOATING ACTION BAR - CHUẨN DOCUSIGN MOBILE) -->
+        <div id="floatingSelectionBar" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700 items-center gap-3 text-xs transition-all duration-200">
+          <div class="flex items-center gap-1.5 pr-2 border-r border-slate-700">
+            <i class="fa-solid fa-check-double text-blue-400"></i>
+            <span>Đã chọn <strong id="selectedDocCountText" class="text-blue-300 font-bold">0</strong> hồ sơ</span>
           </div>
-
-          <!-- Hàng 2: Thanh tác vụ nhanh (Ký duyệt, OneDrive, Trạng thái Chữ ký số VGCA / Token) -->
-          <div class="flex flex-wrap items-center justify-between gap-2.5 text-xs">
-            <div class="flex flex-wrap items-center gap-2">
-              <button type="button" onclick="handleBatchSignClick()" id="btnBatchSignVgca"
-                class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-300 transition flex items-center gap-1.5 shadow-xs">
-                <i class="fa-solid fa-file-signature text-blue-600"></i>
-                <span>Ký duyệt</span>
-                <span class="text-[11px] text-slate-500">(<strong id="selectedDocCountText" class="text-blue-600">0</strong>)</span>
-              </button>
-
-              <button type="button" onclick="handleBatchSyncOneDrive()" id="btnBatchSyncOneDrive"
-                class="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-lg shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                title="Lưu hồ sơ đã chọn vào thư mục OneDrive (5TB)">
-                <i class="fa-brands fa-microsoft text-white text-xs"></i>
-                <span>Lưu vào OneDrive (5TB)</span>
-              </button>
-            </div>
-
-            <!-- Trạng thái chữ ký số thích ứng (VGCA hoặc USB Token) -->
-            <div id="vgcaBarActionArea" class="flex items-center gap-2">
-              <button type="button" id="btnVgcaBarLogin" onclick="handleAdaptiveLoginSigner()"
-                class="px-3 py-1.5 bg-white hover:bg-blue-50 border border-blue-600 text-blue-700 font-bold rounded-lg shadow-xs transition flex items-center gap-1.5 text-xs">
-                <i id="headerSignIcon" class="fa-solid fa-shield-halved text-blue-600"></i>
-                <span id="headerSignButtonText">Đăng nhập VGCA (SmartCA)</span>
-              </button>
-
-              <div id="vgcaBarLoggedIn" class="hidden flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 text-emerald-800 px-2.5 py-1 rounded-lg text-xs">
-                <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                <span class="font-bold truncate max-w-[140px]" id="vgcaBarSignerName">Hà Văn Tý</span>
-                <button type="button" onclick="openVgcaAccountInfoModal()" title="Xem chứng thư số" class="text-blue-700 hover:underline font-bold text-[11px]">
-                  [Chi tiết]
-                </button>
-                <button type="button" onclick="handleVgcaLogout()" title="Đăng xuất" class="text-slate-400 hover:text-rose-600 ml-0.5 text-xs">
-                  <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                </button>
-              </div>
-            </div>
-          </div>
+          <button type="button" onclick="handleBatchSignClick()" id="btnBatchSignVgca"
+            class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+            <i class="fa-solid fa-file-signature text-xs"></i>
+            <span>Ký duyệt</span>
+          </button>
+          <button type="button" onclick="handleBatchSyncOneDrive()" id="btnBatchSyncOneDrive"
+            class="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+            <i class="fa-brands fa-microsoft text-xs"></i>
+            <span>OneDrive (5TB)</span>
+          </button>
+          <button type="button" onclick="deselectAllDocs()" class="text-slate-400 hover:text-white p-1 ml-1 cursor-pointer" title="Bỏ chọn tất cả">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
         </div>
 
         <!-- CONTAINER HIỂN THỊ DANH SÁCH: BẢNG TRÊN DESKTOP & THẺ CARD TRÊN ĐIỆN THOẠI -->
@@ -2410,6 +2408,10 @@
       document.getElementById('userNameHeader').innerText = currentUser.name;
       document.getElementById('userRoleHeader').innerText = currentUser.department || 'THCS Chu Văn An';
       document.getElementById('userAvatarText').innerText = currentUser.name.split(' ').pop().substring(0, 2).toUpperCase();
+      const menuNameEl = document.getElementById('menuUserName');
+      if (menuNameEl) menuNameEl.innerText = currentUser.name;
+      const menuRoleEl = document.getElementById('menuUserRole');
+      if (menuRoleEl) menuRoleEl.innerText = `${currentUser.roleTitle || 'Giáo viên'} • ${currentUser.department || 'THCS Chu Văn An'}`;
 
       const roleBadge = document.getElementById('userRoleBadge');
       if (currentUser.role === 'ADMIN') {
@@ -3510,10 +3512,8 @@
       if (masterCb) { masterCb.checked = false; masterCb.indeterminate = false; }
       const countEl = document.getElementById('selectedDocCountText');
       if (countEl) countEl.innerText = '0';
-      const btnBatch = document.getElementById('btnBatchSignVgca');
-      if (btnBatch) {
-        btnBatch.className = 'px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg border border-slate-300 transition flex items-center gap-1.5 shadow-xs';
-      }
+      const floatingBar = document.getElementById('floatingSelectionBar');
+      if (floatingBar) { floatingBar.classList.add('hidden'); floatingBar.classList.remove('flex'); }
 
       if (docs.length === 0) {
         if (emptyState) {
@@ -5026,15 +5026,47 @@
         masterCb.indeterminate = (count > 0 && count < totalBoxes.length);
       }
 
-      const btnSign = document.getElementById('btnBatchSignVgca');
-      if (btnSign) {
+      // Thanh tác vụ nổi (Docked Floating Bar theo chuẩn DocuSign Mobile)
+      const floatingBar = document.getElementById('floatingSelectionBar');
+      if (floatingBar) {
         if (count > 0) {
-          btnSign.className = 'px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 transition flex items-center gap-1.5 cursor-pointer';
+          floatingBar.classList.remove('hidden');
+          floatingBar.classList.add('flex');
         } else {
-          btnSign.className = 'px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl border border-slate-300 transition flex items-center gap-1.5 shadow-xs';
+          floatingBar.classList.add('hidden');
+          floatingBar.classList.remove('flex');
         }
       }
     }
+
+    function deselectAllDocs() {
+      const checkboxes = document.querySelectorAll('.doc-row-checkbox');
+      checkboxes.forEach(cb => { cb.checked = false; });
+      const masterCb = document.getElementById('checkAllDocs');
+      if (masterCb) { masterCb.checked = false; masterCb.indeterminate = false; }
+      updateSelectedDocsCount();
+    }
+
+    function toggleUserDropdownMenu() {
+      const menu = document.getElementById('userProfileDropdownMenu');
+      if (menu) menu.classList.toggle('hidden');
+    }
+
+    function closeUserDropdownMenu() {
+      const menu = document.getElementById('userProfileDropdownMenu');
+      if (menu) menu.classList.add('hidden');
+    }
+
+    // Đóng dropdown khi click bên ngoài
+    document.addEventListener('click', function(e) {
+      const dropdown = document.getElementById('userProfileDropdownMenu');
+      const btn = document.getElementById('btnUserDropdown');
+      if (dropdown && !dropdown.classList.contains('hidden')) {
+        if (btn && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.add('hidden');
+        }
+      }
+    });
 
     function handleBatchSignClick() {
       const checkboxes = document.querySelectorAll('.doc-row-checkbox:checked');
