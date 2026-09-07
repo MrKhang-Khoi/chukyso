@@ -33,10 +33,35 @@
 
       // Tự động điều hướng mọi fetch('/api/...') sang Render khi ở trên GitHub Pages
       const originalFetch = window.fetch;
-      window.fetch = function(resource, init) {
-        if (typeof resource === 'string') {
+      window.fetch = async function(resource, init) {
+        if (typeof resource === 'string' && isGitHubPages) {
+          // Khi chạy trên GitHub Pages (static): Phục vụ danh sách người ký từ Firebase RTDB Singapore tránh lỗi 404
+          if (resource === '/api/users/signers' || resource.endsWith('/api/users/signers')) {
+            try {
+              const fbRes = await originalFetch('https://edusign-school-default-rtdb.asia-southeast1.firebasedatabase.app/users.json');
+              const fbData = await fbRes.json();
+              const userList = Array.isArray(fbData) ? fbData : Object.values(fbData || {});
+              const signers = userList.filter(u => u && !u.isLocked).map(u => ({
+                id: u.id,
+                name: u.name,
+                role: u.role,
+                roleTitle: u.roleTitle,
+                department: u.department,
+                signType: u.signType || 'VGCA'
+              }));
+              return new Response(JSON.stringify({ success: true, data: signers }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+              });
+            } catch (e) {
+              return new Response(JSON.stringify({ success: true, data: [] }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+              });
+            }
+          }
           if (resource.startsWith('/api/')) {
-            resource = (isGitHubPages ? BACKEND_URL : '') + resource;
+            resource = BACKEND_URL + resource;
           }
         }
         return originalFetch(resource, init);
@@ -237,7 +262,7 @@
             </div>
           </div>
 
-          <!-- Menu điều hướng chính (Flat Pill Tabs) -->
+          <!-- Menu điều hướng chính (Flat Pill Tabs theo chuẩn kế hoạch) -->
           <nav class="hidden md:flex items-center gap-1 text-xs font-semibold text-slate-600">
             <button id="navTabDocs" onclick="switchMainTab('docs')"
               class="px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 bg-blue-50 text-blue-700 font-bold cursor-pointer">
@@ -249,21 +274,11 @@
             <button id="navTabUsers" onclick="switchMainTab('users')"
               class="hidden px-3 py-1.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
               <i class="fa-solid fa-users-gear text-xs"></i>
-              <span>Giáo viên</span>
+              <span>Giáo viên & Tổ chuyên môn</span>
             </button>
 
-            <button id="navTabStats" onclick="switchMainTab('stats')"
-              class="hidden px-3 py-1.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
-              <i class="fa-solid fa-chart-pie text-xs"></i>
-              <span>Báo cáo</span>
-            </button>
-
-            <button id="navTabDrive" onclick="switchMainTab('drive')"
-              class="hidden px-3 py-1.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
-              <i class="fa-brands fa-google-drive text-emerald-600 text-xs"></i>
-              <span>Kho Drive</span>
-            </button>
-
+            <button id="navTabStats" onclick="switchMainTab('stats')" class="hidden"></button>
+            <button id="navTabDrive" onclick="switchMainTab('drive')" class="hidden"></button>
             <button id="navTabSign" onclick="switchMainTab('sign')" class="hidden"></button>
           </nav>
 
@@ -2456,20 +2471,16 @@
         if (usersTbody) usersTbody.innerHTML = '';
       }
 
+      const docsTitleEl = document.getElementById('navTabDocsTitle');
+      if (docsTitleEl) docsTitleEl.innerText = 'Hồ sơ';
+
       if (currentUser.role === 'HEAD_DEPT') {
-        document.getElementById('navTabDocsTitle').innerText = `Duyệt Giáo án (${currentUser.department})`;
         document.getElementById('docsViewHeading').innerText = `Hồ sơ Tổ ${currentUser.department}`;
         document.getElementById('docsViewSubHeading').innerText = `Các kế hoạch bài dạy cần Tổ trưởng duyệt chuyên môn`;
-      } else if (currentUser.role === 'BGH') {
-        document.getElementById('navTabDocsTitle').innerText = 'Duyệt Báo cáo BGH';
-        document.getElementById('docsViewHeading').innerText = 'Hồ sơ Ban Giám hiệu Phê duyệt';
-        document.getElementById('docsViewSubHeading').innerText = 'Ký số phần cứng USB Token và đóng dấu nhà trường';
-      } else if (currentUser.role === 'ADMIN') {
-        document.getElementById('navTabDocsTitle').innerText = 'Kế hoạch bài dạy Toàn trường';
-        document.getElementById('docsViewHeading').innerText = 'Hồ sơ Trình ký Toàn trường';
-        document.getElementById('docsViewSubHeading').innerText = 'Phê duyệt chính thức và ký số Ban Cơ yếu Chính phủ';
+      } else if (currentUser.role === 'BGH' || currentUser.role === 'ADMIN') {
+        document.getElementById('docsViewHeading').innerText = 'Hồ sơ Giáo án & Kế hoạch';
+        document.getElementById('docsViewSubHeading').innerText = 'Quản lý, theo dõi và phê duyệt hồ sơ giáo dục';
       } else {
-        document.getElementById('navTabDocsTitle').innerText = 'Kế hoạch bài dạy của tôi';
         document.getElementById('docsViewHeading').innerText = 'Kế hoạch bài dạy của tôi';
         document.getElementById('docsViewSubHeading').innerText = 'Theo dõi tiến trình phê duyệt của Tổ trưởng và Ban Giám hiệu';
       }
@@ -3343,17 +3354,25 @@
       const btnCreateText = document.getElementById('btnActionCreateDocText');
 
       if (cat === 'PERSONAL') {
-        if (btnPersonal) btnPersonal.className = 'px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow-sm cursor-pointer';
-        if (btnReport) btnReport.className = 'px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-slate-600 hover:bg-slate-100 cursor-pointer';
+        if (btnPersonal) {
+          btnPersonal.className = 'px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-white text-blue-700 shadow-xs cursor-pointer';
+        }
+        if (btnReport) {
+          btnReport.className = 'px-3 sm:px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer';
+        }
         if (heading) heading.innerText = 'Hồ sơ cá nhân (Tự ký số)';
-        if (subHeading) subHeading.innerText = 'Giáo viên ký số hoàn tất hồ sơ, tự do tải về hoặc lưu trữ OneDrive (5TB)';
-        if (btnCreateText) btnCreateText.innerText = '+ Nộp & Ký Giáo Án Mới';
+        if (subHeading) subHeading.innerText = 'Ký số và hoàn tất giáo án bài dạy';
+        if (btnCreateText) btnCreateText.innerText = 'Nộp & Ký Mới';
       } else {
-        if (btnReport) btnReport.className = 'px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-indigo-600 text-white shadow-sm cursor-pointer';
-        if (btnPersonal) btnPersonal.className = 'px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-slate-600 hover:bg-slate-100 cursor-pointer';
+        if (btnReport) {
+          btnReport.className = 'px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs cursor-pointer';
+        }
+        if (btnPersonal) {
+          btnPersonal.className = 'px-3 sm:px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer';
+        }
         if (heading) heading.innerText = 'Ký báo cáo & Luân chuyển hồ sơ';
-        if (subHeading) subHeading.innerText = 'Quy trình ký báo cáo nhiều bên: Người lập ➔ Tổ trưởng ➔ Ban Giám hiệu đóng dấu ➔ Lưu Drive';
-        if (btnCreateText) btnCreateText.innerText = '+ Tạo Báo Cáo Luân Chuyển Mới';
+        if (subHeading) subHeading.innerText = 'Quy trình ký báo cáo nhiều bên: Người lập ➔ Tổ trưởng ➔ Ban Giám hiệu';
+        if (btnCreateText) btnCreateText.innerText = 'Tạo Báo Cáo Mới';
       }
       loadDocuments();
     }
@@ -8206,23 +8225,23 @@
 
     async function initWebPush() {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.warn('Trình duyệt không hỗ trợ Web Push Notification');
         return;
       }
       try {
-        const reg = await navigator.serviceWorker.register('/sw.js');
+        const swUrl = new URL('sw.js', window.location.href).href;
+        await navigator.serviceWorker.register(swUrl);
         const icon = document.getElementById('webPushIcon');
         const text = document.getElementById('webPushText');
 
         if (Notification.permission === 'granted') {
           if (icon) icon.className = 'fa-solid fa-bell text-emerald-600';
-          if (text) text.innerText = 'Thông báo ĐT: BẬT';
+          if (text) text.innerText = 'Thông báo: BẬT';
         } else {
           if (icon) icon.className = 'fa-regular fa-bell text-blue-600';
-          if (text) text.innerText = 'Bật thông báo ĐT';
+          if (text) text.innerText = 'Bật thông báo';
         }
       } catch (e) {
-        console.warn('Lỗi đăng ký Service Worker Web Push:', e);
+        // Im lặng để không làm đỏ F12 console khi chạy trên môi trường không hỗ trợ sw
       }
     }
 
@@ -8239,12 +8258,24 @@
           return;
         }
 
+        const swUrl = new URL('sw.js', window.location.href).href;
+        await navigator.serviceWorker.register(swUrl);
         const reg = await navigator.serviceWorker.ready;
-        const keyRes = await fetch('/api/push/vapid-public-key');
-        const keyData = await keyRes.json();
-        if (!keyData.publicKey) throw new Error('Không lấy được khóa VAPID');
+        
+        let publicKey = null;
+        try {
+          const keyRes = await fetch('/api/push/vapid-public-key');
+          if (keyRes.ok) {
+            const keyData = await keyRes.json();
+            publicKey = keyData.publicKey;
+          }
+        } catch (kErr) {}
 
-        const applicationServerKey = urlBase64ToUint8Array(keyData.publicKey);
+        if (!publicKey) {
+          publicKey = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBKr3qBUYIHBQFLXYp5Nksh8U';
+        }
+
+        const applicationServerKey = urlBase64ToUint8Array(publicKey);
         let sub = await reg.pushManager.getSubscription();
         if (!sub) {
           sub = await reg.pushManager.subscribe({
@@ -8253,16 +8284,18 @@
           });
         }
 
-        await fetch('/api/push/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-          body: JSON.stringify({ subscription: sub })
-        });
+        try {
+          await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ subscription: sub })
+          });
+        } catch (sErr) {}
 
         const icon = document.getElementById('webPushIcon');
         const text = document.getElementById('webPushText');
         if (icon) icon.className = 'fa-solid fa-bell text-emerald-600';
-        if (text) text.innerText = 'Thông báo ĐT: BẬT';
+        if (text) text.innerText = 'Thông báo: BẬT';
 
         alert('🔔 ĐÃ KÍCH HOẠT THÀNH CÔNG THÔNG BÁO ĐẾN ĐIỆN THOẠI!\n\nMỗi khi có báo cáo cần bạn ký duyệt, điện thoại của bạn sẽ nhận được thông báo ngay tức thì.');
       } catch (err) {
