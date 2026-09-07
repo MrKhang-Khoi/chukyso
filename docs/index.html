@@ -2120,7 +2120,7 @@
       document.getElementById('docsTableBody').innerHTML = '';
       const usersTbody = document.getElementById('usersTableBody');
       if (usersTbody) usersTbody.innerHTML = '';
-      switchMainTab('docs');
+      switchMainTab('docs', false);
       showLoginScreen();
     }
 
@@ -2180,7 +2180,7 @@
       updateVgcaBarStatus();
     }
 
-    function switchMainTab(tab) {
+    function switchMainTab(tab, shouldLoad = true) {
       if (['users', 'stats', 'drive'].includes(tab) && (!currentUser || currentUser.role !== 'ADMIN')) {
         tab = 'docs';
       }
@@ -2201,6 +2201,9 @@
           }
         }
       });
+
+      // Nếu không yêu cầu tải dữ liệu hoặc chưa đăng nhập, DỪNG LẠI tại đây (tránh đệ quy vô tận)
+      if (!shouldLoad || !authToken) return;
 
       if (tab === 'docs') loadDocuments();
       if (tab === 'users' && currentUser && currentUser.role === 'ADMIN') loadAdminUsers();
@@ -3026,7 +3029,7 @@
     async function loadDocuments() {
       try {
         if (!authToken) {
-          handleLogout();
+          showLoginScreen();
           return;
         }
 
