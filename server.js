@@ -979,11 +979,39 @@ app.post('/api/documents/:id/upload-drive', requireAuth, async (req, res) => {
     console.log(`[Google Drive] Đang đồng bộ hồ sơ "${doc.title}" lên Kho Google Drive trường...`);
     const driveRes = await googleDriveService.uploadToGoogleDrive(doc, pathToUpload);
 
+    // =========================================================================
+    // QUY TẮC BẢO MẬT & TỐI ƯU RENDER STATELESS:
+    // Sau khi đã lưu vĩnh viễn vào Google Drive theo tên giáo viên,
+    // xóa sạch hoàn toàn các file tạm trên máy chủ Render để giải phóng bộ nhớ
+    // =========================================================================
+    try {
+      if (pathToUpload && fs.existsSync(pathToUpload)) {
+        fs.unlinkSync(pathToUpload);
+      }
+      if (doc.filePath && fs.existsSync(doc.filePath)) {
+        fs.unlinkSync(doc.filePath);
+      }
+      if (doc.realSignedPath && fs.existsSync(doc.realSignedPath)) {
+        fs.unlinkSync(doc.realSignedPath);
+      }
+      // Dọn dẹp các file cache xuất PDF của docId
+      const uploadDir = path.join(__dirname, 'uploads', 'documents');
+      if (fs.existsSync(uploadDir)) {
+        const tempFiles = fs.readdirSync(uploadDir).filter(f => f.includes(doc.id));
+        tempFiles.forEach(tf => {
+          try { fs.unlinkSync(path.join(uploadDir, tf)); } catch(e) {}
+        });
+      }
+      console.log(`[Render Purge] Đã dọn dẹp sạch toàn bộ file tạm của "${doc.title}" trên Render!`);
+    } catch (cleanupErr) {
+      console.warn('[Render Purge Warning]', cleanupErr.message);
+    }
+
     const driveLogs = Array.isArray(doc.logs) ? [...doc.logs] : [];
     driveLogs.push({
       time: new Date().toISOString().replace('T', ' ').substring(0, 19),
       actor: req.user.name,
-      action: `Đã lưu trữ và đồng bộ tài liệu lên Google Drive: "${driveRes.folderPath}"`
+      action: `Đã lưu trữ Google Drive (${driveRes.folderPath}) và xóa sạch dữ liệu tạm trên Render.`
     });
 
     const updatedDoc = dataStore.updateDocument(doc.id, {
@@ -993,14 +1021,19 @@ app.post('/api/documents/:id/upload-drive', requireAuth, async (req, res) => {
         folderPath: driveRes.folderPath,
         uploadedAt: driveRes.uploadedAt
       },
+      fileBase64: null,
+      filePath: null,
+      realSignedPath: null,
+      isCleanedOnRender: true,
       logs: driveLogs
     });
 
     res.json({
       success: true,
-      message: `Đã lưu thành công lên Google Drive của trường!\nThư mục: ${driveRes.folderPath}`,
+      message: `Đã lưu thành công lên Google Drive theo tên giáo viên!\nThư mục: ${driveRes.folderPath}\n(File tạm trên Render đã được dọn sạch)`,
       data: updatedDoc,
-      driveInfo: updatedDoc.driveInfo
+      driveInfo: updatedDoc.driveInfo,
+      cleanedOnRender: true
     });
   } catch (err) {
     console.error('Lỗi đẩy lên Google Drive:', err.message);
@@ -1586,13 +1619,13 @@ app.post('/api/documents', requireAuth, async (req, res) => {
   const currentUser = req.user;
   const isCopy = signType === 'COPY' || req.body.isCopySign === true;
   const activeSigImage = isCopy ? null : (signatureImage || currentUser.signatureImage || null);
-  const docCategory = category || null;
+  const docCategory = (category === 'REPORT') ? 'REPORT' : 'PERSONAL';
   const initialStatus = (docCategory === 'PERSONAL')
     ? 'COMPLETED'
-    : (docCategory === 'REPORT' ? (nextSignerId ? 'WAITING_NEXT_SIGN' : 'SUBMITTED') : 'WAITING_LEADER_APPROVAL');
+    : (nextSignerId ? 'WAITING_NEXT_SIGN' : 'SUBMITTED');
   const initialRole = (docCategory === 'PERSONAL')
     ? 'Hoàn tất tự ký cá nhân'
-    : (docCategory === 'REPORT' ? (nextSignerRole || 'Người duyệt tiếp theo') : 'Tổ trưởng chuyên môn');
+    : (nextSignerRole || 'Người duyệt tiếp theo');
 
   // BẮT BUỘC PHẢI CÓ CHỮ KÝ HỢP LỆ TRƯỚC KHI NỘP (ngoại trừ ký sao y)
   if (!activeSigImage && !isCopy) {
