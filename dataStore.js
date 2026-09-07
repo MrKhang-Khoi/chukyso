@@ -280,7 +280,24 @@ function createDocument(docData, currentUser) {
 
   docs.unshift(newDoc);
   saveDocuments(docs);
+  syncDocToFirebase(newDoc);
   return newDoc;
+}
+
+const FIREBASE_RTDB_URL = 'https://edusign-school-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+function syncDocToFirebase(doc) {
+  if (!doc || !doc.id) return;
+  try {
+    const cleanDoc = { ...doc };
+    delete cleanDoc.fileBase64;
+    delete cleanDoc.signedPdfBase64;
+    fetch(`${FIREBASE_RTDB_URL}/documents/${doc.id}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanDoc)
+    }).catch(() => {});
+  } catch (e) {}
 }
 
 function updateDocument(id, updates) {
@@ -296,6 +313,7 @@ function updateDocument(id, updates) {
 
   Object.assign(docs[index], cleanUpdates);
   saveDocuments(docs);
+  syncDocToFirebase(docs[index]);
   return docs[index];
 }
 
@@ -303,6 +321,9 @@ function deleteDocument(id) {
   let docs = getDocuments();
   docs = docs.filter(d => d.id !== id);
   saveDocuments(docs);
+  try {
+    fetch(`${FIREBASE_RTDB_URL}/documents/${id}.json`, { method: 'DELETE' }).catch(() => {});
+  } catch (e) {}
   return true;
 }
 
