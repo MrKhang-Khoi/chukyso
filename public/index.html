@@ -61,6 +61,76 @@
               });
             }
           }
+          if (resource === '/api/admin/departments' || resource.startsWith('/api/admin/departments') || resource === '/api/departments') {
+            try {
+              const method = (init && init.method) ? init.method.toUpperCase() : 'GET';
+              const fbDeptUrl = 'https://edusign-school-default-rtdb.asia-southeast1.firebasedatabase.app/departments.json';
+              const fbRes = await originalFetch(fbDeptUrl);
+              let depts = await fbRes.json();
+              depts = Array.isArray(depts) ? depts : Object.values(depts || {});
+
+              if (method === 'GET') {
+                return new Response(JSON.stringify({ success: true, data: depts, departments: depts }), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' }
+                });
+              } else if (method === 'POST') {
+                const body = JSON.parse((init && init.body) || '{}');
+                const newDept = {
+                  id: 'dept_' + Date.now(),
+                  name: body.name || '',
+                  code: body.code || '',
+                  description: body.description || '',
+                  leaderId: body.leaderId || '',
+                  createdAt: new Date().toISOString()
+                };
+                depts.push(newDept);
+                await originalFetch(fbDeptUrl, {
+                  method: 'PUT',
+                  body: JSON.stringify(depts),
+                  headers: { 'Content-Type': 'application/json' }
+                });
+                return new Response(JSON.stringify({ success: true, data: newDept }), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' }
+                });
+              } else if (method === 'PUT') {
+                const id = resource.split('/').pop();
+                const body = JSON.parse((init && init.body) || '{}');
+                const idx = depts.findIndex(d => d.id === id);
+                if (idx !== -1) {
+                  depts[idx] = { ...depts[idx], ...body, updatedAt: new Date().toISOString() };
+                  await originalFetch(fbDeptUrl, {
+                    method: 'PUT',
+                    body: JSON.stringify(depts),
+                    headers: { 'Content-Type': 'application/json' }
+                  });
+                }
+                return new Response(JSON.stringify({ success: true }), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' }
+                });
+              } else if (method === 'DELETE') {
+                const id = resource.split('/').pop();
+                depts = depts.filter(d => d.id !== id);
+                await originalFetch(fbDeptUrl, {
+                  method: 'PUT',
+                  body: JSON.stringify(depts),
+                  headers: { 'Content-Type': 'application/json' }
+                });
+                return new Response(JSON.stringify({ success: true }), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' }
+                });
+              }
+            } catch (err) {
+              console.warn('Lỗi xử lý departments qua Firebase:', err);
+              return new Response(JSON.stringify({ success: false, message: err.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+              });
+            }
+          }
           if (resource.startsWith('/api/')) {
             resource = BACKEND_URL + resource;
           }
@@ -296,7 +366,7 @@
 
               <div id="vgcaBarLoggedIn" class="hidden items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-xl text-xs font-semibold">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-                <span class="truncate max-w-[110px]" id="vgcaBarSignerName">Hà Văn Tý</span>
+                <span class="truncate max-w-[110px]" id="vgcaBarSignerName"></span>
                 <button type="button" onclick="openVgcaAccountInfoModal()" title="Xem chứng thư số" class="text-blue-700 hover:underline text-[10px] font-bold">
                   [Xem]
                 </button>
@@ -328,7 +398,7 @@
                   <p class="text-[11px] text-slate-500" id="menuUserRole">Tổ chuyên môn</p>
                 </div>
                 <div class="py-1">
-                  <button type="button" onclick="closeUserDropdownMenu(); openUploadSignatureModal()" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 cursor-pointer">
+                  <button type="button" id="btnMySignatureUpload" onclick="closeUserDropdownMenu(); openUploadSignatureModal()" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 cursor-pointer">
                     <i class="fa-solid fa-signature text-indigo-600 w-4"></i>
                     <span>Tải ảnh chữ ký số cá nhân</span>
                   </button>
@@ -796,7 +866,8 @@
         <div>
           <label class="block font-bold text-slate-700 mb-1.5">Bản xem trước chữ ký (Nền trong suốt):</label>
           <div class="h-28 bg-[linear-gradient(45deg,#f1f5f9_25%,transparent_25%),linear-gradient(-45deg,#f1f5f9_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f1f5f9_75%),linear-gradient(-45deg,transparent_75%,#f1f5f9_75%)] bg-[size:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0] rounded-xl border border-slate-200 flex items-center justify-center p-2 overflow-hidden">
-            <img id="userSigPreviewCanvas" src="./uploads/signatures/sig_user_cvaty.png" class="max-h-full max-w-full object-contain" alt="Chữ ký cá nhân">
+            <img id="userSigPreviewCanvas" src="" class="max-h-full max-w-full object-contain hidden" alt="Chữ ký cá nhân">
+            <span id="userSigPreviewEmpty" class="text-xs text-slate-400 italic">Chưa có chữ ký</span>
           </div>
           <p class="text-[10px] text-slate-400 mt-1 italic text-center">Ô kẻ ca-rô mô phỏng nền trong suốt khi đóng dấu lên văn bản</p>
         </div>
@@ -1086,11 +1157,11 @@
           <div class="relative border-2 border-dashed border-blue-500 hover:border-blue-700 bg-transparent hover:bg-blue-500/5 rounded-xl p-0.5 transition shadow-sm">
             <!-- Ảnh chữ ký giáo viên hiển thị trong suốt -->
             <div class="flex items-center justify-center p-0.5 bg-transparent">
-              <img id="draggableSignatureImg" src="./uploads/signatures/sig_user_cvaty.png" class="max-h-20 w-auto object-contain pointer-events-none select-none drop-shadow-sm transition-all duration-100" alt="Chữ ký giáo viên">
+              <img id="draggableSignatureImg" src="" class="max-h-20 w-auto object-contain pointer-events-none select-none drop-shadow-sm transition-all duration-100 hidden" alt="Chữ ký giáo viên">
             </div>
             <!-- Ẩn hoàn toàn vùng hiển thị tọa độ theo yêu cầu để nhìn rõ văn bản bên dưới và kéo cho khớp -->
             <div class="hidden">
-              <span id="draggableStampSignerName">Hà Văn Tý</span>
+              <span id="draggableStampSignerName"></span>
               <span id="draggableStampCoords">X: 75% | Y: 51% | 100%</span>
             </div>
           </div>
@@ -2464,6 +2535,16 @@
       document.getElementById('navTabStats').classList.toggle('hidden', !isAdmin);
       document.getElementById('navTabDrive').classList.toggle('hidden', !isAdmin);
 
+      // Quản trị viên (Admin) không ký duyệt hoặc nộp giáo án cá nhân: Ẩn các nút ký số & nộp bài
+      const vgcaArea = document.getElementById('vgcaBarActionArea');
+      if (vgcaArea) vgcaArea.classList.toggle('hidden', isAdmin);
+      const btnCreateDoc = document.getElementById('btnActionCreateDoc');
+      if (btnCreateDoc) btnCreateDoc.classList.toggle('hidden', isAdmin);
+      const btnMySig = document.getElementById('btnMySignatureUpload');
+      if (btnMySig) btnMySig.classList.toggle('hidden', isAdmin);
+      const floatingBar = document.getElementById('floatingSelectionBar');
+      if (floatingBar && isAdmin) floatingBar.classList.add('hidden');
+
       if (!isAdmin) {
         document.getElementById('tabContentUsers').classList.add('hidden');
         document.getElementById('tabContentStats').classList.add('hidden');
@@ -2480,14 +2561,16 @@
         document.getElementById('docsViewSubHeading').innerText = `Các kế hoạch bài dạy cần Tổ trưởng duyệt chuyên môn`;
       } else if (currentUser.role === 'BGH' || currentUser.role === 'ADMIN') {
         document.getElementById('docsViewHeading').innerText = 'Hồ sơ Giáo án & Kế hoạch';
-        document.getElementById('docsViewSubHeading').innerText = 'Quản lý, theo dõi và phê duyệt hồ sơ giáo dục';
+        document.getElementById('docsViewSubHeading').innerText = 'Quản lý, theo dõi và giám sát toàn bộ hồ sơ nhà trường';
       } else {
         document.getElementById('docsViewHeading').innerText = 'Kế hoạch bài dạy của tôi';
         document.getElementById('docsViewSubHeading').innerText = 'Theo dõi tiến trình phê duyệt của Tổ trưởng và Ban Giám hiệu';
       }
 
-      // Tải mẫu chữ ký hiện có nếu có
-      loadUserSignatureProfile();
+      // Tải mẫu chữ ký hiện có nếu không phải admin
+      if (!isAdmin) {
+        loadUserSignatureProfile();
+      }
 
       // Cập nhật thanh trạng thái tài khoản VGCA
       updateVgcaBarStatus();
@@ -3837,18 +3920,24 @@
       if (!currentUser) return;
       const nameEl = document.getElementById('newDocCertSignerName');
       const deptEl = document.getElementById('newDocCertDept');
-      if (nameEl) nameEl.innerText = currentUser.name || 'Hà Văn Tý';
-      if (deptEl) deptEl.innerText = currentUser.department || 'Tổ Toán - Tin';
+      if (nameEl) nameEl.innerText = (currentUser && currentUser.name) || '';
+      if (deptEl) deptEl.innerText = (currentUser && currentUser.department) || '';
 
-      const sigImg = currentUser.signatureImage || './uploads/signatures/sig_user_cvaty.png';
+      const sigImg = (currentUser && currentUser.signatureImage) || '';
       const previewImg = document.getElementById('newDocSigPreviewImg');
-      if (previewImg) previewImg.src = sigImg;
+      if (previewImg) {
+        previewImg.src = sigImg;
+        previewImg.classList.toggle('hidden', !sigImg);
+      }
 
       const dragImg = document.getElementById('draggableSignatureImg');
-      if (dragImg) dragImg.src = sigImg;
+      if (dragImg) {
+        dragImg.src = sigImg;
+        dragImg.classList.toggle('hidden', !sigImg);
+      }
 
       const dragName = document.getElementById('draggableStampSignerName');
-      if (dragName) dragName.innerText = currentUser.name || 'Hà Văn Tý';
+      if (dragName) dragName.innerText = (currentUser && currentUser.name) || '';
     }
 
     // Giáo viên đổi hoặc tải ảnh chữ ký mới từ máy tính (tự động bóc tách phông nền trong suốt)
@@ -3902,8 +3991,13 @@
     // ==================== BƯỚC 2: QUẢN LÝ VÀ TẢI CHỮ KÝ SỐ LÊN HỆ THỐNG ====================
     function openUploadSignatureModal() {
       const previewImg = document.getElementById('userSigPreviewCanvas');
-      const sigImg = (currentUser && currentUser.signatureImage) || './uploads/signatures/sig_user_cvaty.png';
-      if (previewImg) previewImg.src = sigImg;
+      const emptyText = document.getElementById('userSigPreviewEmpty');
+      const sigImg = (currentUser && currentUser.signatureImage) || '';
+      if (previewImg) {
+        previewImg.src = sigImg;
+        previewImg.classList.toggle('hidden', !sigImg);
+      }
+      if (emptyText) emptyText.classList.toggle('hidden', !!sigImg);
       window._tempSelectedUserSignature = null;
       openModal('modalUploadSignature');
     }
@@ -4021,12 +4115,15 @@
         if (btnText) btnText.innerText = 'Ẩn Vị Trí Ký';
 
         // Cập nhật ảnh chữ ký giáo viên (chuẩn thuần túy Hình 2)
-        const sigImg = (currentUser && currentUser.signatureImage) || './uploads/signatures/sig_user_cvaty.png';
+        const sigImg = (currentUser && currentUser.signatureImage) || '';
         const dragImg = document.getElementById('draggableSignatureImg');
-        if (dragImg) dragImg.src = sigImg;
+        if (dragImg) {
+          dragImg.src = sigImg;
+          dragImg.classList.toggle('hidden', !sigImg);
+        }
 
         const dragName = document.getElementById('draggableStampSignerName');
-        if (dragName && currentUser) dragName.innerText = currentUser.name || 'Hà Văn Tý';
+        if (dragName) dragName.innerText = (currentUser && currentUser.name) || '';
 
         // Mặc định đặt vào cột giáo viên nếu là giáo viên, hoặc cột tổ trưởng nếu là tổ trưởng
         if (currentUser && currentUser.role === 'HEAD_DEPT') {
@@ -5004,13 +5101,20 @@
       const nameEl = document.getElementById('infoVgcaSignerName');
       const orgEl = document.getElementById('infoVgcaOrg');
       const accEl = document.getElementById('infoVgcaAccount');
-      if (nameEl) nameEl.innerText = vgca.signerName || 'Hà Văn Tý';
+      if (nameEl) nameEl.innerText = vgca.signerName || (currentUser && currentUser.name) || '';
       if (orgEl) orgEl.innerText = (currentUser && currentUser.department) ? (currentUser.department + ' — THCS Chu Văn An') : 'TRƯỜNG THCS CHU VĂN AN';
       if (accEl) accEl.innerText = vgca.account;
       openModal('modalVgcaAccountInfo');
     }
 
     function updateVgcaBarStatus() {
+      const vgcaArea = document.getElementById('vgcaBarActionArea');
+      if (currentUser && currentUser.role === 'ADMIN') {
+        if (vgcaArea) vgcaArea.classList.add('hidden');
+        return;
+      }
+      if (vgcaArea) vgcaArea.classList.remove('hidden');
+
       const btnLogin = document.getElementById('btnVgcaBarLogin');
       const badgeLogged = document.getElementById('vgcaBarLoggedIn');
       const signerText = document.getElementById('vgcaBarSignerName');
@@ -5019,7 +5123,7 @@
       if (vgca && vgca.account && vgca.status === 'CONNECTED') {
         if (btnLogin) btnLogin.classList.add('hidden');
         if (badgeLogged) badgeLogged.classList.remove('hidden');
-        if (signerText) signerText.innerText = (vgca.signerName || 'Hà Văn Tý') + ' (' + vgca.account + ')';
+        if (signerText) signerText.innerText = (vgca.signerName || (currentUser && currentUser.name) || '') + (vgca.account ? ' (' + vgca.account + ')' : '');
       } else {
         if (btnLogin) btnLogin.classList.remove('hidden');
         if (badgeLogged) badgeLogged.classList.add('hidden');
@@ -5951,7 +6055,7 @@
       const week = p.week || (document.getElementById('newDocWeek') ? document.getElementById('newDocWeek').value : 'Tuần 1');
       const category = p.category || (document.getElementById('newDocCategory') ? document.getElementById('newDocCategory').value : activeDocCategory) || 'PERSONAL';
       const nextSignerId = p.nextSignerId || (document.getElementById('newDocNextSigner') ? document.getElementById('newDocNextSigner').value : '');
-      const signatureToSubmit = currentUser ? (currentUser.signatureImage || './uploads/signatures/sig_user_cvaty.png') : './uploads/signatures/sig_user_cvaty.png';
+      const signatureToSubmit = (currentUser && currentUser.signatureImage) ? currentUser.signatureImage : null;
 
       const payload = {
         title,
