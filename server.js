@@ -915,7 +915,7 @@ app.get('/api/check-vgca-status', (req, res) => {
 app.post('/api/vgca/login', (req, res) => {
   try {
     const user = getCurrentUser(req);
-    const { vgcaAccount, vgcaPassword } = req.body || {};
+    const { vgcaAccount, vgcaPassword, certInfo, switchSession } = req.body || {};
     if (!vgcaAccount || !vgcaPassword) {
       return res.status(400).json({ success: false, message: 'Vui lòng nhập đầy đủ Tài khoản và Mật khẩu VGCA!' });
     }
@@ -956,17 +956,46 @@ app.post('/api/vgca/login', (req, res) => {
       });
     }
 
-    const signerName = (matchedUser && matchedUser.name) ? matchedUser.name : ((user && user.name) ? user.name : 'Hà Văn Tý');
-    const email = cleanAccount.includes('@') ? cleanAccount : ((user && user.email) ? user.email : `${cleanAccount}@quangngai.gov.vn`);
+    // 5. Xác định tên chủ thể chứng thư số chính xác (Ưu tiên Chứng thư số thật VGCA > Tài khoản khớp > Session > CCCD)
+    let signerName = 'Hà Văn Tý';
+    if (certInfo && certInfo.signerName && certInfo.signerName !== 'Giáo viên') {
+      signerName = certInfo.signerName;
+    } else if (matchedUser && matchedUser.name) {
+      signerName = matchedUser.name;
+    } else if (user && user.name && user.role === 'TEACHER') {
+      signerName = user.name;
+    } else if (isCCCD) {
+      signerName = (user && user.name) ? user.name : `Giáo viên (CCCD: ${cleanAccount})`;
+    }
+
+    // Kiểm tra chéo phát hiện lệch danh tính (mượn máy / chưa đăng xuất tài khoản khác)
+    let mismatchWarning = null;
+    if (certInfo && certInfo.signerName && user && user.name) {
+      const cNameNorm = certInfo.signerName.toLowerCase().trim();
+      const uNameNorm = user.name.toLowerCase().trim();
+      if (cNameNorm !== uNameNorm && !uNameNorm.includes('quản trị viên') && !uNameNorm.includes('admin')) {
+        mismatchWarning = {
+          webUser: user.name,
+          certUser: certInfo.signerName,
+          cccd: cleanAccount,
+          message: `Tài khoản Web hiện tại là [${user.name}], nhưng Chứng thư số Ban Cơ yếu là của [${certInfo.signerName}].`
+        };
+      }
+    }
+
+    const email = cleanAccount.includes('@') ? cleanAccount : ((certInfo && certInfo.email) || (user && user.email) || `${cleanAccount}@quangngai.gov.vn`);
     const now = Date.now();
 
     const vgcaAuthData = {
       account: cleanAccount,
       email,
       signerName,
+      school: (certInfo && certInfo.school) || (user && user.school) || 'TRƯỜNG THCS CHU VĂN AN',
+      serialNumber: (certInfo && certInfo.serialNumber) || null,
       status: 'CONNECTED',
       provider: 'Ban Cơ yếu Chính phủ (Virtual CSP / TSE)',
       method: 'IMPLICIT/TSE',
+      mismatchWarning,
       loggedInAt: new Date().toISOString(),
       lastActiveAt: now,
       expiresAt: now + (30 * 60 * 1000) // 30 phút tự động hết hạn nếu không hoạt động
@@ -974,7 +1003,11 @@ app.post('/api/vgca/login', (req, res) => {
 
     if (user && user.id) {
       try {
-        dataStore.updateUser(user.id, { vgcaAuth: vgcaAuthData, cccd: isCCCD ? cleanAccount : (user.cccd || '052085001234') });
+        const updatePayload = { vgcaAuth: vgcaAuthData, cccd: isCCCD ? cleanAccount : (user.cccd || '052085001234') };
+        if (switchSession && certInfo && certInfo.signerName) {
+          updatePayload.name = certInfo.signerName;
+        }
+        dataStore.updateUser(user.id, updatePayload);
       } catch (e) {
         console.warn('Lỗi lưu vgcaAuth:', e.message);
       }
@@ -985,6 +1018,7 @@ app.post('/api/vgca/login', (req, res) => {
     res.json({
       success: true,
       data: vgcaAuthData,
+      mismatchWarning,
       message: `Đăng nhập tài khoản VGCA thành công! Chứng thư số: ${signerName} (Ban Cơ yếu Chính phủ)`
     });
   } catch (err) {

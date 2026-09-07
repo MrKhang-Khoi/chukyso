@@ -1306,6 +1306,8 @@ namespace RealPdfSigner
                 if (path == "/api/ping-local-signer" || path == "/api/check-vgca-status")
                 {
                     var cert = FindVgcaCertificate();
+                    string detectedCccd = cert != null ? ExtractCccdOrUid(cert.Subject) : "";
+                    string certSigner = cert != null ? ExtractCn(cert.Subject) : "";
                     var statusData = new
                     {
                         success = true,
@@ -1321,13 +1323,15 @@ namespace RealPdfSigner
                             issuer = cert.Issuer,
                             notAfter = cert.NotAfter.ToString("yyyy-MM-dd HH:mm:ss"),
                             thumbprint = cert.Thumbprint,
+                            serialNumber = cert.SerialNumber,
                             hasPrivateKey = cert.HasPrivateKey,
-                            signerName = ExtractCn(cert.Subject),
+                            signerName = certSigner,
                             email = ExtractEmail(cert.Subject),
-                            school = ExtractOu(cert.Subject)
+                            school = ExtractOu(cert.Subject),
+                            cccd = detectedCccd
                         } : null,
                         details = (cert != null && cert.HasPrivateKey)
-                            ? "EduSign Agent đang hoạt động và đã nhận diện USB Token hợp lệ."
+                            ? $"EduSign Agent đang hoạt động và đã nhận diện chứng thư Ban Cơ yếu: {certSigner}."
                             : "EduSign Agent đang hoạt động nhưng chưa cắm USB Token."
                     };
 
@@ -1518,7 +1522,14 @@ namespace RealPdfSigner
                         }
                     }
 
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 📝 Nhận lệnh ký số từ Web: \"{docTitle}\" (Người ký: {signerName})");
+                    var localVgcaCert = FindVgcaCertificate();
+                    string localVgcaSigner = localVgcaCert != null ? ExtractCn(localVgcaCert.Subject) : "";
+                    if (!string.IsNullOrEmpty(localVgcaSigner) && localVgcaSigner != "Giáo viên")
+                    {
+                        signerName = localVgcaSigner;
+                    }
+
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 📝 Nhận lệnh ký số: \"{docTitle}\" (Chủ thể chứng thư: {signerName})");
 
                     byte[] pdfBytes;
                     if (!string.IsNullOrEmpty(fileBase64))
@@ -1758,6 +1769,18 @@ namespace RealPdfSigner
             if (string.IsNullOrEmpty(subject)) return "THCS Chu Văn An";
             var m = Regex.Match(subject, @"OU=([^,]+)");
             return m.Success ? m.Groups[1].Value.Trim() : "THCS Chu Văn An";
+        }
+
+        public static string ExtractCccdOrUid(string? subject)
+        {
+            if (string.IsNullOrEmpty(subject)) return "";
+            var mUid = Regex.Match(subject, @"(?:UID|SERIALNUMBER|OID\.2\.5\.4\.45)\s*=\s*([^,]+)", RegexOptions.IgnoreCase);
+            if (mUid.Success) return mUid.Groups[1].Value.Trim();
+
+            var mDigits = Regex.Match(subject, @"\b([0-9]{9,12})\b");
+            if (mDigits.Success) return mDigits.Groups[1].Value.Trim();
+
+            return "";
         }
     }
 

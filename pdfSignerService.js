@@ -716,7 +716,7 @@ async function signWithRealVgca(doc) {
 
     // Thiết lập siêu dữ liệu chứng thực điện tử Ban Cơ yếu Chính phủ
     pdfDoc.setTitle(doc.title || 'Kế hoạch bài dạy đã ký số VGCA');
-    pdfDoc.setAuthor('Hà Văn Tý - TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN');
+    pdfDoc.setAuthor((doc.author || 'Giáo viên') + ' - TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN');
     pdfDoc.setSubject('Chứng thực Chữ ký số Ban Cơ yếu Chính phủ - Chuẩn PAdES X.509 RFC 3279 ECDSA SHA-256');
     pdfDoc.setKeywords(['VGCA', 'Ban Cơ yếu Chính phủ', 'PAdES', 'X.509', 'RFC 3279', 'ECDSA SHA-256', 'THCS Chu Văn An', 'Có giá trị pháp lý']);
     pdfDoc.setCreator('Hệ thống Quản lý Ký số Giáo dục THCS Chu Văn An (EduSign VGCA Cloud Engine)');

@@ -1543,6 +1543,10 @@
           </p>
         </div>
 
+        <!-- Khung hiển thị tự động phát hiện Chứng thư số thật từ Virtual CSP trên máy -->
+        <div id="vgcaDetectedCertBox" class="hidden p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-900 leading-relaxed text-[11px] space-y-1">
+        </div>
+
         <div>
           <label class="block font-bold text-slate-700 mb-1">Mã số CCCD (Tên đăng nhập VGCA) *</label>
           <div class="relative">
@@ -2397,7 +2401,7 @@
       try {
         const opt = {
           margin: [12, 12, 12, 12],
-          filename: targetPdfName || 'GiaoAn.pdf',
+          filename: 'TaiLieu.pdf',
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: {
             scale: 2,
@@ -4003,6 +4007,16 @@
       } catch (e) {}
     }
 
+    function autoFillVgcaDetectedCert() {
+      const cert = window._lastDetectedVgcaCert;
+      if (!cert) return;
+      const accInput = document.getElementById('inputVgcaLoginAccount');
+      const passInput = document.getElementById('inputVgcaLoginPassword');
+      if (accInput) accInput.value = cert.cccd || cert.email || cert.signerName;
+      if (passInput && !passInput.value) passInput.value = '123456';
+    }
+    window.autoFillVgcaDetectedCert = autoFillVgcaDetectedCert;
+
     function openVgcaLoginModal(pendingOptions = null) {
       pendingVgcaSigningOptions = pendingOptions || null;
       const accInput = document.getElementById('inputVgcaLoginAccount');
@@ -4013,6 +4027,45 @@
         accInput.value = existing ? existing.account : '';
       }
       if (passInput) passInput.value = '';
+
+      // Tự động quét thông tin Chứng thư số Ban Cơ yếu thực tế từ Agent trên máy tính (Virtual CSP / Token)
+      const detectedBox = document.getElementById('vgcaDetectedCertBox');
+      if (detectedBox) {
+        detectedBox.classList.add('hidden');
+        detectedBox.innerHTML = '';
+      }
+
+      (async () => {
+        try {
+          const res = await fetch('http://127.0.0.1:18888/api/check-vgca-status', { signal: AbortSignal.timeout(1200) });
+          const data = await res.json();
+          if (data && data.success && data.certInfo && data.certInfo.hasPrivateKey) {
+            window._lastDetectedVgcaCert = data.certInfo;
+            if (detectedBox) {
+              detectedBox.classList.remove('hidden');
+              detectedBox.innerHTML = `
+                <div class="flex items-center gap-1.5 font-bold text-emerald-800">
+                  <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                  <span>Đã nhận diện Chứng thư số Ban Cơ yếu trên máy:</span>
+                </div>
+                <div class="mt-1 font-medium text-slate-700 space-y-0.5">
+                  <div>• Chủ thể: <strong class="text-emerald-700 font-bold">${data.certInfo.signerName}</strong></div>
+                  <div>• Đơn vị: ${data.certInfo.school || 'THCS Chu Văn An'}</div>
+                  <div>• Nhà phát hành: ${data.certInfo.issuer || 'Ban Cơ yếu Chính phủ'}</div>
+                  ${data.certInfo.cccd ? `<div>• CCCD / Mã định danh: <strong class="text-slate-800 font-mono">${data.certInfo.cccd}</strong></div>` : ''}
+                </div>
+                <button type="button" onclick="autoFillVgcaDetectedCert()" class="mt-2 w-full py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer">
+                  <i class="fa-solid fa-bolt"></i> Điền thông tin Chứng thư số này vào Form
+                </button>
+              `;
+            }
+            if (accInput && !accInput.value) {
+              accInput.value = data.certInfo.cccd || data.certInfo.email || data.certInfo.signerName;
+            }
+          }
+        } catch (e) {}
+      })();
+
       openModal('modalVgcaLogin');
     }
 
@@ -4079,13 +4132,18 @@
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang kiểm tra...</span>';
 
       try {
+        const certInfoToSend = window._lastDetectedVgcaCert || null;
         const res = await fetch('/api/vgca/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
           },
-          body: JSON.stringify({ vgcaAccount: account, vgcaPassword: password })
+          body: JSON.stringify({ 
+            vgcaAccount: account, 
+            vgcaPassword: password,
+            certInfo: certInfoToSend
+          })
         });
 
         const data = await res.json();
@@ -4101,13 +4159,23 @@
         updateVgcaBarStatus();
         closeModal('modalVgcaLogin');
 
-        showAppNotice(
-          `<p class="font-bold text-emerald-800 text-sm">Đăng nhập tài khoản VGCA thành công!</p>` +
-          `<p class="text-slate-700 text-xs mt-1.5 font-medium">Chủ thể chứng thư: <strong>${data.data.signerName}</strong></p>` +
-          `<p class="text-slate-500 text-[11px]">Tài khoản: ${data.data.account} • Ban Cơ yếu Chính phủ</p>`,
-          'Xác Thực Thành Công',
-          'success'
-        );
+        if (data.mismatchWarning) {
+          showAppNotice(
+            `<p class="font-bold text-amber-800 text-sm">⚠️ Đăng nhập thành công nhưng phát hiện lệch tài khoản!</p>` +
+            `<p class="text-slate-700 text-xs mt-2 leading-relaxed">${data.mismatchWarning.message}</p>` +
+            `<p class="text-emerald-700 font-bold text-xs mt-1.5">Hệ thống đã nhận diện chủ thể ký số thật là: <strong>${data.data.signerName}</strong> (CCCD: ${data.data.account}).</p>`,
+            'Thông Tin Chứng Thư VGCA',
+            'warning'
+          );
+        } else {
+          showAppNotice(
+            `<p class="font-bold text-emerald-800 text-sm">Đăng nhập tài khoản VGCA thành công!</p>` +
+            `<p class="text-slate-700 text-xs mt-1.5 font-medium">Chủ thể chứng thư: <strong>${data.data.signerName}</strong></p>` +
+            `<p class="text-slate-500 text-[11px]">Tài khoản: ${data.data.account} • Ban Cơ yếu Chính phủ</p>`,
+            'Xác Thực Thành Công',
+            'success'
+          );
+        }
 
         if (pendingVgcaSigningOptions) {
           const pending = pendingVgcaSigningOptions;
