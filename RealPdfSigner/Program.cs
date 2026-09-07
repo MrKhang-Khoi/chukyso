@@ -1238,6 +1238,9 @@ namespace RealPdfSigner
 
             try
             {
+                // TỰ ĐỘNG THIẾT LẬP CÀI ĐẶT CHUẨN WINDOWS (Tự chép vào LocalAppData, tạo Desktop Icon & khởi động cùng Windows)
+                EnsureInstalledAndShortcuts();
+
                 _activeTrayInstance = new EduSignWin32Tray();
                 _activeTrayInstance.Run();
                 GC.KeepAlive(_activeTrayInstance);
@@ -1251,6 +1254,97 @@ namespace RealPdfSigner
             {
                 _agentMutex?.Dispose();
             }
+        }
+
+        public static void EnsureInstalledAndShortcuts()
+        {
+            try
+            {
+                string currentExe = Environment.ProcessPath ?? AppDomain.CurrentDomain.BaseDirectory;
+                if (string.IsNullOrEmpty(currentExe) || !File.Exists(currentExe)) return;
+
+                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string targetDir = System.IO.Path.Combine(localAppData, "EduSign_Agent");
+                if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
+                string targetExe = System.IO.Path.Combine(targetDir, "EduSign_Agent.exe");
+
+                // Nếu đang chạy từ nơi khác (Downloads, Desktop, Temp), tự sao chép vào LocalAppData
+                bool isTargetExe = string.Equals(currentExe, targetExe, StringComparison.OrdinalIgnoreCase);
+                if (!isTargetExe)
+                {
+                    try
+                    {
+                        File.Copy(currentExe, targetExe, true);
+                    }
+                    catch { }
+                }
+
+                string exeToUse = File.Exists(targetExe) ? targetExe : currentExe;
+                string workDir = System.IO.Path.GetDirectoryName(exeToUse) ?? targetDir;
+
+                // 1. Tạo Desktop Shortcut chuẩn Windows
+                try
+                {
+                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                    string lnkDesktop = System.IO.Path.Combine(desktopPath, "EduSign Agent.lnk");
+                    CreateWindowsShortcut(lnkDesktop, exeToUse, "--tray", workDir, "EduSign Desktop Agent v2.0 - Ban Co yeu Chinh phu");
+                }
+                catch { }
+
+                // 2. Tạo Start Menu Shortcut
+                try
+                {
+                    string startMenu = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"Microsoft\Windows\Start Menu\Programs");
+                    string lnkStart = System.IO.Path.Combine(startMenu, "EduSign Agent.lnk");
+                    CreateWindowsShortcut(lnkStart, exeToUse, "--tray", workDir, "EduSign Desktop Agent v2.0");
+                }
+                catch { }
+
+                // 3. Tự động đăng ký khởi động cùng Windows
+                try
+                {
+                    using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
+                    key?.SetValue("EduSignAgent", $"\"{exeToUse}\" --tray");
+                }
+                catch { }
+            }
+            catch { }
+        }
+
+        private static void CreateWindowsShortcut(string shortcutPath, string targetPath, string arguments, string workingDir, string description)
+        {
+            try
+            {
+                Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
+                if (shellType != null)
+                {
+                    dynamic shell = Activator.CreateInstance(shellType)!;
+                    dynamic shortcut = shell.CreateShortcut(shortcutPath);
+                    shortcut.TargetPath = targetPath;
+                    shortcut.Arguments = arguments;
+                    shortcut.WorkingDirectory = workingDir;
+                    shortcut.Description = description;
+                    shortcut.IconLocation = targetPath + ",0";
+                    shortcut.Save();
+                    return;
+                }
+            }
+            catch { }
+
+            try
+            {
+                string psScript = $"$s = (New-Object -ComObject WScript.Shell).CreateShortcut('{shortcutPath.Replace("'", "''")}'); $s.TargetPath = '{targetPath.Replace("'", "''")}'; $s.Arguments = '{arguments.Replace("'", "''")}'; $s.WorkingDirectory = '{workingDir.Replace("'", "''")}'; $s.Description = '{description.Replace("'", "''")}'; $s.IconLocation = '{targetPath.Replace("'", "''")},0'; $s.Save()";
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript}\"",
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                using var proc = System.Diagnostics.Process.Start(psi);
+                proc?.WaitForExit(3000);
+            }
+            catch { }
         }
 
         public static void RunConsoleAgent()

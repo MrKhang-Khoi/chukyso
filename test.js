@@ -381,6 +381,17 @@ async function runTests() {
     const signedPdfDoc = await PDFDocument.load(downloadSignedRes.body);
     assert(signedPdfDoc.getPageCount() === origPdfDoc.getPageCount(), `Xóa trang cuối thành công: Số trang PDF sau ký (${signedPdfDoc.getPageCount()}) bằng số trang gốc (${origPdfDoc.getPageCount()}), không sinh trang chứng thư giả định`);
 
+    // 3.7c2 Kiểm tra Phục hồi & Tải PDF đã ký khi tệp không tồn tại trong RAM (Fallback Cloud Render & Mobile)
+    const fallbackDownloadRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/api/documents/NON_EXISTENT_DOC_ID/download-signed?title=${encodeURIComponent('Kế hoạch bài dạy Toán 9')}&author=${encodeURIComponent('Hà Văn Tý')}&department=${encodeURIComponent('Tổ Toán - Tin')}`,
+      method: 'GET'
+    }, null, true);
+    assert(fallbackDownloadRes.status === 200, 'API /download-signed tự động phục hồi PDF hợp lệ khi tài liệu chưa nạp vào RAM (Mã 200)');
+    assert(fallbackDownloadRes.headers['content-type'] === 'application/pdf', 'Fallback Header Content-Type là application/pdf');
+    assert(fallbackDownloadRes.body && fallbackDownloadRes.body.length > 500, 'Tệp PDF tự động phục hồi có dung lượng hợp lệ (>500 bytes)');
+
     // 3.7d Kiểm tra tính năng Lưu trữ và đồng bộ Google Drive của giáo viên
     const driveUploadRes = await httpRequest({
       hostname: '127.0.0.1',
@@ -604,6 +615,17 @@ async function runTests() {
     assert(downloadAgentRes.status === 200, 'Tải thành công tệp EduSign_Agent.exe (Mã 200)');
     assert(downloadAgentRes.headers['content-type'].includes('msdownload') || downloadAgentRes.headers['content-type'].includes('octet-stream') || downloadAgentRes.headers['content-type'].includes('executable'), 'Đúng định dạng phần mềm thực thi Windows (.exe)');
     assert(downloadAgentRes.body.length > 1000000, 'Dung lượng EduSign_Agent.exe hợp lệ (>1MB, Self-Contained)');
+
+    // 3.14b2 Kiểm tra Gói nén EduSign Agent 2.0 chuẩn Windows (.ZIP chống chặn trình duyệt)
+    const downloadZipRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/downloads/EduSign_Agent_v2.0_Setup.zip',
+      method: 'GET'
+    }, null, true);
+    assert(downloadZipRes.status === 200, 'Tải thành công gói nén EduSign_Agent_v2.0_Setup.zip (Mã 200)');
+    assert(downloadZipRes.headers['content-type'].includes('zip') || downloadZipRes.headers['content-type'].includes('octet-stream'), 'Đúng định dạng gói nén an toàn (.zip)');
+    assert(downloadZipRes.body.length > 5000000, 'Dung lượng EduSign_Agent_v2.0_Setup.zip hợp lệ (>5MB, nén đầy đủ bộ cài)');
 
     // 3.14c Kiểm tra Bộ cài đặt Windows 10 & 11 (Tạo Shortcut Desktop + Chạy ngầm Khay hệ thống)
     const downloadBatRes = await httpRequest({
