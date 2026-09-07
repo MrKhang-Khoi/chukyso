@@ -24,6 +24,7 @@
     (function() {
       const isGitHubPages = window.location.hostname.includes('github.io');
       const BACKEND_URL = 'https://edusign-vgca.onrender.com';
+      const GITHUB_DOWNLOAD_BASE = 'https://github.com/MrKhang-Khoi/chukyso/raw/main/docs';
       window.API_BASE = isGitHubPages ? BACKEND_URL : '';
 
       // Tự động điều hướng mọi fetch('/api/...') sang Render khi ở trên GitHub Pages
@@ -32,18 +33,16 @@
         if (typeof resource === 'string') {
           if (resource.startsWith('/api/')) {
             resource = (isGitHubPages ? BACKEND_URL : '') + resource;
-          } else if (isGitHubPages && resource.startsWith('/downloads/')) {
-            resource = BACKEND_URL + resource;
           }
         }
         return originalFetch(resource, init);
       };
 
-      // Tự động chuyển đổi các liên kết tải công cụ ký số /downloads sang Render khi chạy trên GitHub Pages
+      // Khi chạy trên GitHub Pages: Tải các bộ cài đặt EduSign Agent trực tiếp từ GitHub CDN (tránh phụ thuộc vào Render Cloud)
       if (isGitHubPages) {
         window.addEventListener('DOMContentLoaded', function() {
-          document.querySelectorAll('a[href^="/downloads/"], a[href^="/api/"]').forEach(function(el) {
-            el.href = BACKEND_URL + el.getAttribute('href');
+          document.querySelectorAll('a[href^="/downloads/"]').forEach(function(el) {
+            el.href = GITHUB_DOWNLOAD_BASE + el.getAttribute('href');
           });
         });
       }
@@ -1774,11 +1773,12 @@
             </p>
 
             <div class="bg-white p-3.5 rounded-xl border border-blue-100 space-y-2.5">
-              <div class="font-bold text-slate-800 text-[11.5px]">Các bước thực hiện trên máy tính mới (Chuẩn Windows - Không cần file .bat):</div>
+              <div class="font-bold text-slate-800 text-[11.5px]">Các bước cài đặt chuẩn Windows (Có hộp thoại hướng dẫn & tạo Shortcut Icon):</div>
               <ol class="list-decimal list-inside space-y-1.5 text-[11px] text-slate-600">
-                <li>Bấm nút <strong>"Tải EduSign Agent 2.0 (.ZIP - Khuyên dùng)"</strong> để tải gói nén an toàn (tránh bị Windows chặn tệp thực thi).</li>
-                <li>Mở file nén, nhấp đúp chạy <strong>EduSign_Agent.exe</strong>. Ứng dụng sẽ <strong>tự động cài đặt</strong>, tự tạo biểu tượng Desktop và khởi động cùng Windows.</li>
-                <li>Cắm USB Token Ban Cơ yếu vào máy tính và tiến hành ký duyệt trên web bình thường.</li>
+                <li>Bấm nút <strong>"Tải EduSign Agent 2.0 (.ZIP - Khuyên dùng)"</strong> để tải từ máy chủ GitHub siêu tốc (không lo bị Windows chặn tệp).</li>
+                <li>Mở file ZIP vừa tải, nhấp đúp chạy <strong>EduSign_Agent.exe</strong>.</li>
+                <li><strong>Hộp thoại cài đặt chuẩn Windows</strong> sẽ xuất hiện: Thầy/Cô chỉ cần nhấn <strong>[Cài đặt ngay]</strong>, hệ thống sẽ tự động cài đặt vào máy tính, tự tạo biểu tượng <strong>Desktop có Icon nhận diện</strong>, thêm vào Menu Start và tự động khởi động cùng Windows.</li>
+                <li>Cắm USB Token Ban Cơ yếu vào cổng USB máy tính và thực hiện ký số trên web bình thường!</li>
               </ol>
 
               <!-- Các nút tải nhanh -->

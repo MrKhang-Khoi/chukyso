@@ -39,7 +39,8 @@ app.get(['/downloads/EduSign_Agent_v2.0_Setup.zip', '/downloads/EduSign_Agent.zi
     res.setHeader('Content-Type', 'application/zip');
     return res.download(targetFile, 'EduSign_Agent_v2.0_Setup.zip');
   }
-  return res.status(404).json({ error: 'File cài đặt EduSign Agent 2.0 chưa sẵn sàng' });
+  // Nếu máy chủ đám mây chưa có sẵn tệp: Chuyển hướng siêu tốc 302 sang GitHub CDN chính thức
+  return res.redirect(302, 'https://github.com/MrKhang-Khoi/chukyso/raw/main/docs/downloads/EduSign_Agent_v2.0_Setup.zip');
 });
 
 app.get('/downloads/EduSign_Agent.exe', (req, res) => {
@@ -50,7 +51,18 @@ app.get('/downloads/EduSign_Agent.exe', (req, res) => {
     res.setHeader('Content-Type', 'application/vnd.microsoft.portable-executable');
     return res.download(targetFile, 'EduSign_Agent.exe');
   }
-  return res.status(404).json({ error: 'File EduSign_Agent.exe chưa sẵn sàng' });
+  return res.redirect(302, 'https://github.com/MrKhang-Khoi/chukyso/raw/main/docs/downloads/EduSign_Agent.exe');
+});
+
+app.get('/downloads/app.ico', (req, res) => {
+  const icoPath = path.join(__dirname, 'public', 'downloads', 'app.ico');
+  const fallbackIcoPath = path.join(__dirname, 'docs', 'downloads', 'app.ico');
+  const targetFile = fs.existsSync(icoPath) ? icoPath : (fs.existsSync(fallbackIcoPath) ? fallbackIcoPath : null);
+  if (targetFile) {
+    res.setHeader('Content-Type', 'image/x-icon');
+    return res.download(targetFile, 'app.ico');
+  }
+  return res.redirect(302, 'https://github.com/MrKhang-Khoi/chukyso/raw/main/docs/downloads/app.ico');
 });
 
 // ==================== 1. QUÉT CHỨNG THƯ SỐ VGCA ====================

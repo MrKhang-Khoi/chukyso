@@ -7,6 +7,7 @@ using System.Text.Json;
 using iText.Bouncycastle.X509;
 using iText.Commons.Bouncycastle.Cert;
 using iText.Kernel.Geom;
+using Rectangle = iText.Kernel.Geom.Rectangle;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
@@ -15,13 +16,15 @@ using iText.Layout;
 using iText.Layout.Element;
 using iText.Signatures;
 using iText.IO.Image;
-using iText.Forms.Form.Element;
+using SignatureFieldAppearance = iText.Forms.Form.Element.SignatureFieldAppearance;
 
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using System.Windows.Forms;
+using System.Drawing;
 
 namespace RealPdfSigner
 {
@@ -128,13 +131,46 @@ namespace RealPdfSigner
             string debugLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_debug.log");
             try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Main entered with args: '{string.Join(" ", args)}'\n"); } catch { }
 
-            // Nếu chạy ứng dụng mà không truyền tham số CLI, hoặc có cờ --tray/--agent:
-            // TỰ ĐỘNG CHẠY NGẦM KHAY HỆ THỐNG (SYSTEM TRAY) - KHÔNG ATTACH CONSOLE ĐỂ TRÁNH BỊ TẮT KHI TIẾN TRÌNH GỌI THOÁT
-            if (args.Length == 0 || (args.Length == 1 && (args[0].Equals("--tray", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--agent", StringComparison.OrdinalIgnoreCase))))
+            // 1. Chạy ngầm khay hệ thống nếu có cờ --tray hoặc --agent
+            if (args.Length == 1 && (args[0].Equals("--tray", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--agent", StringComparison.OrdinalIgnoreCase)))
             {
                 try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Calling RunTrayAgent...\n"); } catch { }
                 RunTrayAgent();
                 return;
+            }
+
+            // 2. Nếu người dùng nhấp đúp chạy ứng dụng không truyền tham số CLI:
+            if (args.Length == 0)
+            {
+                string currentExe = Environment.ProcessPath ?? AppDomain.CurrentDomain.BaseDirectory;
+                string targetDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EduSign_Agent");
+                string targetExe = System.IO.Path.Combine(targetDir, "EduSign_Agent.exe");
+
+                // Nếu đang chạy từ thư mục đã cài đặt (%LOCALAPPDATA%\EduSign_Agent\EduSign_Agent.exe):
+                // Chạy trực tiếp vào khay hệ thống
+                if (string.Equals(currentExe, targetExe, StringComparison.OrdinalIgnoreCase))
+                {
+                    RunTrayAgent();
+                    return;
+                }
+
+                // Nếu chạy từ thư mục khác (Downloads, Desktop, USB, v.v.):
+                // HIỂN THỊ HỘP THOẠI CÀI ĐẶT ỨNG DỤNG CHUẨN WINDOWS (GUI INSTALLER WIZARD)
+                try
+                {
+                    Application.EnableVisualStyles();
+                    Application.SetCompatibleTextRenderingDefault(false);
+                    Application.Run(new EduSignInstallerForm());
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    try { File.AppendAllText(debugLog, $"[{DateTime.Now}] Installer Form error: {ex}\n"); } catch { }
+                    // Fallback nếu không hiện được form: tự cài đặt và chạy tray
+                    EnsureInstalledAndShortcuts();
+                    RunTrayAgent();
+                    return;
+                }
             }
 
             try { AttachConsole(ATTACH_PARENT_PROCESS); } catch { }
@@ -1049,7 +1085,7 @@ namespace RealPdfSigner
             }
         }
 
-        public static byte[] SignBytesWithBouncyCastle(byte[] inputPdfBytes, X509Certificate2? realCert, string reason, string location, byte[]? visualSignImageBytes = null, Rectangle? signRect = null, int targetPage = 0)
+        public static byte[] SignBytesWithBouncyCastle(byte[] inputPdfBytes, X509Certificate2? realCert, string reason, string location, byte[]? visualSignImageBytes = null, iText.Kernel.Geom.Rectangle? signRect = null, int targetPage = 0)
         {
             var ecParams = Org.BouncyCastle.Asn1.Sec.SecNamedCurves.GetByName("secp384r1");
             var keyGen = new Org.BouncyCastle.Crypto.Generators.ECKeyPairGenerator();
@@ -1120,7 +1156,7 @@ namespace RealPdfSigner
             return outputStream.ToArray();
         }
 
-        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location, bool strict = false, byte[]? visualSignImageBytes = null, Rectangle? signRect = null, int targetPage = 0, string? expectedSerial = null)
+        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location, bool strict = false, byte[]? visualSignImageBytes = null, iText.Kernel.Geom.Rectangle? signRect = null, int targetPage = 0, string? expectedSerial = null)
         {
             var cert = FindVgcaCertificate(expectedSerial);
             if (!string.IsNullOrWhiteSpace(expectedSerial) && cert == null)
@@ -1279,15 +1315,24 @@ namespace RealPdfSigner
                     catch { }
                 }
 
+                // Sao chép app.ico nếu có
+                string currentIco = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
+                string targetIco = System.IO.Path.Combine(targetDir, "app.ico");
+                if (File.Exists(currentIco) && !File.Exists(targetIco))
+                {
+                    try { File.Copy(currentIco, targetIco, true); } catch { }
+                }
+
                 string exeToUse = File.Exists(targetExe) ? targetExe : currentExe;
+                string icoToUse = File.Exists(targetIco) ? targetIco : (exeToUse + ",0");
                 string workDir = System.IO.Path.GetDirectoryName(exeToUse) ?? targetDir;
 
-                // 1. Tạo Desktop Shortcut chuẩn Windows
+                // 1. Tạo Desktop Shortcut chuẩn Windows có icon nhận diện
                 try
                 {
                     string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
                     string lnkDesktop = System.IO.Path.Combine(desktopPath, "EduSign Agent.lnk");
-                    CreateWindowsShortcut(lnkDesktop, exeToUse, "--tray", workDir, "EduSign Desktop Agent v2.0 - Ban Co yeu Chinh phu");
+                    CreateWindowsShortcut(lnkDesktop, exeToUse, "--tray", workDir, "EduSign Desktop Agent v2.0 - Ban Cơ yếu Chính phủ", icoToUse);
                 }
                 catch { }
 
@@ -1296,7 +1341,7 @@ namespace RealPdfSigner
                 {
                     string startMenu = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"Microsoft\Windows\Start Menu\Programs");
                     string lnkStart = System.IO.Path.Combine(startMenu, "EduSign Agent.lnk");
-                    CreateWindowsShortcut(lnkStart, exeToUse, "--tray", workDir, "EduSign Desktop Agent v2.0");
+                    CreateWindowsShortcut(lnkStart, exeToUse, "--tray", workDir, "EduSign Desktop Agent v2.0", icoToUse);
                 }
                 catch { }
 
@@ -1311,8 +1356,9 @@ namespace RealPdfSigner
             catch { }
         }
 
-        private static void CreateWindowsShortcut(string shortcutPath, string targetPath, string arguments, string workingDir, string description)
+        public static void CreateWindowsShortcut(string shortcutPath, string targetPath, string arguments, string workingDir, string description, string? iconPath = null)
         {
+            string iconToSet = !string.IsNullOrEmpty(iconPath) ? iconPath : (targetPath + ",0");
             try
             {
                 Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
@@ -1324,7 +1370,7 @@ namespace RealPdfSigner
                     shortcut.Arguments = arguments;
                     shortcut.WorkingDirectory = workingDir;
                     shortcut.Description = description;
-                    shortcut.IconLocation = targetPath + ",0";
+                    shortcut.IconLocation = iconToSet;
                     shortcut.Save();
                     return;
                 }
@@ -1333,7 +1379,7 @@ namespace RealPdfSigner
 
             try
             {
-                string psScript = $"$s = (New-Object -ComObject WScript.Shell).CreateShortcut('{shortcutPath.Replace("'", "''")}'); $s.TargetPath = '{targetPath.Replace("'", "''")}'; $s.Arguments = '{arguments.Replace("'", "''")}'; $s.WorkingDirectory = '{workingDir.Replace("'", "''")}'; $s.Description = '{description.Replace("'", "''")}'; $s.IconLocation = '{targetPath.Replace("'", "''")},0'; $s.Save()";
+                string psScript = $"$s = (New-Object -ComObject WScript.Shell).CreateShortcut('{shortcutPath.Replace("'", "''")}'); $s.TargetPath = '{targetPath.Replace("'", "''")}'; $s.Arguments = '{arguments.Replace("'", "''")}'; $s.WorkingDirectory = '{workingDir.Replace("'", "''")}'; $s.Description = '{description.Replace("'", "''")}'; $s.IconLocation = '{iconToSet.Replace("'", "''")}'; $s.Save()";
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "powershell.exe",
@@ -1345,6 +1391,349 @@ namespace RealPdfSigner
                 proc?.WaitForExit(3000);
             }
             catch { }
+        }
+
+        public class EduSignInstallerForm : Form
+        {
+            private ProgressBar _progressBar = null!;
+            private Label _lblStatus = null!;
+            private Button _btnInstall = null!;
+            private Button _btnCancel = null!;
+            private CheckBox _chkDesktop = null!;
+            private CheckBox _chkStartMenu = null!;
+            private CheckBox _chkAutoRun = null!;
+            private CheckBox _chkLaunchNow = null!;
+            private TextBox _txtTargetDir = null!;
+
+            public EduSignInstallerForm()
+            {
+                InitializeComponent();
+            }
+
+            private void InitializeComponent()
+            {
+                this.Text = "Cài đặt EduSign Agent 2.0 - Chuẩn Windows";
+                this.Size = new System.Drawing.Size(560, 530);
+                this.StartPosition = FormStartPosition.CenterScreen;
+                this.FormBorderStyle = FormBorderStyle.FixedDialog;
+                this.MaximizeBox = false;
+                this.MinimizeBox = false;
+                this.BackColor = System.Drawing.Color.White;
+                this.Font = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Regular);
+
+                try
+                {
+                    string iconPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
+                    if (File.Exists(iconPath))
+                    {
+                        this.Icon = new Icon(iconPath);
+                    }
+                }
+                catch { }
+
+                // Header
+                var headerPanel = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 85,
+                    BackColor = System.Drawing.Color.FromArgb(24, 39, 71)
+                };
+
+                var lblHeaderTitle = new Label
+                {
+                    Text = "EduSign Agent v2.0 - Chuẩn Windows",
+                    Font = new System.Drawing.Font("Segoe UI", 13f, System.Drawing.FontStyle.Bold),
+                    ForeColor = System.Drawing.Color.White,
+                    Location = new System.Drawing.Point(20, 16),
+                    AutoSize = true
+                };
+
+                var lblHeaderSub = new Label
+                {
+                    Text = "Ứng dụng Cầu nối Ký số Ban Cơ yếu Chính phủ (VGCA) • THCS Chu Văn An",
+                    Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Regular),
+                    ForeColor = System.Drawing.Color.FromArgb(203, 213, 225),
+                    Location = new System.Drawing.Point(20, 46),
+                    AutoSize = true
+                };
+
+                headerPanel.Controls.Add(lblHeaderTitle);
+                headerPanel.Controls.Add(lblHeaderSub);
+
+                // Footer
+                var footerPanel = new Panel
+                {
+                    Dock = DockStyle.Bottom,
+                    Height = 65,
+                    BackColor = System.Drawing.Color.FromArgb(248, 250, 252)
+                };
+
+                var footerLine = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 1,
+                    BackColor = System.Drawing.Color.FromArgb(226, 232, 240)
+                };
+                footerPanel.Controls.Add(footerLine);
+
+                _btnInstall = new Button
+                {
+                    Text = "Cài đặt ngay",
+                    Font = new System.Drawing.Font("Segoe UI", 10f, System.Drawing.FontStyle.Bold),
+                    BackColor = System.Drawing.Color.FromArgb(16, 185, 129),
+                    ForeColor = System.Drawing.Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Size = new System.Drawing.Size(140, 38),
+                    Location = new System.Drawing.Point(260, 14),
+                    Cursor = Cursors.Hand
+                };
+                _btnInstall.FlatAppearance.BorderSize = 0;
+                _btnInstall.Click += BtnInstall_Click;
+
+                _btnCancel = new Button
+                {
+                    Text = "Hủy bỏ",
+                    Font = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Regular),
+                    BackColor = System.Drawing.Color.FromArgb(241, 245, 249),
+                    ForeColor = System.Drawing.Color.FromArgb(71, 85, 105),
+                    FlatStyle = FlatStyle.Flat,
+                    Size = new System.Drawing.Size(100, 38),
+                    Location = new System.Drawing.Point(415, 14),
+                    Cursor = Cursors.Hand
+                };
+                _btnCancel.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(203, 213, 225);
+                _btnCancel.Click += (s, e) => this.Close();
+
+                footerPanel.Controls.Add(_btnInstall);
+                footerPanel.Controls.Add(_btnCancel);
+
+                // Body
+                var bodyPanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    Padding = new Padding(24, 16, 24, 16)
+                };
+
+                var lblDesc = new Label
+                {
+                    Text = "Trình cài đặt sẽ thiết lập EduSign Agent trên máy tính này để trình duyệt web có thể kết nối với USB Token Ban Cơ yếu và thực hiện ký duyệt văn bản, giáo án.",
+                    Location = new System.Drawing.Point(24, 14),
+                    Size = new System.Drawing.Size(495, 40),
+                    ForeColor = System.Drawing.Color.FromArgb(51, 65, 85)
+                };
+
+                var lblTargetTitle = new Label
+                {
+                    Text = "Thư mục cài đặt ứng dụng chuẩn Windows:",
+                    Font = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Bold),
+                    ForeColor = System.Drawing.Color.FromArgb(30, 41, 59),
+                    Location = new System.Drawing.Point(24, 62),
+                    AutoSize = true
+                };
+
+                string defaultTarget = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EduSign_Agent");
+                _txtTargetDir = new TextBox
+                {
+                    Text = defaultTarget,
+                    Location = new System.Drawing.Point(24, 86),
+                    Size = new System.Drawing.Size(495, 26),
+                    ReadOnly = true,
+                    BackColor = System.Drawing.Color.FromArgb(248, 250, 252),
+                    ForeColor = System.Drawing.Color.FromArgb(71, 85, 105)
+                };
+
+                var lblOptions = new Label
+                {
+                    Text = "Tùy chọn thiết lập hệ thống:",
+                    Font = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Bold),
+                    ForeColor = System.Drawing.Color.FromArgb(30, 41, 59),
+                    Location = new System.Drawing.Point(24, 126),
+                    AutoSize = true
+                };
+
+                _chkDesktop = new CheckBox
+                {
+                    Text = "Tạo biểu tượng lối tắt ngoài màn hình nền (Desktop) có Icon nhận diện",
+                    Checked = true,
+                    Location = new System.Drawing.Point(28, 150),
+                    Size = new System.Drawing.Size(490, 24),
+                    ForeColor = System.Drawing.Color.FromArgb(51, 65, 85)
+                };
+
+                _chkStartMenu = new CheckBox
+                {
+                    Text = "Thêm biểu tượng vào danh mục ứng dụng Menu Start của Windows",
+                    Checked = true,
+                    Location = new System.Drawing.Point(28, 178),
+                    Size = new System.Drawing.Size(490, 24),
+                    ForeColor = System.Drawing.Color.FromArgb(51, 65, 85)
+                };
+
+                _chkAutoRun = new CheckBox
+                {
+                    Text = "Tự động khởi động cùng Windows (chạy ngầm ở Khay hệ thống)",
+                    Checked = true,
+                    Location = new System.Drawing.Point(28, 206),
+                    Size = new System.Drawing.Size(490, 24),
+                    ForeColor = System.Drawing.Color.FromArgb(51, 65, 85)
+                };
+
+                _chkLaunchNow = new CheckBox
+                {
+                    Text = "Khởi chạy EduSign Agent ngay ở khay hệ thống sau khi cài đặt",
+                    Checked = true,
+                    Location = new System.Drawing.Point(28, 234),
+                    Size = new System.Drawing.Size(490, 24),
+                    ForeColor = System.Drawing.Color.FromArgb(51, 65, 85)
+                };
+
+                _progressBar = new ProgressBar
+                {
+                    Location = new System.Drawing.Point(24, 270),
+                    Size = new System.Drawing.Size(495, 18),
+                    Visible = false,
+                    Minimum = 0,
+                    Maximum = 100,
+                    Value = 0
+                };
+
+                _lblStatus = new Label
+                {
+                    Text = "Sẵn sàng cài đặt. Nhấn [Cài đặt ngay] để tiếp tục.",
+                    Location = new System.Drawing.Point(24, 295),
+                    Size = new System.Drawing.Size(495, 24),
+                    Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Italic),
+                    ForeColor = System.Drawing.Color.FromArgb(100, 116, 139)
+                };
+
+                bodyPanel.Controls.Add(lblDesc);
+                bodyPanel.Controls.Add(lblTargetTitle);
+                bodyPanel.Controls.Add(_txtTargetDir);
+                bodyPanel.Controls.Add(lblOptions);
+                bodyPanel.Controls.Add(_chkDesktop);
+                bodyPanel.Controls.Add(_chkStartMenu);
+                bodyPanel.Controls.Add(_chkAutoRun);
+                bodyPanel.Controls.Add(_chkLaunchNow);
+                bodyPanel.Controls.Add(_progressBar);
+                bodyPanel.Controls.Add(_lblStatus);
+
+                this.Controls.Add(bodyPanel);
+                this.Controls.Add(footerPanel);
+                this.Controls.Add(headerPanel);
+            }
+
+            private async void BtnInstall_Click(object? sender, EventArgs e)
+            {
+                _btnInstall.Enabled = false;
+                _btnCancel.Enabled = false;
+                _chkDesktop.Enabled = false;
+                _chkStartMenu.Enabled = false;
+                _chkAutoRun.Enabled = false;
+                _chkLaunchNow.Enabled = false;
+
+                _progressBar.Visible = true;
+                _progressBar.Value = 15;
+                _lblStatus.ForeColor = System.Drawing.Color.FromArgb(37, 99, 235);
+                _lblStatus.Text = "Đang chuẩn bị thư mục đích...";
+
+                await System.Threading.Tasks.Task.Delay(300);
+
+                try
+                {
+                    string targetDir = _txtTargetDir.Text.Trim();
+                    if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
+
+                    string currentExe = Environment.ProcessPath ?? AppDomain.CurrentDomain.BaseDirectory;
+                    string targetExe = System.IO.Path.Combine(targetDir, "EduSign_Agent.exe");
+
+                    _progressBar.Value = 40;
+                    _lblStatus.Text = "Đang sao chép tệp chương trình và icon chuẩn Windows...";
+                    await System.Threading.Tasks.Task.Delay(300);
+
+                    if (!string.Equals(currentExe, targetExe, StringComparison.OrdinalIgnoreCase))
+                    {
+                        try { File.Copy(currentExe, targetExe, true); } catch { }
+                    }
+
+                    // Copy app.ico nếu có
+                    string currentIco = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
+                    string targetIco = System.IO.Path.Combine(targetDir, "app.ico");
+                    if (File.Exists(currentIco) && !File.Exists(targetIco))
+                    {
+                        try { File.Copy(currentIco, targetIco, true); } catch { }
+                    }
+
+                    string exeToUse = File.Exists(targetExe) ? targetExe : currentExe;
+                    string icoToUse = File.Exists(targetIco) ? targetIco : (exeToUse + ",0");
+
+                    _progressBar.Value = 65;
+                    if (_chkDesktop.Checked)
+                    {
+                        _lblStatus.Text = "Đang tạo biểu tượng Desktop có icon nhận diện...";
+                        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                        string lnkDesktop = System.IO.Path.Combine(desktopPath, "EduSign Agent.lnk");
+                        Program.CreateWindowsShortcut(lnkDesktop, exeToUse, "--tray", targetDir, "EduSign Desktop Agent v2.0 - Ban Cơ yếu", icoToUse);
+                    }
+
+                    if (_chkStartMenu.Checked)
+                    {
+                        _lblStatus.Text = "Đang tạo biểu tượng trong Menu Start...";
+                        string startMenu = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"Microsoft\Windows\Start Menu\Programs");
+                        string lnkStart = System.IO.Path.Combine(startMenu, "EduSign Agent.lnk");
+                        Program.CreateWindowsShortcut(lnkStart, exeToUse, "--tray", targetDir, "EduSign Desktop Agent v2.0", icoToUse);
+                    }
+
+                    _progressBar.Value = 85;
+                    if (_chkAutoRun.Checked)
+                    {
+                        _lblStatus.Text = "Đang cấu hình tự khởi động cùng Windows...";
+                        try
+                        {
+                            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
+                            key?.SetValue("EduSignAgent", $"\"{exeToUse}\" --tray");
+                        }
+                        catch { }
+                    }
+
+                    _progressBar.Value = 95;
+                    if (_chkLaunchNow.Checked)
+                    {
+                        _lblStatus.Text = "Đang khởi chạy EduSign Agent ở khay hệ thống...";
+                        try
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = exeToUse,
+                                Arguments = "--tray",
+                                WorkingDirectory = targetDir,
+                                UseShellExecute = true
+                            });
+                        }
+                        catch { }
+                    }
+
+                    await System.Threading.Tasks.Task.Delay(300);
+                    _progressBar.Value = 100;
+                    _lblStatus.ForeColor = System.Drawing.Color.FromArgb(16, 185, 129);
+                    _lblStatus.Font = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Bold);
+                    _lblStatus.Text = "🎉 Cài đặt hoàn tất! EduSign Agent 2.0 đã sẵn sàng sử dụng.";
+
+                    _btnInstall.Text = "Hoàn tất";
+                    _btnInstall.BackColor = System.Drawing.Color.FromArgb(37, 99, 235);
+                    _btnInstall.Enabled = true;
+                    _btnInstall.Click -= BtnInstall_Click;
+                    _btnInstall.Click += (s, ev) => this.Close();
+
+                    _btnCancel.Visible = false;
+                }
+                catch (Exception ex)
+                {
+                    _lblStatus.ForeColor = System.Drawing.Color.Red;
+                    _lblStatus.Text = "Lỗi khi cài đặt: " + ex.Message;
+                    _btnInstall.Enabled = true;
+                    _btnCancel.Enabled = true;
+                }
+            }
         }
 
         public static void RunConsoleAgent()
