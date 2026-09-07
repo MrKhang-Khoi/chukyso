@@ -1,0 +1,66 @@
+[
+  {
+    "id": "dept_bgh",
+    "name": "Ban Giám hiệu",
+    "code": "BGH",
+    "description": "Lãnh đạo và quản lý toàn diện các hoạt động nhà trường",
+    "leaderId": "admin",
+    "createdAt": "2026-09-05T12:00:00.000Z"
+  },
+  {
+    "id": "dept_toan_tin",
+    "name": "Tổ Toán - Tin",
+    "code": "TOAN_TIN",
+    "description": "Tổ chuyên môn Toán học và Tin học",
+    "leaderId": "tvnam",
+    "createdAt": "2026-09-05T12:00:00.000Z"
+  },
+  {
+    "id": "dept_ngu_van",
+    "name": "Tổ Ngữ Văn",
+    "code": "NGU_VAN",
+    "description": "Tổ chuyên môn Ngữ văn và Nghệ thuật",
+    "leaderId": null,
+    "createdAt": "2026-09-05T12:00:00.000Z"
+  },
+  {
+    "id": "dept_ngoai_ngu",
+    "name": "Tổ Ngoại Ngữ",
+    "code": "NGOAI_NGU",
+    "description": "Tổ chuyên môn Tiếng Anh",
+    "leaderId": null,
+    "createdAt": "2026-09-05T12:00:00.000Z"
+  },
+  {
+    "id": "dept_khtn",
+    "name": "Tổ Khoa học Tự nhiên",
+    "code": "KHTN",
+    "description": "Tổ chuyên môn Vật lý, Hóa học, Sinh học",
+    "leaderId": null,
+    "createdAt": "2026-09-05T12:00:00.000Z"
+  },
+  {
+    "id": "dept_ls_dl",
+    "name": "Tổ Lịch sử - Địa lý",
+    "code": "LS_DL",
+    "description": "Tổ chuyên môn Lịch sử, Địa lý, GDCD",
+    "leaderId": null,
+    "createdAt": "2026-09-05T12:00:00.000Z"
+  },
+  {
+    "id": "dept_gdtc_nt",
+    "name": "Tổ Giáo dục Thể chất - Nghệ thuật",
+    "code": "GDTC_NT",
+    "description": "Tổ chuyên môn Thể dục, Âm nhạc, Mỹ thuật",
+    "leaderId": null,
+    "createdAt": "2026-09-05T12:00:00.000Z"
+  },
+  {
+    "id": "dept_van_phong",
+    "name": "Văn phòng nhà trường",
+    "code": "VAN_PHONG",
+    "description": "Bộ phận hành chính, kế toán, văn thư, y tế",
+    "leaderId": null,
+    "createdAt": "2026-09-05T12:00:00.000Z"
+  }
+]

@@ -42,10 +42,13 @@ async function uploadToGoogleDrive(doc, pdfFilePath) {
 
   const fileBuffer = fs.readFileSync(pdfFilePath);
   const base64Content = fileBuffer.toString('base64');
-  const safeFileName = `[${doc.department}]_${doc.title.replace(/[^a-zA-Z0-9_\-\s]/g, '').trim()}_DaKy.pdf`;
+  const schoolYear = doc.schoolYear || 'Năm học 2026 - 2027';
+  const teacherName = (doc.authorName || doc.author || 'GiaoVien').trim();
+  const safeDocTitle = (doc.title || doc.id).replace(/[^a-zA-Z0-9_\-\s]/g, '').trim();
+  const safeFileName = `[${doc.department || 'CVA'}]_${safeDocTitle}_DaKy.pdf`;
 
-  // Cấu trúc phân loại thư mục lưu trữ theo tiêu chuẩn sư phạm
-  const folderPath = `Năm học 2026 - 2027 / Học kỳ I / ${doc.department} / ${doc.week || 'Tuần 12'}`;
+  // Cấu trúc phân loại thư mục lưu trữ theo tên từng giáo viên
+  const folderPath = `${schoolYear} / ${teacherName}`;
 
   // Nếu nhà trường đã cấu hình Google Apps Script Webhook URL thật
   if (config.gasWebhookUrl && config.gasWebhookUrl.startsWith('http')) {
@@ -84,8 +87,8 @@ async function uploadToGoogleDrive(doc, pdfFilePath) {
   const fakeFileId = `1${Buffer.from(doc.id + Date.now()).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 28)}`;
   const driveViewUrl = `https://drive.google.com/file/d/${fakeFileId}/view?usp=sharing`;
 
-  // Lưu một bản sao vào thư mục đồng bộ cục bộ của Google Drive Desktop nếu có
-  const localDriveDir = path.join(__dirname, 'GoogleDrive_KhoTruong', doc.department, doc.week || 'Tuần 12');
+  // Lưu một bản sao vào thư mục đồng bộ cục bộ của Google Drive Desktop theo từng giáo viên
+  const localDriveDir = path.join(__dirname, 'GoogleDrive_KhoTruong', schoolYear, teacherName);
   if (!fs.existsSync(localDriveDir)) {
     fs.mkdirSync(localDriveDir, { recursive: true });
   }
@@ -101,7 +104,7 @@ async function uploadToGoogleDrive(doc, pdfFilePath) {
     localMirrorPath: destPath,
     uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
     mode: 'SIMULATION_LOCAL_MIRROR',
-    message: 'Lưu trữ tại thư mục cục bộ (Chưa cấu hình Webhook Google Apps Script thật)'
+    message: 'Lưu trữ tại thư mục cục bộ theo tên giáo viên (Google Drive)'
   };
 }
 

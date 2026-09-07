@@ -7,6 +7,43 @@ const dataStore = require('./dataStore');
 const googleDriveService = require('./googleDriveService');
 const oneDriveService = require('./oneDriveService');
 const pdfSignerService = require('./pdfSignerService');
+const webpush = require('web-push');
+
+// Cấu hình VAPID cho Web Push Notification (PWA Chuẩn W3C)
+const VAPID_FILE = path.join(__dirname, 'data', 'vapid_keys.json');
+let vapidKeys = null;
+if (fs.existsSync(VAPID_FILE)) {
+  try { vapidKeys = JSON.parse(fs.readFileSync(VAPID_FILE, 'utf8')); } catch(e) {}
+}
+if (!vapidKeys || !vapidKeys.publicKey || !vapidKeys.privateKey) {
+  vapidKeys = webpush.generateVAPIDKeys();
+  try {
+    fs.writeFileSync(VAPID_FILE, JSON.stringify(vapidKeys, null, 2), 'utf8');
+  } catch(e) {}
+}
+if (vapidKeys && vapidKeys.publicKey && vapidKeys.privateKey) {
+  webpush.setVapidDetails(
+    'mailto:bgh-dakha@quangngai.gov.vn',
+    vapidKeys.publicKey,
+    vapidKeys.privateKey
+  );
+}
+
+async function notifyUserWebPush(userId, payload) {
+  if (!userId) return;
+  try {
+    const subs = dataStore.getSubscriptionsForUser(userId);
+    if (!subs || subs.length === 0) return;
+    const payloadStr = JSON.stringify(payload);
+    for (const sub of subs) {
+      try {
+        await webpush.sendNotification(sub, payloadStr);
+      } catch (err) {
+        // Bỏ qua lỗi thuê bao đã hết hạn 404/410
+      }
+    }
+  } catch(e) {}
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -206,8 +243,17 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ success: false, message: 'Tên đăng nhập hoặc mật khẩu không chính xác!' });
   }
 
+  // Chặn đăng nhập nếu tài khoản bị Admin tạm khóa
+  if (user.status === 'LOCKED') {
+    return res.status(403).json({
+      success: false,
+      message: 'Tài khoản của Thầy/Cô đã bị tạm khóa. Vui lòng liên hệ Ban Giám hiệu / Quản trị viên!'
+    });
+  }
+
   const token = generateToken(user);
-  console.log(`[Auth] Đăng nhập thành công: ${user.name} (${user.roleTitle})`);
+  const signType = user.signType || (user.role === 'BGH' || user.role === 'ADMIN' ? 'USB_TOKEN' : 'VGCA');
+  console.log(`[Auth] Đăng nhập thành công: ${user.name} (${user.roleTitle}) - Loại chữ ký: ${signType}`);
 
   res.json({
     success: true,
@@ -220,6 +266,9 @@ app.post('/api/auth/login', (req, res) => {
       role: user.role,
       roleTitle: user.roleTitle,
       department: user.department,
+      departmentId: user.departmentId || null,
+      signType: signType,
+      status: user.status || 'ACTIVE',
       email: user.email,
       phone: user.phone,
       school: user.school,
@@ -231,6 +280,7 @@ app.post('/api/auth/login', (req, res) => {
 // Lấy thông tin tài khoản hiện tại từ Token
 app.get('/api/auth/me', requireAuth, (req, res) => {
   const user = req.user;
+  const signType = user.signType || (user.role === 'BGH' || user.role === 'ADMIN' ? 'USB_TOKEN' : 'VGCA');
   res.json({
     success: true,
     user: {
@@ -240,6 +290,9 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
       role: user.role,
       roleTitle: user.roleTitle,
       department: user.department,
+      departmentId: user.departmentId || null,
+      signType: signType,
+      status: user.status || 'ACTIVE',
       email: user.email,
       phone: user.phone,
       school: user.school,
@@ -264,12 +317,58 @@ app.post('/api/auth/change-password', requireAuth, (req, res) => {
   res.json({ success: true, message: 'Đổi mật khẩu thành công!' });
 });
 
-// Danh sách tổ bộ môn
+// Danh sách tổ chuyên môn (Public & tương thích ngược)
 app.get('/api/departments', (req, res) => {
-  res.json({ success: true, data: dataStore.DEPARTMENTS });
+  const depts = dataStore.getDepartments();
+  const deptNames = depts.length > 0 ? depts.map(d => d.name) : dataStore.DEPARTMENTS;
+  res.json({ success: true, data: deptNames, departments: depts });
 });
 
-// ==================== 4. QUẢN LÝ TÀI KHOẢN GIÁO VIÊN (DÀNH CHO ADMIN) ====================
+// ==================== QUẢN LÝ TỔ CHUYÊN MÔN (DÀNH CHO ADMIN) ====================
+app.get('/api/admin/departments', requireAdmin, (req, res) => {
+  const depts = dataStore.getDepartments();
+  const users = dataStore.getUsers();
+  const data = depts.map(d => {
+    const leader = users.find(u => u.id === d.leaderId || u.username === d.leaderId);
+    return {
+      ...d,
+      leaderName: leader ? leader.name : null,
+      userCount: users.filter(u => u.department === d.name || u.departmentId === d.id).length
+    };
+  });
+  res.json({ success: true, data });
+});
+
+app.post('/api/admin/departments', requireAdmin, (req, res) => {
+  const { name, code, description, leaderId } = req.body;
+  if (!name) return res.status(400).json({ success: false, message: 'Vui lòng nhập Tên tổ chuyên môn!' });
+  try {
+    const newDept = dataStore.createDepartment({ name, code, description, leaderId });
+    res.json({ success: true, message: `Đã tạo tổ "${newDept.name}" thành công!`, data: newDept });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.put('/api/admin/departments/:id', requireAdmin, (req, res) => {
+  try {
+    const updated = dataStore.updateDepartment(req.params.id, req.body);
+    res.json({ success: true, message: `Đã cập nhật thông tin tổ "${updated.name}"!`, data: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.delete('/api/admin/departments/:id', requireAdmin, (req, res) => {
+  try {
+    dataStore.deleteDepartment(req.params.id);
+    res.json({ success: true, message: 'Đã xóa tổ chuyên môn thành công!' });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// ==================== QUẢN LÝ TÀI KHOẢN GIÁO VIÊN & BGH (ADMIN) ====================
 
 // Lấy danh sách tất cả giáo viên và cán bộ trong trường
 app.get('/api/admin/users', requireAdmin, (req, res) => {
@@ -280,6 +379,9 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
     role: u.role,
     roleTitle: u.roleTitle,
     department: u.department,
+    departmentId: u.departmentId || null,
+    signType: u.signType || (u.role === 'BGH' || u.role === 'ADMIN' ? 'USB_TOKEN' : 'VGCA'),
+    status: u.status || 'ACTIVE',
     email: u.email,
     phone: u.phone,
     createdAt: u.createdAt
@@ -287,9 +389,9 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
   res.json({ success: true, data: users });
 });
 
-// Tạo tài khoản giáo viên mới (Chỉ định Tổ bộ môn & Vai trò)
+// Tạo tài khoản giáo viên mới (Chỉ định Tổ bộ môn, Vai trò & Loại chữ ký số)
 app.post('/api/admin/users', requireAdmin, (req, res) => {
-  const { username, password, name, role, department, email, phone } = req.body;
+  const { username, password, name, role, department, departmentId, signType, email, phone } = req.body;
   if (!username || !name || !department) {
     return res.status(400).json({ success: false, message: 'Vui lòng điền đủ Tên đăng nhập, Họ và tên và Tổ bộ môn!' });
   }
@@ -299,8 +401,11 @@ app.post('/api/admin/users', requireAdmin, (req, res) => {
       username,
       password: password || '123456',
       name,
-      role: role || 'TEACHER', // TEACHER, HEAD_DEPT
+      role: role || 'TEACHER', // TEACHER, HEAD_DEPT, BGH, ADMIN
       department,
+      departmentId: departmentId || null,
+      signType: signType || (role === 'BGH' || role === 'ADMIN' ? 'USB_TOKEN' : 'VGCA'),
+      status: 'ACTIVE',
       email,
       phone
     });
@@ -313,7 +418,9 @@ app.post('/api/admin/users', requireAdmin, (req, res) => {
         name: newUser.name,
         role: newUser.role,
         roleTitle: newUser.roleTitle,
-        department: newUser.department
+        department: newUser.department,
+        signType: newUser.signType,
+        status: newUser.status
       }
     });
   } catch (err) {
@@ -321,7 +428,23 @@ app.post('/api/admin/users', requireAdmin, (req, res) => {
   }
 });
 
-// Chỉnh sửa thông tin giáo viên (Phân quyền lại Tổ trưởng hoặc chuyển Tổ)
+// Khóa / Mở khóa tài khoản giáo viên (1 chạm)
+app.put('/api/admin/users/:id/toggle-lock', requireAdmin, (req, res) => {
+  try {
+    const user = dataStore.toggleUserLock(req.params.id);
+    const isLocked = user.status === 'LOCKED';
+    res.json({
+      success: true,
+      message: isLocked ? `Đã tạm khóa tài khoản: ${user.name}` : `Đã mở khóa tài khoản: ${user.name}`,
+      status: user.status,
+      data: user
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// Chỉnh sửa thông tin giáo viên (Phân quyền lại Tổ trưởng, chuyển Tổ, đổi Loại chữ ký)
 app.put('/api/admin/users/:id', requireAdmin, (req, res) => {
   try {
     const updated = dataStore.updateUser(req.params.id, req.body);
@@ -357,6 +480,28 @@ app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
+});
+
+// Lấy danh sách người ký hợp lệ cho dropdown chọn người ký tiếp theo trong Tab 2
+app.get('/api/users/signers', requireAuth, (req, res) => {
+  res.json({ success: true, data: dataStore.getSigners() });
+});
+
+// ==================== WEB PUSH NOTIFICATION (PWA) ====================
+app.get('/api/push/vapid-public-key', (req, res) => {
+  if (!vapidKeys || !vapidKeys.publicKey) {
+    return res.status(500).json({ success: false, message: 'Chưa cấu hình VAPID keys' });
+  }
+  res.json({ success: true, publicKey: vapidKeys.publicKey });
+});
+
+app.post('/api/push/subscribe', requireAuth, (req, res) => {
+  const { subscription } = req.body;
+  if (!subscription || !subscription.endpoint) {
+    return res.status(400).json({ success: false, message: 'Thiếu dữ liệu subscription' });
+  }
+  dataStore.saveSubscription(req.user.id, subscription);
+  res.json({ success: true, message: 'Đã đăng ký nhận thông báo Web Push thành công!' });
 });
 
 // Quản lý mẫu chữ ký tay của người dùng hiện tại
@@ -422,28 +567,44 @@ app.post('/api/signatures/mine', requireAuth, (req, res) => {
 
 // ==================== 5. QUẢN LÝ HỒ SƠ KẾ HOẠCH BÀI DẠY (TRÌNH KÝ 3 CẤP) ====================
 
-// Lấy danh sách hồ sơ (Tự động lọc theo Vai trò & Tổ chuyên môn)
+// Lấy danh sách hồ sơ (Tự động lọc theo Vai trò, Tổ chuyên môn, Tab và Trạng thái Lưu trữ)
 app.get('/api/documents', requireAuth, (req, res) => {
   const currentUser = req.user;
   const allDocs = dataStore.getDocuments();
-  let filtered = [];
+  const showArchived = req.query.archived === 'true' || req.query.archived === '1';
+  const categoryFilter = req.query.category; // 'PERSONAL' hoặc 'REPORT'
 
-  if (currentUser.role === 'ADMIN') {
-    // Ban Giám hiệu / Admin: Xem tất cả giáo án toàn trường
-    filtered = allDocs;
+  // Mặc định ẩn hồ sơ đã xác nhận hoàn thành (isArchived) để giao diện siêu nhẹ và tải nhanh
+  let pool = allDocs.filter(d => showArchived ? d.isArchived === true : d.isArchived !== true);
+
+  if (categoryFilter) {
+    pool = pool.filter(d => (d.category || 'PERSONAL') === categoryFilter);
+  }
+
+  let filtered = [];
+  if (currentUser.role === 'ADMIN' || currentUser.role === 'BGH') {
+    // Ban Giám hiệu / Admin: Xem toàn trường
+    filtered = pool;
   } else if (currentUser.role === 'HEAD_DEPT') {
-    // Tổ trưởng: Xem toàn bộ giáo án của Tổ mình + bài của chính mình
-    filtered = allDocs.filter(d => 
-      d.department === currentUser.department || d.authorId === currentUser.id
+    // Tổ trưởng: Xem hồ sơ của Tổ mình + hồ sơ do mình tạo + hồ sơ được chỉ định ký
+    filtered = pool.filter(d => 
+      d.department === currentUser.department || 
+      d.authorId === currentUser.id || 
+      d.nextSignerId === currentUser.id
     );
   } else {
-    // Giáo viên: Chỉ xem các giáo án do chính mình nộp
-    filtered = allDocs.filter(d => d.authorId === currentUser.id);
+    // Giáo viên: Xem hồ sơ do chính mình lập + hồ sơ được chỉ định ký duyệt
+    filtered = pool.filter(d => 
+      d.authorId === currentUser.id || 
+      d.nextSignerId === currentUser.id
+    );
   }
 
   res.json({
     success: true,
     data: filtered,
+    totalCount: filtered.length,
+    isArchivedView: showArchived,
     currentUser: {
       id: currentUser.id,
       name: currentUser.name,
@@ -1410,20 +1571,34 @@ app.post('/api/local-sign-doc', async (req, res) => {
 
 // Giáo viên nộp Kế hoạch bài dạy mới (Hỗ trợ Ký số Mật mã Thật VGCA qua điện thoại)
 app.post('/api/documents', requireAuth, async (req, res) => {
-  const { title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64, signPlacement, signatureImage, signCoordinates, realVgcaSign, realSignedPdfBase64, txId, tokenPin, signType, copyType, copyText, copySignBannerBase64, copySignBannerWidthPt, copySignBannerHeightPt } = req.body;
+  const {
+    title, grade, week, term, pages, fileSize, fileName, fileType, fileBase64,
+    signPlacement, signatureImage, signCoordinates, realVgcaSign, realSignedPdfBase64,
+    txId, tokenPin, signType, copyType, copyText, copySignBannerBase64,
+    copySignBannerWidthPt, copySignBannerHeightPt,
+    category, nextSignerId, nextSignerName, nextSignerRole
+  } = req.body;
+
   if (!title) {
-    return res.status(400).json({ success: false, message: 'Vui lòng nhập Tên kế hoạch bài dạy!' });
+    return res.status(400).json({ success: false, message: 'Vui lòng nhập Tên kế hoạch bài dạy / Báo cáo!' });
   }
 
   const currentUser = req.user;
   const isCopy = signType === 'COPY' || req.body.isCopySign === true;
   const activeSigImage = isCopy ? null : (signatureImage || currentUser.signatureImage || null);
+  const docCategory = category || null;
+  const initialStatus = (docCategory === 'PERSONAL')
+    ? 'COMPLETED'
+    : (docCategory === 'REPORT' ? (nextSignerId ? 'WAITING_NEXT_SIGN' : 'SUBMITTED') : 'WAITING_LEADER_APPROVAL');
+  const initialRole = (docCategory === 'PERSONAL')
+    ? 'Hoàn tất tự ký cá nhân'
+    : (docCategory === 'REPORT' ? (nextSignerRole || 'Người duyệt tiếp theo') : 'Tổ trưởng chuyên môn');
 
   // BẮT BUỘC PHẢI CÓ CHỮ KÝ HỢP LỆ TRƯỚC KHI NỘP (ngoại trừ ký sao y)
   if (!activeSigImage && !isCopy) {
     return res.status(400).json({
       success: false,
-      message: 'Vui lòng thực hiện ký số vào kế hoạch bài dạy trước khi nộp!'
+      message: 'Vui lòng thực hiện ký số vào văn bản trước khi nộp!'
     });
   }
 
@@ -1432,7 +1607,7 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     if (!txId) {
       return res.status(400).json({
         success: false,
-        message: 'Nguyên tắc an toàn: Kế hoạch bài dạy bắt buộc phải được ký số mật mã thật trước khi nộp vào hệ thống!'
+        message: 'Nguyên tắc an toàn: Văn bản bắt buộc phải được ký số mật mã thật trước khi nộp vào hệ thống!'
       });
     }
     const session = vgcaSessions.get(txId);
@@ -1486,10 +1661,16 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     copySignBannerBase64: isCopy ? (copySignBannerBase64 || null) : null,
     copySignBannerWidthPt: isCopy ? (copySignBannerWidthPt || null) : null,
     copySignBannerHeightPt: isCopy ? (copySignBannerHeightPt || null) : null,
+    category: docCategory || 'PERSONAL',
+    nextSignerId: docCategory === 'REPORT' ? (nextSignerId || null) : null,
+    nextSignerName: docCategory === 'REPORT' ? (nextSignerName || null) : null,
+    nextSignerRole: docCategory === 'REPORT' ? (nextSignerRole || null) : null,
+    status: initialStatus,
+    currentSignerRole: initialRole,
     signatures: [
       {
         step: 1,
-        role: isCopy ? 'Người chứng thực bản sao' : 'Giáo viên soạn thảo',
+        role: isCopy ? 'Người chứng thực bản sao' : (docCategory === 'REPORT' ? 'Người lập báo cáo' : 'Giáo viên soạn thảo'),
         signerName: currentUser.name,
         signerUnit: currentUser.department,
         signedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
@@ -1502,6 +1683,35 @@ app.post('/api/documents', requireAuth, async (req, res) => {
       }
     ]
   }, currentUser);
+
+  // Cập nhật trạng thái cụ thể cho Tab 1 và Tab 2
+  if (docCategory === 'PERSONAL') {
+    dataStore.updateDocument(newDoc.id, {
+      status: 'COMPLETED',
+      currentSignerRole: 'Hoàn tất tự ký cá nhân'
+    });
+    newDoc.status = 'COMPLETED';
+    newDoc.currentSignerRole = 'Hoàn tất tự ký cá nhân';
+  } else if (docCategory === 'REPORT') {
+    let targetSignerName = nextSignerName;
+    let targetSignerRole = nextSignerRole;
+    if (nextSignerId && (!targetSignerName || !targetSignerRole)) {
+      const u = dataStore.getUsers().find(x => x.id === nextSignerId || x.username === nextSignerId);
+      if (u) {
+        targetSignerName = targetSignerName || u.name;
+        targetSignerRole = targetSignerRole || u.roleTitle || u.role;
+      }
+    }
+    const reportUpdates = {
+      status: nextSignerId ? 'WAITING_NEXT_SIGN' : 'SUBMITTED',
+      currentSignerRole: targetSignerRole || 'Người duyệt tiếp theo',
+      nextSignerId: nextSignerId || null,
+      nextSignerName: targetSignerName || null,
+      nextSignerRole: targetSignerRole || null
+    };
+    dataStore.updateDocument(newDoc.id, reportUpdates);
+    Object.assign(newDoc, reportUpdates);
+  }
 
   // Kích hoạt tiến trình ký số mật mã thật VGCA
   if (realSignedPdfBase64) {
@@ -1607,7 +1817,7 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     }
   }
 
-  // Tự động phân loại và đồng bộ lên Google Drive trường
+  // Tự động phân loại và đồng bộ lên Google Drive trường (nếu cấu hình)
   const driveCfg = googleDriveService.getDriveConfig();
   if (driveCfg.enabled && driveCfg.autoUploadOnSign) {
     const pathToSync = newDoc.realSignedPath || newDoc.filePath;
@@ -1628,21 +1838,210 @@ app.post('/api/documents', requireAuth, async (req, res) => {
     }
   }
 
-  console.log(`[Document] Giáo viên ${currentUser.name} (${currentUser.department}) vừa nộp bài có ký số: "${newDoc.title}" (File: ${newDoc.fileName})`);
+  // Gửi Web Push Notification nếu là Báo cáo có chỉ định người ký duyệt
+  if (docCategory === 'REPORT' && nextSignerId) {
+    notifyUserWebPush(nextSignerId, {
+      title: 'Báo cáo cần ký duyệt',
+      body: `${currentUser.name} đã gửi báo cáo "${newDoc.title}" cho thầy/cô ký duyệt.`,
+      url: `/?docId=${newDoc.id}`
+    });
+  }
+
+  console.log(`[Document] Giáo viên ${currentUser.name} (${currentUser.department}) vừa tạo hồ sơ (${docCategory}): "${newDoc.title}" (File: ${newDoc.fileName})`);
+  
+  let successMsg = '';
+  if (docCategory === 'PERSONAL') {
+    successMsg = '🎉 Ký số cá nhân thành công! Hồ sơ giáo án đã hoàn tất và sẵn sàng tải về hoặc đồng bộ OneDrive.';
+  } else {
+    successMsg = nextSignerId
+      ? `Ký số báo cáo thành công! Hồ sơ đã được chuyển đến ${nextSignerName || 'người ký tiếp theo'} để ký duyệt.`
+      : 'Ký số báo cáo thành công!';
+  }
+
   res.json({
     success: true,
-    message: realVgcaSign 
-      ? '🎉 Ký số mật mã thật VGCA và nộp kế hoạch bài dạy thành công! Hồ sơ đã được niêm phong chữ ký số công vụ.' 
-      : 'Ký số và nộp kế hoạch bài dạy thành công! Hồ sơ đã được chuyển đến Tổ trưởng chuyên môn duyệt.',
+    message: successMsg,
     data: newDoc,
     doc: newDoc
   });
 });
 
+// Ký tiếp và chuyển tiếp hồ sơ báo cáo (Tab 2: Ký luân chuyển nhiều bên)
+app.post('/api/documents/:id/forward-sign', requireAuth, async (req, res) => {
+  const currentUser = req.user;
+  const doc = dataStore.getDocumentById(req.params.id);
+  if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+
+  const isDesignated = doc.nextSignerId === currentUser.id || doc.nextSignerId === currentUser.username;
+  const isAdminOrBgh = currentUser.role === 'ADMIN' || currentUser.role === 'BGH';
+  const isLeaderSameDept = currentUser.role === 'HEAD_DEPT' && doc.department === currentUser.department;
+  if (!isDesignated && !isAdminOrBgh && !isLeaderSameDept) {
+    return res.status(403).json({ success: false, message: 'Bạn không nằm trong danh sách người ký duyệt của hồ sơ này!' });
+  }
+
+  const { comment, signPlacement, signatureImage, realSignedPdfBase64, nextSignerId, nextSignerName, nextSignerRole, isFinalBgh } = req.body;
+  const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+  let activeSigImage = signatureImage || currentUser.signatureImage || null;
+  if (isFinalBgh || currentUser.role === 'BGH' || currentUser.role === 'ADMIN') {
+    const sealPath = path.join(__dirname, 'uploads', 'signatures', 'school_seal.png');
+    if (fs.existsSync(sealPath) && !activeSigImage) {
+      activeSigImage = `data:image/png;base64,${fs.readFileSync(sealPath).toString('base64')}`;
+    }
+  }
+
+  const newStep = (doc.signatures && doc.signatures.length ? doc.signatures.length : 1) + 1;
+  const sig = {
+    step: newStep,
+    role: currentUser.roleTitle || (currentUser.role === 'BGH' ? 'Ban Giám hiệu' : (currentUser.role === 'HEAD_DEPT' ? `Tổ trưởng ${doc.department}` : 'Giáo viên tham gia ký')),
+    signerName: currentUser.name,
+    signerUnit: currentUser.department || 'Ban Giám hiệu',
+    signedAt: now,
+    signType: realSignedPdfBase64 ? 'Ký số mật mã thật (X.509 PAdES)' : 'Ký số điện tử chuẩn hóa',
+    status: 'VALID',
+    placement: signPlacement || (newStep === 2 ? 'middle-right' : (newStep >= 3 ? 'bottom-left' : 'bottom-right')),
+    visualSignImage: activeSigImage,
+    visualSign: `Ký duyệt cấp ${newStep}: ${comment || 'Đã ký xác nhận nội dung'}`
+  };
+
+  const updatedSignatures = [...(doc.signatures || []), sig];
+  const updatedLogs = [
+    ...(doc.logs || []),
+    {
+      time: now,
+      actor: `${currentUser.name} (${currentUser.roleTitle || currentUser.role})`,
+      action: isFinalBgh || !nextSignerId
+        ? `Đã ký duyệt cấp ${newStep}. Hồ sơ đã hoàn tất mọi chữ ký, sẵn sàng xác nhận lưu trữ!`
+        : `Đã ký duyệt cấp ${newStep} và chuyển tiếp cho ${nextSignerName || 'người tiếp theo'}`
+    }
+  ];
+
+  let updateFields = {
+    signatures: updatedSignatures,
+    logs: updatedLogs,
+    currentStep: newStep
+  };
+
+  if (realSignedPdfBase64) {
+    try {
+      const uploadDir = path.join(__dirname, 'uploads', 'documents');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const cleanB64 = realSignedPdfBase64.replace(/^data:[^;]+;base64,/, '');
+      const savedSignedPath = path.join(uploadDir, `signed_forward_${doc.id}_${Date.now()}.pdf`);
+      fs.writeFileSync(savedSignedPath, Buffer.from(cleanB64, 'base64'));
+      updateFields.realSignedPath = savedSignedPath;
+      updateFields.realVgcaSigned = true;
+      updateFields.realSignedAt = now;
+    } catch (e) {
+      console.error('[Forward Sign] Lỗi lưu file ký thật:', e.message);
+    }
+  }
+
+  if (isFinalBgh || !nextSignerId) {
+    updateFields.status = 'APPROVED';
+    updateFields.nextSignerId = null;
+    updateFields.nextSignerName = null;
+    updateFields.nextSignerRole = null;
+    updateFields.currentSignerRole = 'Đã hoàn tất các cấp ký';
+  } else {
+    updateFields.status = 'WAITING_NEXT_SIGN';
+    updateFields.nextSignerId = nextSignerId;
+    updateFields.nextSignerName = nextSignerName;
+    updateFields.nextSignerRole = nextSignerRole;
+    updateFields.currentSignerRole = nextSignerRole || 'Người duyệt tiếp theo';
+  }
+
+  const updatedDoc = dataStore.updateDocument(doc.id, updateFields);
+
+  // Gửi push notification cho người ký tiếp theo hoặc báo cho người lập bài
+  if (nextSignerId) {
+    notifyUserWebPush(nextSignerId, {
+      title: 'Báo cáo cần ký duyệt',
+      body: `${currentUser.name} đã ký và chuyển tiếp báo cáo "${doc.title}" cho thầy/cô ký duyệt.`,
+      url: `/?docId=${doc.id}`
+    });
+  } else {
+    // Thông báo cho tác giả khi đã đủ các chữ ký
+    if (doc.authorId) {
+      notifyUserWebPush(doc.authorId, {
+        title: 'Báo cáo đã ký xong mọi cấp',
+        body: `Báo cáo "${doc.title}" đã được các bên ký hoàn tất. Hãy nhấn [Xác nhận hoàn thành] để lưu trữ.`,
+        url: `/?docId=${doc.id}`
+      });
+    }
+  }
+
+  res.json({
+    success: true,
+    message: isFinalBgh || !nextSignerId
+      ? 'Đã ký hoàn tất các cấp! Người tạo hoặc BGH có thể nhấn [Xác nhận hoàn thành] để lưu trữ.'
+      : `Đã ký và chuyển tiếp thành công đến ${nextSignerName || 'người ký tiếp theo'}!`,
+    data: updatedDoc,
+    doc: updatedDoc
+  });
+});
+
+// Xác nhận hoàn thành hồ sơ báo cáo: Tự động tải lên Google Drive & Ẩn khỏi bảng đang xử lý
+app.post('/api/documents/:id/confirm-complete', requireAuth, async (req, res) => {
+  const currentUser = req.user;
+  const doc = dataStore.getDocumentById(req.params.id);
+  if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+
+  // Kiểm tra quyền: Người lập hoặc BGH / Admin
+  const isAuthor = doc.authorId === currentUser.id;
+  const isAdminOrBgh = currentUser.role === 'ADMIN' || currentUser.role === 'BGH';
+  if (!isAuthor && !isAdminOrBgh) {
+    return res.status(403).json({ success: false, message: 'Chỉ người lập báo cáo hoặc Ban Giám hiệu mới có quyền Xác nhận hoàn thành!' });
+  }
+
+  try {
+    // 1. Chuẩn bị file PDF đã ký đầy đủ
+    let filePathToArchive = dataStore.resolveFilePath(doc.realSignedPath);
+    if (!filePathToArchive || !fs.existsSync(filePathToArchive)) {
+      const generatedBuffer = await pdfSignerService.generateSignedPdf(doc);
+      const uploadDir = path.join(__dirname, 'uploads', 'documents');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      filePathToArchive = path.join(uploadDir, `final_completed_${doc.id}.pdf`);
+      fs.writeFileSync(filePathToArchive, Buffer.from(generatedBuffer));
+    }
+
+    // 2. Upload lên Google Drive theo cấu trúc: Năm học 2026 - 2027 / Họ và tên từng GV / Báo cáo.pdf
+    let driveRes = null;
+    try {
+      driveRes = await googleDriveService.uploadToGoogleDrive(doc, filePathToArchive);
+      console.log(`[Confirm Complete] ✅ Đã tải lên Google Drive: ${driveRes ? driveRes.viewUrl : 'N/A'}`);
+    } catch (driveErr) {
+      console.warn('[Confirm Complete] Lưu ý Google Drive:', driveErr.message);
+    }
+
+    // 3. Đánh dấu lưu trữ & ẩn khỏi bảng chính
+    const updatedDoc = dataStore.archiveDocument(doc.id, driveRes);
+
+    // 4. Bắn Web Push thông báo
+    if (doc.authorId && doc.authorId !== currentUser.id) {
+      notifyUserWebPush(doc.authorId, {
+        title: 'Hồ sơ đã được xác nhận hoàn thành',
+        body: `Báo cáo "${doc.title}" đã được lưu trữ an toàn vào Google Drive của trường.`,
+        url: `/?docId=${doc.id}`
+      });
+    }
+
+    res.json({
+      success: true,
+      message: '🎉 Đã xác nhận hoàn thành hồ sơ! Tệp đã được lưu trữ an toàn vào Google Drive của trường và ẩn khỏi danh sách chờ xử lý.',
+      data: updatedDoc,
+      doc: updatedDoc
+    });
+  } catch (err) {
+    console.error('Lỗi khi xác nhận hoàn thành:', err);
+    res.status(500).json({ success: false, message: 'Lỗi khi xác nhận hoàn thành: ' + err.message });
+  }
+});
+
 // Cấp 2: Tổ trưởng ký nháy phê duyệt chuyên môn
 app.post('/api/documents/:id/approve-leader', requireAuth, (req, res) => {
   const currentUser = req.user;
-  if (currentUser.role !== 'HEAD_DEPT' && currentUser.role !== 'ADMIN') {
+  if (currentUser.role !== 'HEAD_DEPT' && currentUser.role !== 'ADMIN' && currentUser.role !== 'BGH') {
     return res.status(403).json({ success: false, message: 'Chỉ Tổ trưởng chuyên môn hoặc Ban Giám hiệu mới có quyền duyệt cấp này!' });
   }
 
@@ -1687,6 +2086,15 @@ app.post('/api/documents/:id/approve-leader', requireAuth, (req, res) => {
     logs: updatedLogs
   });
 
+  // Bắn Web Push thông báo cho tác giả
+  if (doc.authorId) {
+    notifyUserWebPush(doc.authorId, {
+      title: 'Tổ trưởng đã duyệt hồ sơ',
+      body: `Hồ sơ "${doc.title}" đã được Tổ trưởng chuyên môn ký nháy và chuyển Ban Giám hiệu phê duyệt.`,
+      url: `/?docId=${doc.id}`
+    });
+  }
+
   res.json({
     success: true,
     message: 'Tổ trưởng đã ký nháy duyệt thành công! Hồ sơ đã chuyển lên Ban Giám hiệu phê duyệt.',
@@ -1697,7 +2105,7 @@ app.post('/api/documents/:id/approve-leader', requireAuth, (req, res) => {
 // Cấp 3: Ban Giám hiệu Phê duyệt & Đóng dấu Chữ ký số VGCA
 app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
   const currentUser = req.user;
-  if (currentUser.role !== 'ADMIN') {
+  if (currentUser.role !== 'ADMIN' && currentUser.role !== 'BGH') {
     return res.status(403).json({ success: false, message: 'Chỉ Ban Giám hiệu mới có quyền phê duyệt và đóng dấu cấp 3!' });
   }
 
@@ -1829,6 +2237,15 @@ app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
       .catch(signErr => console.warn('[Approve Principal] Lỗi khi ký số tự động:', signErr.message));
   }
 
+  // Bắn Web Push thông báo cho tác giả
+  if (doc.authorId) {
+    notifyUserWebPush(doc.authorId, {
+      title: 'Hồ sơ đã được Ban Giám hiệu phê duyệt',
+      body: `Hồ sơ "${doc.title}" đã được Ban Giám hiệu phê duyệt và đóng dấu đỏ hoàn tất!`,
+      url: `/?docId=${doc.id}`
+    });
+  }
+
   res.json({
     success: true,
     message: 'Phê duyệt chính thức thành công! Hồ sơ đã hoàn tất 3 cấp, đóng dấu điện tử và lưu trữ vào Kho số.',
@@ -1839,7 +2256,7 @@ app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
 // Yêu cầu chỉnh sửa / Trả về cho giáo viên
 app.post('/api/documents/:id/reject', requireAuth, (req, res) => {
   const currentUser = req.user;
-  if (currentUser.role !== 'HEAD_DEPT' && currentUser.role !== 'ADMIN') {
+  if (currentUser.role !== 'HEAD_DEPT' && currentUser.role !== 'ADMIN' && currentUser.role !== 'BGH') {
     return res.status(403).json({ success: false, message: 'Bạn không có quyền từ chối hồ sơ này!' });
   }
 
@@ -1853,7 +2270,7 @@ app.post('/api/documents/:id/reject', requireAuth, (req, res) => {
     ...(doc.logs || []),
     {
       time: now,
-      actor: `${currentUser.name} (${currentUser.roleTitle})`,
+      actor: `${currentUser.name} (${currentUser.roleTitle || currentUser.role})`,
       action: `Yêu cầu chỉnh sửa: "${reason || 'Chưa đúng chuẩn phân phối chương trình'}"`
     }
   ];
@@ -1863,6 +2280,15 @@ app.post('/api/documents/:id/reject', requireAuth, (req, res) => {
     currentSignerRole: 'Giáo viên chỉnh sửa',
     logs: updatedLogs
   });
+
+  // Bắn Web Push thông báo cho tác giả
+  if (doc.authorId) {
+    notifyUserWebPush(doc.authorId, {
+      title: 'Hồ sơ bị trả về chỉnh sửa',
+      body: `Hồ sơ "${doc.title}" cần chỉnh sửa: ${reason || 'Vui lòng kiểm tra lại nội dung.'}`,
+      url: `/?docId=${doc.id}`
+    });
+  }
 
   res.json({
     success: true,
