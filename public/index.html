@@ -20,6 +20,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <!-- html2pdf.js để chuyển đổi tài liệu Word sang PDF chuẩn xác ngay trên trình duyệt (hoạt động trên Render Linux) -->
   <script src="/html2pdf.bundle.min.js"></script>
+  <!-- Google Firebase SDK v10 (Compat version cho Vanilla JS) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="/firebase-config.js"></script>
+  <script src="/js/firebaseClient.js"></script>
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -218,6 +223,13 @@
               </div>
               <span id="userRoleBadge" class="ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">GV</span>
             </div>
+
+            <!-- Nút trạng thái Cloud Firestore Realtime Sync -->
+            <button id="firebaseStatusBadge" onclick="openModal('modalFirebaseStatus')" title="Trạng thái kết nối Cloud Firestore Realtime Sync"
+              class="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition shadow-sm cursor-pointer">
+              <i class="fa-solid fa-server text-slate-400"></i>
+              <span>Local Server Mode</span>
+            </button>
 
             <button id="btnBghSignConfig" onclick="openBghSignConfigModal()" title="Cấu hình thông tin Chữ ký số Ban Giám hiệu (USB Token / SmartCA)"
               class="hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-xl transition shadow-sm">
@@ -1908,6 +1920,64 @@
     </div>
   </div>
 
+  <!-- MODAL: TRẠNG THÁI & HƯỚNG DẪN CLOUD FIRESTORE REALTIME (MÔ HÌNH 3) -->
+  <div id="modalFirebaseStatus" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModalOnBackdrop(event, 'modalFirebaseStatus')">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-100 animate-in fade-in zoom-in duration-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Hạ Tầng Cloud Realtime (Mô Hình 3)</h3>
+            <p class="text-xs text-slate-500">Google Cloud Firestore & Firebase Hosting CDN</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modalFirebaseStatus')" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Trạng thái hiện tại -->
+      <div id="firebaseModalStatusBox" class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+        <div class="flex items-center justify-between font-bold text-slate-800">
+          <span>Trạng thái kết nối:</span>
+          <span id="firebaseConnectionState" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-semibold">Local Server Mode</span>
+        </div>
+        <p class="text-slate-500 text-[11px] leading-relaxed" id="firebaseStatusDesc">
+          Hệ thống đang hoạt động qua máy chủ REST API. Để bật chế độ <strong>Realtime Sync tức thì (không cần bấm F5)</strong> và giúp trang web mở ngay trong 0.3s (không bị ngủ đông Render), Thầy/Cô cấu hình thông tin Firebase miễn phí bên dưới.
+        </p>
+      </div>
+
+      <!-- 3 Bước kích hoạt -->
+      <div class="space-y-2.5 text-xs text-slate-700">
+        <div class="font-bold text-slate-900 flex items-center gap-1.5">
+          <i class="fa-solid fa-list-check text-blue-600"></i>
+          <span>3 Bước kích hoạt Firebase (Miễn phí 100% trọn đời):</span>
+        </div>
+
+        <div class="p-3 bg-blue-50/60 border border-blue-100 rounded-xl space-y-1 text-[11px] leading-relaxed">
+          <div><strong>Bước 1:</strong> Truy cập <a href="https://console.firebase.google.com" target="_blank" class="text-blue-600 underline font-bold">Firebase Console</a>, đăng nhập Google và bấm <em>[Add Project]</em> (ví dụ: <code>edusign-school</code>).</div>
+          <div><strong>Bước 2:</strong> Vào <em>Build -> Firestore Database</em> -> bấm <em>[Create database]</em> (chọn máy chủ Singapore <code>asia-southeast1</code>).</div>
+          <div><strong>Bước 3:</strong> Vào <em>Project Settings -> Web App &lt;/&gt;</em>, sao chép <code>firebaseConfig</code> và dán vào file: <code class="bg-white px-1.5 py-0.5 rounded border border-blue-200">public/firebase-config.js</code> rồi đổi <code>enabled: true</code>.</div>
+        </div>
+
+        <div class="p-3 bg-emerald-50/60 border border-emerald-100 rounded-xl text-[11px] text-emerald-800 space-y-1">
+          <div class="font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check text-emerald-600"></i> Lợi ích khi kích hoạt:</div>
+          <div>• Không bao giờ bị ngủ đông 50s như Render Free. Tốc độ mở web &lt; 0.3s.</div>
+          <div>• BGH cắm USB ký duyệt, màn hình Giáo viên tự đổi màu Xanh Lá ngay lập tức.</div>
+          <div>• Tải lên và ký số phân loại tự động vào Google Drive của trường.</div>
+        </div>
+      </div>
+
+      <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+        <button type="button" onclick="closeModal('modalFirebaseStatus')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============================================================== -->
   <!-- 4. JAVASCRIPT ĐIỀU HÀNH ỨNG DỤNG (APP LOGIC)                   -->
   <!-- ============================================================== -->
@@ -2919,12 +2989,29 @@
     }
 
     // ==================== QUẢN LÝ HỒ SƠ GIÁO ÁN ====================
+    let isFirebaseListenerAttached = false;
+
     async function loadDocuments() {
       try {
         if (!authToken) {
           handleLogout();
           return;
         }
+
+        // Tích hợp Firebase Cloud Realtime Sync (Mô hình 3)
+        if (window.EduSignFirebase && window.EduSignFirebase.isAvailable() && !isFirebaseListenerAttached) {
+          isFirebaseListenerAttached = true;
+          window.EduSignFirebase.subscribeDocuments((realtimeDocs) => {
+            if (realtimeDocs && realtimeDocs.length > 0) {
+              currentDocList = realtimeDocs;
+              renderDocsTable(currentDocList);
+              const badge = document.getElementById('docCountBadge');
+              if (badge) badge.innerText = currentDocList.length;
+              initOneDriveFolderUI();
+            }
+          });
+        }
+
         const res = await fetch('/api/documents', {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
@@ -6934,7 +7021,7 @@
     // Lắng nghe phím Escape để đóng nhanh bất kỳ modal nào đang mở
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        const modals = ['modalInstallGuide', 'modalAppNotice', 'modalVgcaLogin', 'modalVgcaAccountInfo', 'modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalChangePass', 'modalBghSignConfig'];
+        const modals = ['modalInstallGuide', 'modalAppNotice', 'modalVgcaLogin', 'modalVgcaAccountInfo', 'modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalChangePass', 'modalBghSignConfig', 'modalFirebaseStatus'];
         for (const id of modals) {
           const el = document.getElementById(id);
           if (el && !el.classList.contains('hidden')) {

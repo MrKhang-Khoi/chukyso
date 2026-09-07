@@ -253,10 +253,10 @@ function createDocument(docData, currentUser) {
     fileName: docData.fileName || 'GiaoAn_Chuan.pdf',
     fileType: docData.fileType || 'pdf', // 'pdf', 'docx', 'doc'
     filePath: normalizeFilePath(docData.filePath),
-    fileBase64: docData.fileBase64 || null,
+    fileBase64: null,
     customContentHtml: docData.customContentHtml || null,
     realSignedPath: normalizeFilePath(docData.realSignedPath),
-    signedPdfBase64: docData.signedPdfBase64 || null,
+    signedPdfBase64: null,
     signPlacement: docData.signPlacement || 'bottom-right',
     fileSize: docData.fileSize || '1.5 MB',
     pages: docData.pages || 10,
@@ -289,6 +289,8 @@ function updateDocument(id, updates) {
   if (index === -1) throw new Error('Không tìm thấy hồ sơ!');
 
   const cleanUpdates = { ...updates };
+  delete cleanUpdates.fileBase64;
+  delete cleanUpdates.signedPdfBase64;
   if (cleanUpdates.filePath) cleanUpdates.filePath = normalizeFilePath(cleanUpdates.filePath);
   if (cleanUpdates.realSignedPath) cleanUpdates.realSignedPath = normalizeFilePath(cleanUpdates.realSignedPath);
 

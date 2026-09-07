@@ -43,3 +43,7 @@ GoogleDrive_KhoTruong/**
 cloudflared.exe
 --copy-sign
 
+# Backups & Secret Service Keys
+_BACKUPS/
+serviceAccountKey.json
+
