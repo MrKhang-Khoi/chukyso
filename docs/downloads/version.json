@@ -1,0 +1,14 @@
+{
+  "version": "2.0.1",
+  "releaseDate": "2026-09-07",
+  "title": "Bản cập nhật EduSign Agent 2.0.1",
+  "changelog": [
+    "Tích hợp công nghệ Tự động Cập nhật 1 chạm (Auto-Updater)",
+    "Bổ sung Hộp thoại cài đặt chuẩn Windows (Setup Wizard GUI)",
+    "Tích hợp Icon nhận diện chính thức của nhà trường",
+    "Tối ưu tốc độ quét và kết nối USB Token Ban Cơ yếu Chính phủ"
+  ],
+  "downloadUrl": "https://github.com/MrKhang-Khoi/chukyso/raw/main/docs/downloads/EduSign_Agent.exe",
+  "zipDownloadUrl": "https://github.com/MrKhang-Khoi/chukyso/raw/main/docs/downloads/EduSign_Agent_v2.0_Setup.zip",
+  "mandatory": false
+}

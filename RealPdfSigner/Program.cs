@@ -104,7 +104,7 @@ namespace RealPdfSigner
         }
     }
 
-    class Program
+    public class Program
     {
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool AttachConsole(int dwProcessId);
@@ -1246,6 +1246,121 @@ namespace RealPdfSigner
             return SignBytesWithBouncyCastle(inputPdfBytes, cert, reason, location, visualSignImageBytes, signRect, targetPage);
         }
 
+        public const string CurrentVersion = "2.0.0";
+        private static bool _lastUpdateCheckResult = false;
+        private static string _lastLatestVersion = CurrentVersion;
+        private static AgentVersionInfo? _lastVersionInfo = null;
+        private static DateTime _lastCheckTime = DateTime.MinValue;
+
+        public class AgentVersionInfo
+        {
+            public string version { get; set; } = "2.0.0";
+            public string releaseDate { get; set; } = "";
+            public string title { get; set; } = "";
+            public List<string> changelog { get; set; } = new List<string>();
+            public string downloadUrl { get; set; } = "";
+            public string zipDownloadUrl { get; set; } = "";
+            public bool mandatory { get; set; } = false;
+        }
+
+        public static bool IsNewerVersion(string latestVerStr, string currentVerStr)
+        {
+            if (string.IsNullOrWhiteSpace(latestVerStr)) return false;
+            try
+            {
+                string cleanLatest = Regex.Replace(latestVerStr.Trim(), @"^[^\d]*", "");
+                string cleanCurrent = Regex.Replace(currentVerStr.Trim(), @"^[^\d]*", "");
+                var vLatest = Version.Parse(cleanLatest);
+                var vCurrent = Version.Parse(cleanCurrent);
+                return vLatest > vCurrent;
+            }
+            catch
+            {
+                return string.Compare(latestVerStr, currentVerStr, StringComparison.OrdinalIgnoreCase) > 0;
+            }
+        }
+
+        public static (bool hasUpdate, AgentVersionInfo? info) CheckForUpdates(bool force = false)
+        {
+            if (!force && (DateTime.Now - _lastCheckTime).TotalMinutes < 3 && _lastVersionInfo != null)
+            {
+                return (_lastUpdateCheckResult, _lastVersionInfo);
+            }
+
+            var checkUrls = new[]
+            {
+                "http://127.0.0.1:3000/downloads/version.json",
+                "https://raw.githubusercontent.com/MrKhang-Khoi/chukyso/main/docs/downloads/version.json",
+                "https://mrkhang-khoi.github.io/chukyso/downloads/version.json"
+            };
+
+            foreach (var url in checkUrls)
+            {
+                try
+                {
+                    using var handler = new HttpClientHandler { AllowAutoRedirect = true };
+                    using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(2.5) };
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("EduSign-Agent/2.0");
+                    string json = client.GetStringAsync(url).GetAwaiter().GetResult();
+                    if (!string.IsNullOrWhiteSpace(json))
+                    {
+                        var info = JsonSerializer.Deserialize<AgentVersionInfo>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (info != null && !string.IsNullOrWhiteSpace(info.version))
+                        {
+                            bool hasNew = IsNewerVersion(info.version, CurrentVersion);
+                            _lastUpdateCheckResult = hasNew;
+                            _lastLatestVersion = info.version;
+                            _lastVersionInfo = info;
+                            _lastCheckTime = DateTime.Now;
+                            if (_activeTrayInstance != null)
+                            {
+                                _activeTrayInstance.UpdateAvailable = hasNew;
+                                _activeTrayInstance.LatestVersionInfo = info;
+                            }
+                            return (hasNew, info);
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            return (_lastUpdateCheckResult, _lastVersionInfo);
+        }
+
+        public static void TriggerUpdateGui(AgentVersionInfo? info = null)
+        {
+            try
+            {
+                if (info == null)
+                {
+                    var (hasNew, fetched) = CheckForUpdates(true);
+                    info = fetched ?? new AgentVersionInfo
+                    {
+                        version = "2.0.1",
+                        title = "Bản cập nhật EduSign Agent 2.0.1",
+                        downloadUrl = "https://github.com/MrKhang-Khoi/chukyso/raw/main/docs/downloads/EduSign_Agent.exe",
+                        changelog = new List<string> { "Tích hợp công nghệ Tự động Cập nhật 1 chạm (Auto-Updater)" }
+                    };
+                }
+
+                var staThread = new Thread(() =>
+                {
+                    try
+                    {
+                        Application.EnableVisualStyles();
+                        try { Application.SetCompatibleTextRenderingDefault(false); } catch { }
+                        using var form = new EduSignUpdateForm(info);
+                        Application.Run(form);
+                    }
+                    catch { }
+                });
+                staThread.SetApartmentState(ApartmentState.STA);
+                staThread.IsBackground = true;
+                staThread.Start();
+            }
+            catch { }
+        }
+
         private static EduSignWin32Tray? _activeTrayInstance;
 
         public static void RunDesktopAgent()
@@ -1274,6 +1389,15 @@ namespace RealPdfSigner
 
             try
             {
+                // Dọn dẹp tệp sao lưu .bak cũ từ các lần cập nhật trước
+                try
+                {
+                    string currentExe = Environment.ProcessPath ?? AppDomain.CurrentDomain.BaseDirectory;
+                    string bakFile = currentExe + ".bak";
+                    if (File.Exists(bakFile)) File.Delete(bakFile);
+                }
+                catch { }
+
                 // TỰ ĐỘNG THIẾT LẬP CÀI ĐẶT CHUẨN WINDOWS (Tự chép vào LocalAppData, tạo Desktop Icon & khởi động cùng Windows)
                 EnsureInstalledAndShortcuts();
 
@@ -1736,6 +1860,360 @@ namespace RealPdfSigner
             }
         }
 
+        public class EduSignUpdateForm : Form
+        {
+            private readonly AgentVersionInfo _info;
+            private ProgressBar _progressBar = null!;
+            private Label _lblStatus = null!;
+            private Button _btnUpdate = null!;
+            private Button _btnCancel = null!;
+            private TextBox _txtChangelog = null!;
+
+            public EduSignUpdateForm(AgentVersionInfo info)
+            {
+                _info = info;
+                InitializeComponent();
+            }
+
+            private void InitializeComponent()
+            {
+                this.Text = "Cập nhật EduSign Agent - Ban Cơ yếu CP";
+                this.Size = new System.Drawing.Size(540, 480);
+                this.StartPosition = FormStartPosition.CenterScreen;
+                this.FormBorderStyle = FormBorderStyle.FixedDialog;
+                this.MaximizeBox = false;
+                this.MinimizeBox = false;
+                this.BackColor = System.Drawing.Color.White;
+                this.Font = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Regular);
+
+                try
+                {
+                    string iconPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
+                    if (File.Exists(iconPath))
+                    {
+                        this.Icon = new Icon(iconPath);
+                    }
+                }
+                catch { }
+
+                // Header Panel
+                var headerPanel = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 85,
+                    BackColor = System.Drawing.Color.FromArgb(24, 39, 71)
+                };
+
+                var lblHeaderTitle = new Label
+                {
+                    Text = "Đã có bản cập nhật mới!",
+                    Font = new System.Drawing.Font("Segoe UI", 13f, System.Drawing.FontStyle.Bold),
+                    ForeColor = System.Drawing.Color.White,
+                    Location = new System.Drawing.Point(20, 16),
+                    AutoSize = true
+                };
+
+                var lblHeaderSub = new Label
+                {
+                    Text = $"Phiên bản hiện tại: v{Program.CurrentVersion}   ➜   Bản cập nhật mới: v{_info.version}",
+                    Font = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Regular),
+                    ForeColor = System.Drawing.Color.FromArgb(203, 213, 225),
+                    Location = new System.Drawing.Point(20, 46),
+                    AutoSize = true
+                };
+
+                headerPanel.Controls.Add(lblHeaderTitle);
+                headerPanel.Controls.Add(lblHeaderSub);
+
+                // Footer Panel
+                var footerPanel = new Panel
+                {
+                    Dock = DockStyle.Bottom,
+                    Height = 65,
+                    BackColor = System.Drawing.Color.FromArgb(248, 250, 252)
+                };
+
+                var footerLine = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 1,
+                    BackColor = System.Drawing.Color.FromArgb(226, 232, 240)
+                };
+                footerPanel.Controls.Add(footerLine);
+
+                _btnUpdate = new Button
+                {
+                    Text = "Cập nhật ngay",
+                    Font = new System.Drawing.Font("Segoe UI", 10f, System.Drawing.FontStyle.Bold),
+                    BackColor = System.Drawing.Color.FromArgb(16, 185, 129),
+                    ForeColor = System.Drawing.Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Size = new System.Drawing.Size(145, 38),
+                    Location = new System.Drawing.Point(245, 14),
+                    Cursor = Cursors.Hand
+                };
+                _btnUpdate.FlatAppearance.BorderSize = 0;
+                _btnUpdate.Click += BtnUpdate_Click;
+
+                _btnCancel = new Button
+                {
+                    Text = "Để sau",
+                    Font = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Regular),
+                    BackColor = System.Drawing.Color.FromArgb(241, 245, 249),
+                    ForeColor = System.Drawing.Color.FromArgb(71, 85, 105),
+                    FlatStyle = FlatStyle.Flat,
+                    Size = new System.Drawing.Size(100, 38),
+                    Location = new System.Drawing.Point(400, 14),
+                    Cursor = Cursors.Hand
+                };
+                _btnCancel.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(203, 213, 225);
+                _btnCancel.Click += (s, e) => this.Close();
+
+                footerPanel.Controls.Add(_btnUpdate);
+                footerPanel.Controls.Add(_btnCancel);
+
+                // Body Panel
+                var bodyPanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    Padding = new Padding(24, 16, 24, 16)
+                };
+
+                var lblReleaseTitle = new Label
+                {
+                    Text = string.IsNullOrWhiteSpace(_info.title) ? $"EduSign Agent phiên bản {_info.version}" : _info.title,
+                    Font = new System.Drawing.Font("Segoe UI", 10.5f, System.Drawing.FontStyle.Bold),
+                    ForeColor = System.Drawing.Color.FromArgb(30, 41, 59),
+                    Location = new System.Drawing.Point(20, 12),
+                    AutoSize = true
+                };
+
+                var lblReleaseDate = new Label
+                {
+                    Text = string.IsNullOrWhiteSpace(_info.releaseDate) ? "" : $"Ngày phát hành: {_info.releaseDate}",
+                    Font = new System.Drawing.Font("Segoe UI", 8.5f, System.Drawing.FontStyle.Italic),
+                    ForeColor = System.Drawing.Color.FromArgb(100, 116, 139),
+                    Location = new System.Drawing.Point(20, 36),
+                    AutoSize = true
+                };
+
+                var lblChangelogTitle = new Label
+                {
+                    Text = "Những điểm mới và cải tiến trong bản cập nhật này:",
+                    Font = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Bold),
+                    ForeColor = System.Drawing.Color.FromArgb(51, 65, 85),
+                    Location = new System.Drawing.Point(20, 64),
+                    AutoSize = true
+                };
+
+                var changelogLines = new List<string>();
+                if (_info.changelog != null && _info.changelog.Count > 0)
+                {
+                    foreach (var c in _info.changelog)
+                    {
+                        changelogLines.Add($"•  {c}");
+                    }
+                }
+                else
+                {
+                    changelogLines.Add("•  Cải tiến hiệu năng và độ ổn định khi kết nối USB Token Ban Cơ yếu.");
+                    changelogLines.Add("•  Tối ưu hóa khả năng ký duyệt văn bản điện tử và nén file PDF.");
+                }
+
+                _txtChangelog = new TextBox
+                {
+                    Multiline = true,
+                    ReadOnly = true,
+                    ScrollBars = ScrollBars.Vertical,
+                    Text = string.Join(Environment.NewLine + Environment.NewLine, changelogLines),
+                    Location = new System.Drawing.Point(20, 90),
+                    Size = new System.Drawing.Size(485, 120),
+                    BackColor = System.Drawing.Color.FromArgb(248, 250, 252),
+                    ForeColor = System.Drawing.Color.FromArgb(51, 65, 85),
+                    Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Regular)
+                };
+
+                _progressBar = new ProgressBar
+                {
+                    Location = new System.Drawing.Point(20, 224),
+                    Size = new System.Drawing.Size(485, 18),
+                    Visible = false,
+                    Minimum = 0,
+                    Maximum = 100,
+                    Value = 0
+                };
+
+                _lblStatus = new Label
+                {
+                    Text = "Nhấn [Cập nhật ngay] để tải về và tự động nâng cấp nhanh chóng.",
+                    Location = new System.Drawing.Point(20, 248),
+                    Size = new System.Drawing.Size(485, 24),
+                    Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Italic),
+                    ForeColor = System.Drawing.Color.FromArgb(100, 116, 139)
+                };
+
+                bodyPanel.Controls.Add(lblReleaseTitle);
+                bodyPanel.Controls.Add(lblReleaseDate);
+                bodyPanel.Controls.Add(lblChangelogTitle);
+                bodyPanel.Controls.Add(_txtChangelog);
+                bodyPanel.Controls.Add(_progressBar);
+                bodyPanel.Controls.Add(_lblStatus);
+
+                this.Controls.Add(bodyPanel);
+                this.Controls.Add(footerPanel);
+                this.Controls.Add(headerPanel);
+            }
+
+            private async void BtnUpdate_Click(object? sender, EventArgs e)
+            {
+                _btnUpdate.Enabled = false;
+                _btnCancel.Enabled = false;
+                _progressBar.Visible = true;
+                _progressBar.Value = 5;
+                _lblStatus.ForeColor = System.Drawing.Color.FromArgb(37, 99, 235);
+                _lblStatus.Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Regular);
+                _lblStatus.Text = "Đang kết nối máy chủ để tải bản cập nhật...";
+
+                try
+                {
+                    string currentExe = Environment.ProcessPath ?? AppDomain.CurrentDomain.BaseDirectory;
+                    string exeDir = System.IO.Path.GetDirectoryName(currentExe) ?? AppDomain.CurrentDomain.BaseDirectory;
+                    string tempUpdateFile = System.IO.Path.Combine(exeDir, "EduSign_Agent.update");
+                    string bakFile = currentExe + ".bak";
+
+                    var downloadUrls = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(_info.downloadUrl)) downloadUrls.Add(_info.downloadUrl);
+                    downloadUrls.Add("http://127.0.0.1:3000/downloads/EduSign_Agent.exe");
+                    downloadUrls.Add("https://github.com/MrKhang-Khoi/chukyso/raw/main/docs/downloads/EduSign_Agent.exe");
+                    downloadUrls.Add("https://raw.githubusercontent.com/MrKhang-Khoi/chukyso/main/docs/downloads/EduSign_Agent.exe");
+
+                    bool downloadSuccess = false;
+                    string? lastErr = null;
+
+                    using var handler = new HttpClientHandler { AllowAutoRedirect = true };
+                    using var client = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(2) };
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("EduSign-Agent/2.0");
+
+                    foreach (var url in downloadUrls)
+                    {
+                        try
+                        {
+                            _lblStatus.Text = "Đang kết nối tới máy chủ cập nhật...";
+                            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                            if (!response.IsSuccessStatusCode) continue;
+
+                            long? totalBytes = response.Content.Headers.ContentLength;
+
+                            using (var contentStream = await response.Content.ReadAsStreamAsync())
+                            using (var fileStream = new FileStream(tempUpdateFile, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
+                            {
+                                var buffer = new byte[8192];
+                                long totalRead = 0;
+                                int read;
+
+                                while ((read = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                                {
+                                    await fileStream.WriteAsync(buffer, 0, read);
+                                    totalRead += read;
+                                    if (totalBytes.HasValue && totalBytes.Value > 0)
+                                    {
+                                        int progress = (int)((totalRead * 80) / totalBytes.Value) + 10;
+                                        _progressBar.Value = Math.Min(progress, 90);
+                                        _lblStatus.Text = $"Đang tải xuống: {totalRead / 1024 / 1024:F1} MB / {totalBytes.Value / 1024 / 1024:F1} MB...";
+                                    }
+                                    else
+                                    {
+                                        _progressBar.Value = Math.Min((int)(totalRead / (100 * 1024)) + 10, 90);
+                                        _lblStatus.Text = $"Đang tải xuống: {totalRead / 1024:N0} KB...";
+                                    }
+                                }
+                            }
+
+                            // Xác thực tính hợp lệ của tệp thực thi đã tải:
+                            var fi = new FileInfo(tempUpdateFile);
+                            if (fi.Exists && fi.Length > 500 * 1024)
+                            {
+                                using var fs = File.OpenRead(tempUpdateFile);
+                                byte[] magic = new byte[2];
+                                fs.Read(magic, 0, 2);
+                                if (magic[0] == 0x4D && magic[1] == 0x5A) // 'MZ' signature
+                                {
+                                    downloadSuccess = true;
+                                    break;
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            lastErr = ex.Message;
+                        }
+                    }
+
+                    if (!downloadSuccess)
+                    {
+                        throw new Exception(lastErr ?? "Không thể tải tệp cập nhật hợp lệ từ máy chủ.");
+                    }
+
+                    _progressBar.Value = 95;
+                    _lblStatus.Text = "Đang cài đặt và hoán đổi phiên bản ứng dụng...";
+                    await System.Threading.Tasks.Task.Delay(300);
+
+                    // 1. Xóa file .bak cũ nếu tồn tại
+                    if (File.Exists(bakFile))
+                    {
+                        try { File.Delete(bakFile); } catch { }
+                    }
+
+                    // 2. Đổi tên file đang chạy thành .bak (Windows cho phép đổi tên tệp đang chạy)
+                    File.Move(currentExe, bakFile);
+
+                    // 3. Đổi tên file vừa tải về thành currentExe
+                    File.Move(tempUpdateFile, currentExe);
+
+                    // 4. Đồng bộ sang thư mục LocalAppData nếu cần
+                    string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    string targetDir = System.IO.Path.Combine(localAppData, "EduSign_Agent");
+                    string installedExe = System.IO.Path.Combine(targetDir, "EduSign_Agent.exe");
+                    if (File.Exists(installedExe) && !string.Equals(currentExe, installedExe, StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            string installedBak = installedExe + ".bak";
+                            if (File.Exists(installedBak)) File.Delete(installedBak);
+                            File.Copy(currentExe, installedExe, true);
+                        }
+                        catch { }
+                    }
+
+                    _progressBar.Value = 100;
+                    _lblStatus.ForeColor = System.Drawing.Color.FromArgb(16, 185, 129);
+                    _lblStatus.Font = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Bold);
+                    _lblStatus.Text = "🎉 Cập nhật thành công! Ứng dụng đang khởi động lại...";
+                    await System.Threading.Tasks.Task.Delay(600);
+
+                    // 5. Khởi động lại ứng dụng phiên bản mới với cờ --tray
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = currentExe,
+                        Arguments = "--tray",
+                        WorkingDirectory = exeDir,
+                        UseShellExecute = true
+                    });
+
+                    // 6. Thoát ứng dụng cũ để hoàn tất
+                    Environment.Exit(0);
+                }
+                catch (Exception ex)
+                {
+                    _progressBar.Value = 0;
+                    _lblStatus.ForeColor = System.Drawing.Color.Red;
+                    _lblStatus.Text = "Lỗi khi cập nhật: " + ex.Message;
+                    _btnUpdate.Enabled = true;
+                    _btnCancel.Enabled = true;
+                }
+            }
+        }
+
         public static void RunConsoleAgent()
         {
             try { Console.Clear(); } catch { }
@@ -1869,7 +2347,10 @@ namespace RealPdfSigner
                     {
                         success = true,
                         service = "EduSign-Desktop-Agent",
-                        version = "2.0.0",
+                        version = CurrentVersion,
+                        agentVersion = CurrentVersion,
+                        hasUpdate = _lastUpdateCheckResult,
+                        latestVersion = _lastLatestVersion,
                         platform = "win32",
                         appRunning = true,
                         appName = "EduSign Desktop Agent (Ban Cơ yếu Chính phủ)",
@@ -1895,6 +2376,41 @@ namespace RealPdfSigner
 
                     byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(statusData));
                     res.OutputStream.Write(jsonBytes, 0, jsonBytes.Length);
+                    res.Close();
+                    return;
+                }
+
+                if (path == "/api/agent/version")
+                {
+                    var (hasNew, info) = CheckForUpdates();
+                    var verObj = new
+                    {
+                        success = true,
+                        currentVersion = CurrentVersion,
+                        latestVersion = info?.version ?? CurrentVersion,
+                        hasUpdate = hasNew,
+                        releaseDate = info?.releaseDate ?? "",
+                        title = info?.title ?? "",
+                        changelog = info?.changelog ?? new List<string>(),
+                        downloadUrl = info?.downloadUrl ?? "",
+                        zipDownloadUrl = info?.zipDownloadUrl ?? "",
+                        mandatory = info?.mandatory ?? false
+                    };
+                    byte[] b = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(verObj));
+                    res.OutputStream.Write(b, 0, b.Length);
+                    res.Close();
+                    return;
+                }
+
+                if (path == "/api/agent/update" && req.HttpMethod == "POST")
+                {
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        TriggerUpdateGui(null);
+                    });
+                    var okObj = new { success = true, message = "Đang khởi chạy giao diện Cập nhật EduSign Agent..." };
+                    byte[] b = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(okObj));
+                    res.OutputStream.Write(b, 0, b.Length);
                     res.Close();
                     return;
                 }
@@ -2491,6 +3007,9 @@ namespace RealPdfSigner
         private static WndProcDelegate? _staticWndProc;
         private HttpListener? _listener;
         private Thread? _listenerThread;
+        private Thread? _updateCheckThread;
+        public bool UpdateAvailable { get; set; } = false;
+        public Program.AgentVersionInfo? LatestVersionInfo { get; set; } = null;
         private static readonly IntPtr IDI_SHIELD = (IntPtr)32518;
         private static readonly IntPtr IDI_APPLICATION = (IntPtr)32512;
         private static readonly ManualResetEvent _exitEvent = new ManualResetEvent(false);
@@ -2521,6 +3040,7 @@ namespace RealPdfSigner
             };
 
             StartHttpServer();
+            StartBackgroundUpdateCheck();
 
             try
             {
@@ -2597,6 +3117,55 @@ namespace RealPdfSigner
             }
         }
 
+        private void StartBackgroundUpdateCheck()
+        {
+            _updateCheckThread = new Thread(() =>
+            {
+                Thread.Sleep(3000);
+                while (!_exitEvent.WaitOne(0))
+                {
+                    try
+                    {
+                        var (hasNew, info) = Program.CheckForUpdates(true);
+                        if (hasNew && info != null)
+                        {
+                            UpdateAvailable = true;
+                            LatestVersionInfo = info;
+                            ShowBalloon("Đã có bản cập nhật mới!", $"EduSign Agent phiên bản {info.version} đã sẵn sàng. Nhấn để nâng cấp ngay.", NIIF_INFO);
+                        }
+                    }
+                    catch { }
+
+                    if (_exitEvent.WaitOne(TimeSpan.FromHours(2))) break;
+                }
+            })
+            {
+                IsBackground = true,
+                Name = "EduSignBackgroundUpdateChecker"
+            };
+            _updateCheckThread.Start();
+        }
+
+        private void CheckUpdateExplicit()
+        {
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                ShowBalloon("EduSign Agent", "Đang kiểm tra bản cập nhật từ máy chủ...", NIIF_INFO);
+                var (hasNew, info) = Program.CheckForUpdates(true);
+                if (hasNew && info != null)
+                {
+                    UpdateAvailable = true;
+                    LatestVersionInfo = info;
+                    ShowBalloon("Đã có bản cập nhật mới!", $"EduSign Agent phiên bản {info.version} đã sẵn sàng. Đang mở hộp thoại nâng cấp...", NIIF_INFO);
+                    Program.TriggerUpdateGui(info);
+                }
+                else
+                {
+                    ShowBalloon("EduSign Agent", $"Bạn đang sử dụng phiên bản mới nhất (v{Program.CurrentVersion}).", NIIF_INFO);
+                }
+            });
+        }
+
         private void ShowTrayMenu()
         {
             SetForegroundWindow(_hWnd);
@@ -2604,9 +3173,14 @@ namespace RealPdfSigner
 
             IntPtr hMenu = CreatePopupMenu();
 
-            AppendMenu(hMenu, MF_STRING | MF_GRAYED, 101, "🛡️ EduSign Desktop Agent v2.0");
+            AppendMenu(hMenu, MF_STRING | MF_GRAYED, 101, $"🛡️ EduSign Desktop Agent v{Program.CurrentVersion}");
             AppendMenu(hMenu, MF_STRING | MF_GRAYED, 102, "Trường THCS Chu Văn An - Tỉnh Quảng Ngãi");
             AppendMenu(hMenu, MF_SEPARATOR, 0, "");
+
+            if (UpdateAvailable && LatestVersionInfo != null)
+            {
+                AppendMenu(hMenu, MF_STRING, 108, $"✨ Cập nhật lên v{LatestVersionInfo.version} (Có sẵn)");
+            }
 
             AppendMenu(hMenu, MF_STRING | MF_GRAYED, 103, "🟢 Cổng ký số cục bộ: Hoạt động (18888)");
 
@@ -2622,6 +3196,7 @@ namespace RealPdfSigner
             }
 
             AppendMenu(hMenu, MF_SEPARATOR, 0, "");
+            AppendMenu(hMenu, MF_STRING, 109, "🔄 Kiểm tra bản cập nhật...");
             AppendMenu(hMenu, MF_STRING, 105, "🌐 Mở Cổng Ký số Giáo dục THCS Chu Văn An");
 
             int startupFlags = MF_STRING;
@@ -2663,6 +3238,14 @@ namespace RealPdfSigner
             {
                 _exitEvent.Set();
                 PostQuitMessage(0);
+            }
+            else if (cmd == 108)
+            {
+                Program.TriggerUpdateGui(LatestVersionInfo);
+            }
+            else if (cmd == 109)
+            {
+                CheckUpdateExplicit();
             }
         }
 

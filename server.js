@@ -65,6 +65,17 @@ app.get('/downloads/app.ico', (req, res) => {
   return res.redirect(302, 'https://github.com/MrKhang-Khoi/chukyso/raw/main/docs/downloads/app.ico');
 });
 
+app.get('/downloads/version.json', (req, res) => {
+  const vPath = path.join(__dirname, 'public', 'downloads', 'version.json');
+  const fallbackVPath = path.join(__dirname, 'docs', 'downloads', 'version.json');
+  const targetFile = fs.existsSync(vPath) ? vPath : (fs.existsSync(fallbackVPath) ? fallbackVPath : null);
+  if (targetFile) {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return res.sendFile(targetFile);
+  }
+  return res.redirect(302, 'https://github.com/MrKhang-Khoi/chukyso/raw/main/docs/downloads/version.json');
+});
+
 // ==================== 1. QUÉT CHỨNG THƯ SỐ VGCA ====================
 function scanLocalCertificates() {
   try {

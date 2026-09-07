@@ -627,6 +627,18 @@ async function runTests() {
     assert(downloadZipRes.headers['content-type'].includes('zip') || downloadZipRes.headers['content-type'].includes('octet-stream'), 'Đúng định dạng gói nén an toàn (.zip)');
     assert(downloadZipRes.body.length > 5000000, 'Dung lượng EduSign_Agent_v2.0_Setup.zip hợp lệ (>5MB, nén đầy đủ bộ cài)');
 
+    // 3.14b3 Kiểm tra Manifest Auto-Updater phiên bản EduSign Agent (/downloads/version.json)
+    const downloadVersionRes = await httpRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/downloads/version.json',
+      method: 'GET'
+    });
+    assert(downloadVersionRes.status === 200, 'Tải thành công tệp cấu hình phiên bản /downloads/version.json (Mã 200)');
+    assert(typeof downloadVersionRes.body === 'object' && downloadVersionRes.body.version, 'Manifest chứa thông tin phiên bản hợp lệ (version)');
+    assert(Array.isArray(downloadVersionRes.body.changelog) && downloadVersionRes.body.changelog.length > 0, 'Manifest chứa danh sách thay đổi nâng cấp (changelog)');
+    assert(downloadVersionRes.body.downloadUrl && downloadVersionRes.body.downloadUrl.includes('EduSign_Agent.exe'), 'Manifest chứa liên kết tải file nâng cấp trực tiếp');
+
     // 3.14c Kiểm tra Bộ cài đặt Windows 10 & 11 (Tạo Shortcut Desktop + Chạy ngầm Khay hệ thống)
     const downloadBatRes = await httpRequest({
       hostname: '127.0.0.1',

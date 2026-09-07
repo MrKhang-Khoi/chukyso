@@ -4767,15 +4767,27 @@
       const box = document.getElementById('vgcaAgentConnectionStatus');
       if (!box) return;
       if (ping && ping.available) {
-        box.className = 'py-2 px-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-center text-xs text-emerald-800 transition shadow-2xs';
+        const hasUp = ping.data && ping.data.hasUpdate;
+        const curVer = (ping.data && (ping.data.agentVersion || ping.data.version)) || '2.0.0';
+        const latVer = (ping.data && ping.data.latestVersion) || '2.0.1';
+
+        box.className = 'py-2 px-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800 transition shadow-2xs gap-2';
         box.innerHTML = `
           <div class="flex items-center gap-2">
             <span class="relative flex h-2 w-2">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span class="font-bold text-emerald-800 text-xs">Đã kết nối EduSign</span>
+            <span class="font-bold text-emerald-800 text-xs">Đã kết nối EduSign Agent (v${curVer})</span>
           </div>
+          ${hasUp ? `
+            <button type="button" onclick="triggerAgentUpdate('${ping.host}')" 
+              class="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-[11px] rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer transition transform hover:scale-105"
+              title="Có bản nâng cấp mới v${latVer}. Nhấn để mở giao diện tự động cập nhật!">
+              <i class="fa-solid fa-sparkles"></i>
+              <span>Cập nhật v${latVer}</span>
+            </button>
+          ` : ''}
         `;
       } else {
         box.className = 'py-2 px-3 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-xs text-slate-600 transition';
@@ -4785,6 +4797,23 @@
             <span class="font-semibold text-slate-700 text-xs">Chưa kết nối EduSign</span>
           </div>
         `;
+      }
+    }
+
+    async function triggerAgentUpdate(host = 'http://127.0.0.1:18888') {
+      try {
+        const targetHost = host || 'http://127.0.0.1:18888';
+        const res = await fetch(`${targetHost}/api/agent/update`, {
+          method: 'POST',
+          mode: 'cors'
+        });
+        if (res.ok) {
+          if (typeof showToast === 'function') {
+            showToast('Đang mở hộp thoại Cập nhật EduSign Agent trên máy tính...', 'info');
+          }
+        }
+      } catch (e) {
+        console.error('Trigger agent update failed:', e);
       }
     }
 
