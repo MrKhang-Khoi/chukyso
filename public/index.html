@@ -491,7 +491,7 @@
             <button onclick="openNewDocModal()" id="btnActionCreateDoc"
               class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
               <i class="fa-solid fa-plus text-xs"></i>
-              <span id="btnActionCreateDocText">Nộp & Ký Mới</span>
+              <span id="btnActionCreateDocText">Nộp & Tự Ký Giáo Án</span>
             </button>
           </div>
         </div>
@@ -3445,8 +3445,8 @@
           btnReport.className = 'px-3 sm:px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer';
         }
         if (heading) heading.innerText = 'Hồ sơ cá nhân (Tự ký số)';
-        if (subHeading) subHeading.innerText = 'Ký số và hoàn tất giáo án bài dạy';
-        if (btnCreateText) btnCreateText.innerText = 'Nộp & Ký Mới';
+        if (subHeading) subHeading.innerText = 'Ký số và hoàn tất kế hoạch bài dạy';
+        if (btnCreateText) btnCreateText.innerText = 'Nộp & Tự Ký Giáo Án';
       } else {
         if (btnReport) {
           btnReport.className = 'px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs cursor-pointer';
@@ -3455,8 +3455,8 @@
           btnPersonal.className = 'px-3 sm:px-4 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer';
         }
         if (heading) heading.innerText = 'Ký báo cáo & Luân chuyển hồ sơ';
-        if (subHeading) subHeading.innerText = 'Quy trình ký báo cáo nhiều bên: Người lập ➔ Tổ trưởng ➔ Ban Giám hiệu';
-        if (btnCreateText) btnCreateText.innerText = 'Tạo Báo Cáo Mới';
+        if (subHeading) subHeading.innerText = 'Quy trình luân chuyển: Người lập ➔ Tổ trưởng ➔ Ban Giám hiệu';
+        if (btnCreateText) btnCreateText.innerText = 'Tạo Báo Cáo Luân Chuyển';
       }
       loadDocuments();
     }
@@ -3530,49 +3530,53 @@
     function getDocStatusInfo(d) {
       if (d.status === 'ARCHIVED' || d.isArchived) {
         return {
-          badge: '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 border border-purple-200 inline-flex items-center gap-1"><i class="fa-solid fa-box-archive"></i> Đã lưu Drive</span>',
+          badge: '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 inline-flex items-center gap-1"><i class="fa-solid fa-box-archive"></i> Đã lưu Drive</span>',
           text: 'Đã lưu Drive',
           color: 'purple'
         };
-      } else if (d.status === 'COMPLETED') {
+      }
+
+      // Hồ sơ cá nhân (Tab 1) là tự ký số hoàn tất -> Luôn hiển thị Đã ký hoàn tất
+      const isPersonal = (d.category === 'PERSONAL') || (!d.category && activeDocCategory === 'PERSONAL');
+      if (isPersonal || d.status === 'COMPLETED') {
         return {
-          badge: '<span class="badge-approved px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Đã ký hoàn tất</span>',
+          badge: '<span class="badge-approved px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-circle-check text-emerald-600"></i> Đã ký hoàn tất</span>',
           text: 'Đã ký hoàn tất',
           color: 'emerald'
         };
       } else if (d.status === 'APPROVED') {
         return {
-          badge: '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Đã duyệt xong (Chờ xác nhận)</span>',
+          badge: '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Đã duyệt xong (Chờ xác nhận)</span>',
           text: 'Đã duyệt xong',
           color: 'emerald'
         };
       } else if (d.status === 'WAITING_NEXT_SIGN') {
         return {
-          badge: `<span class="badge-waiting-leader px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half"></i> Chờ ${d.nextSignerName || d.currentSignerRole || 'ký tiếp'}</span>`,
+          badge: `<span class="badge-waiting-leader px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half"></i> Chờ ${d.nextSignerName || d.currentSignerRole || 'ký tiếp'}</span>`,
           text: `Chờ ${d.nextSignerName || 'ký'}`,
           color: 'amber'
         };
       } else if (d.status === 'WAITING_LEADER_APPROVAL') {
         return {
-          badge: '<span class="badge-waiting-leader px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half"></i> Chờ Tổ trưởng duyệt</span>',
+          badge: '<span class="badge-waiting-leader px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half"></i> Chờ Tổ trưởng duyệt</span>',
           text: 'Chờ Tổ trưởng duyệt',
           color: 'blue'
         };
       } else if (d.status === 'WAITING_PRINCIPAL_APPROVAL') {
         return {
-          badge: '<span class="badge-waiting-principal px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-stamp"></i> Chờ BGH ký số</span>',
+          badge: '<span class="badge-waiting-principal px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-stamp"></i> Chờ BGH ký số</span>',
           text: 'Chờ BGH ký số',
           color: 'amber'
         };
       } else if (d.status === 'RECALLED') {
         return {
-          badge: '<span class="badge-recalled px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> Đã thu hồi</span>',
+          badge: '<span class="badge-recalled px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> Đã thu hồi</span>',
           text: 'Đã thu hồi',
           color: 'slate'
         };
       } else {
         return {
-          badge: '<span class="badge-rejected px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Yêu cầu sửa</span>',
+          badge: '<span class="badge-rejected px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Yêu cầu sửa</span>',
           text: 'Yêu cầu sửa',
           color: 'rose'
         };
@@ -3631,6 +3635,16 @@
       if (emptyState) emptyState.classList.add('hidden');
 
       docs.forEach(d => {
+
+        // Chuẩn hóa tự động: Nếu là Hồ sơ cá nhân (Tab 1), luôn là COMPLETED (Đã ký hoàn tất)
+        const isPersonalDoc = (d.category === 'PERSONAL') || (!d.category && activeDocCategory === 'PERSONAL');
+        if (isPersonalDoc) {
+          d.category = 'PERSONAL';
+          if (d.status === 'WAITING_LEADER_APPROVAL' || !d.status) {
+            d.status = 'COMPLETED';
+          }
+        }
+
         const statusInfo = getDocStatusInfo(d);
         const isDocx = (d.fileName || '').endsWith('.docx') || (d.fileName || '').endsWith('.doc');
         const fileIcon = isDocx ? '<i class="fa-solid fa-file-word text-blue-600"></i>' : '<i class="fa-solid fa-file-pdf text-red-600"></i>';
@@ -3654,32 +3668,27 @@
           isAuthor || isBgh
         );
 
-        const oneDriveRowBtn = `
-          <button onclick="handleSyncDocToOneDrive('${d.id}')" id="btnRowSyncOneDrive_${d.id}" title="${isOneDriveSynced ? 'Đã lưu vào OneDrive (5TB) - Bấm để đồng bộ lại' : 'Lưu vào OneDrive (5TB) của trường'}" class="px-2 py-1 rounded-lg ${isOneDriveSynced ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'} border font-bold transition text-xs flex items-center gap-1 cursor-pointer">
-            <i class="fa-brands fa-microsoft ${isOneDriveSynced ? 'text-sky-700' : 'text-sky-600'}"></i>
-            <span>${isOneDriveSynced ? 'OneDrive ✔' : 'OneDrive'}</span>
-          </button>
-        `;
-
         let actionBtns = `
-          <button onclick="viewSignedDocument('${d.id}')" title="Xem văn bản đã ký số trực tiếp trên trình duyệt" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer">
+          <button onclick="viewSignedDocument('${d.id}')" title="Xem văn bản đã ký số" class="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 font-bold transition text-xs flex items-center gap-1 shadow-2xs cursor-pointer">
             <i class="fa-solid fa-eye text-emerald-600"></i> Xem
           </button>
-          <button onclick="openDocDetails('${d.id}')" title="Xem chi tiết lịch sử ký số" class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition text-xs cursor-pointer">
-            <i class="fa-solid fa-circle-info"></i>
-          </button>
-          <button onclick="downloadSignedPdfFile('${d.id}')" title="Lưu / Tải văn bản đã ký về máy (.PDF chuẩn)" class="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-xs cursor-pointer">
-            <i class="fa-solid fa-file-arrow-down text-blue-600"></i>
+          <button onclick="downloadSignedPdfFile('${d.id}')" title="Lưu / Tải văn bản đã ký về máy (.PDF chuẩn)" class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 font-semibold transition text-xs flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-file-arrow-down text-blue-600"></i> Tải PDF
           </button>
         `;
 
         if (d.category === 'PERSONAL') {
-          actionBtns += oneDriveRowBtn;
+          actionBtns += `
+            <button onclick="handleSyncDocToOneDrive('${d.id}')" id="btnRowSyncOneDrive_${d.id}" title="${isOneDriveSynced ? 'Đã lưu vào OneDrive (5TB) - Bấm để đồng bộ lại' : 'Lưu vào OneDrive (5TB) của trường'}" class="px-2.5 py-1.5 rounded-xl ${isOneDriveSynced ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'} border font-semibold transition text-xs flex items-center gap-1 cursor-pointer">
+              <i class="fa-brands fa-microsoft ${isOneDriveSynced ? 'text-sky-700' : 'text-sky-600'}"></i>
+              <span>${isOneDriveSynced ? 'OneDrive ✔' : 'OneDrive'}</span>
+            </button>
+          `;
         }
 
         if (canForwardSign) {
           actionBtns += `
-            <button onclick="openForwardSignModal('${d.id}')" title="Ký duyệt và chuyển tiếp báo cáo" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer">
+            <button onclick="openForwardSignModal('${d.id}')" title="Ký duyệt và chuyển tiếp báo cáo" class="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer">
               <i class="fa-solid fa-file-pen text-xs"></i> Ký tiếp
             </button>
           `;
@@ -3687,31 +3696,35 @@
 
         if (canConfirmComplete) {
           actionBtns += `
-            <button onclick="confirmCompleteReport('${d.id}')" title="Xác nhận hoàn thành, đẩy lên Google Drive và lưu trữ" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer">
+            <button onclick="confirmCompleteReport('${d.id}')" title="Xác nhận hoàn thành, đẩy lên Google Drive và lưu trữ" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer">
               <i class="fa-solid fa-cloud-arrow-up text-xs"></i> Hoàn thành
             </button>
           `;
         }
 
-        // Nút Thu hồi (khi chưa ai ký tiếp)
-        if (d.status === 'WAITING_LEADER_APPROVAL' && (isAuthor || isAdmin)) {
+        // Nút Thu hồi: CHỈ ÁP DỤNG CHO BÁO CÁO LUÂN CHUYỂN (TAB 2) KHI CHƯA ĐƯỢC KÝ DUYỆT TIẾP THEO
+        if (d.category === 'REPORT' && (d.status === 'WAITING_LEADER_APPROVAL' || d.status === 'WAITING_NEXT_SIGN') && (isAuthor || isAdmin)) {
           actionBtns += `
-            <button onclick="handleRecallDoc('${d.id}')" title="Thu hồi bài nộp" class="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold transition text-xs flex items-center gap-1 cursor-pointer">
+            <button onclick="handleRecallDoc('${d.id}')" title="Thu hồi báo cáo đã gửi" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold transition text-xs flex items-center gap-1 cursor-pointer">
               <i class="fa-solid fa-rotate-left"></i> Thu hồi
             </button>
           `;
         }
 
+        actionBtns += `
+          <button onclick="openDocDetails('${d.id}')" title="Xem chi tiết lịch sử ký số" class="p-1.5 rounded-xl text-slate-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 transition text-xs cursor-pointer">
+            <i class="fa-solid fa-circle-info"></i>
+          </button>
+        `;
+
         // Nút Xóa hồ sơ
-        if ((d.status === 'WAITING_LEADER_APPROVAL' || d.status === 'RECALLED' || d.status === 'REJECTED' || isAdmin) && (isAuthor || isAdmin)) {
+        if ((d.status === 'RECALLED' || d.status === 'REJECTED' || isPersonalDoc || isAdmin) && (isAuthor || isAdmin)) {
           actionBtns += `
-            <button onclick="handleDeleteDoc('${d.id}')" title="Xóa hồ sơ này" class="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition text-xs cursor-pointer">
+            <button onclick="handleDeleteDoc('${d.id}')" title="Xóa hồ sơ này" class="p-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition text-xs cursor-pointer">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           `;
         }
-
-        const oneDriveBadge = isOneDriveSynced ? '<div class="mt-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200 inline-flex items-center gap-1"><i class="fa-brands fa-microsoft text-sky-600"></i> OneDrive 5TB</span></div>' : '';
 
         // --- 1. Render Desktop Table Row ---
         if (tbody) {
@@ -3724,7 +3737,7 @@
             <td class="py-3 px-4">
               <div class="flex flex-col">
                 <div class="flex items-center gap-1.5 mb-0.5">
-                  <span class="px-1.5 py-0.2 text-[9px] font-bold rounded ${d.category === 'REPORT' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}">
+                  <span class="px-2 py-0.5 text-[10px] font-bold rounded ${d.category === 'REPORT' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}">
                     ${d.category === 'REPORT' ? 'Báo cáo' : 'Hồ sơ tự ký'}
                   </span>
                   <span class="font-mono text-[10px] text-slate-400">#${d.id}</span>
@@ -3752,7 +3765,6 @@
               <div class="space-y-1">
                 ${statusInfo.badge}
                 ${d.category === 'REPORT' ? renderReportStepper(d) : ''}
-                ${oneDriveBadge}
               </div>
             </td>
             <td class="py-3 px-4 text-center">
