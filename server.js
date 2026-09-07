@@ -526,6 +526,14 @@ app.post('/api/documents/prepare-signing-pdf', async (req, res) => {
     });
   } catch (err) {
     console.error('Lỗi chuẩn bị tệp PDF nộp mới:', err.message);
+    const isRenderOrLinux = (err.message && (err.message.includes('Word COM') || err.message.includes('Render') || err.message.includes('Linux')));
+    if (docData && docData.onlyConvert && isRenderOrLinux) {
+      return res.status(200).json({
+        success: false,
+        needClientConvert: true,
+        message: 'Máy chủ đám mây Render (Linux) không hỗ trợ Word COM. Trình duyệt sẽ tự động dựng bản in PDF.'
+      });
+    }
     res.status(500).json({ success: false, message: 'Lỗi chuẩn bị tệp ký: ' + err.message });
   }
 });

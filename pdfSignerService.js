@@ -22,12 +22,28 @@ function safeAscii(str) {
  */
 function convertDocxToPdf(docxPath, outputPath) {
   return new Promise((resolve, reject) => {
-    if (process.platform !== 'win32') {
-      return reject(new Error('Word COM Automation chỉ khả dụng trên Windows'));
-    }
     const absDocx = path.resolve(docxPath);
+    const absPdf = path.resolve(outputPath);
     if (!fs.existsSync(absDocx)) {
       return reject(new Error(`Tệp Word nguồn không tồn tại: ${absDocx}`));
+    }
+
+    if (process.platform !== 'win32') {
+      // Môi trường Linux (như Render Cloud)
+      // Thử dùng soffice hoặc libreoffice nếu có
+      const { exec } = require('child_process');
+      const outDir = path.dirname(absPdf);
+      exec(`soffice --headless --convert-to pdf --outdir "${outDir}" "${absDocx}" || libreoffice --headless --convert-to pdf --outdir "${outDir}" "${absDocx}"`, { timeout: 45000 }, (err) => {
+        const expectedPdf = path.join(outDir, path.basename(absDocx, path.extname(absDocx)) + '.pdf');
+        if (fs.existsSync(expectedPdf) && fs.statSync(expectedPdf).size > 100) {
+          if (expectedPdf !== absPdf) {
+            try { fs.copyFileSync(expectedPdf, absPdf); fs.unlinkSync(expectedPdf); } catch (e) {}
+          }
+          return resolve(absPdf);
+        }
+        return reject(new Error('Máy chủ Linux Cloud (Render) không có Word COM hoặc LibreOffice. Hệ thống sẽ tự động chuyển đổi trực tiếp trên trình duyệt.'));
+      });
+      return;
     }
 
     const os = require('os');

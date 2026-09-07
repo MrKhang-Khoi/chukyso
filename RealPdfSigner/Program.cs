@@ -1347,6 +1347,114 @@ namespace RealPdfSigner
                     return;
                 }
 
+                if (path == "/api/convert-word-to-pdf" && req.HttpMethod == "POST")
+                {
+                    try
+                    {
+                        using var streamReader = new StreamReader(req.InputStream, req.ContentEncoding);
+                        string body = streamReader.ReadToEnd();
+                        using var docJson = JsonDocument.Parse(body);
+                        var root = docJson.RootElement;
+
+                        string fileBase64 = "";
+                        if (root.TryGetProperty("fileBase64", out var fb64)) fileBase64 = fb64.GetString() ?? "";
+
+                        string fileName = "GiaoAn.docx";
+                        if (root.TryGetProperty("fileName", out var fnProp) && !string.IsNullOrWhiteSpace(fnProp.GetString()))
+                        {
+                            fileName = fnProp.GetString()!;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(fileBase64))
+                        {
+                            res.StatusCode = 400;
+                            byte[] errBytes = System.Text.Encoding.UTF8.GetBytes("{\"success\":false,\"message\":\"Thiếu dữ liệu fileBase64\"}");
+                            res.OutputStream.Write(errBytes, 0, errBytes.Length);
+                            res.Close();
+                            return;
+                        }
+
+                        string cleanB64 = Regex.Replace(fileBase64, @"^data:[^;]+;base64,", "");
+                        byte[] fileBytes = Convert.FromBase64String(cleanB64);
+
+                        string tempDir = System.IO.Path.GetTempPath();
+                        string uniqueId = $"agent_conv_{DateTime.Now.Ticks}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+                        string ext = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
+                        if (string.IsNullOrEmpty(ext) || ext == ".pdf") ext = ".docx";
+                        string tempDocx = System.IO.Path.Combine(tempDir, $"{uniqueId}{ext}");
+                        string tempPdf = System.IO.Path.Combine(tempDir, $"{uniqueId}.pdf");
+                        string tempPs1 = System.IO.Path.Combine(tempDir, $"{uniqueId}.ps1");
+
+                        System.IO.File.WriteAllBytes(tempDocx, fileBytes);
+
+                        string psScript = "\uFEFF" + string.Join("\r\n", new[]
+                        {
+                            "$w = New-Object -ComObject Word.Application",
+                            "$w.Visible = $false",
+                            "$w.DisplayAlerts = 0",
+                            "try {",
+                            $"  $doc = $w.Documents.Open('{tempDocx.Replace("'", "''")}')",
+                            $"  $doc.SaveAs([ref]'{tempPdf.Replace("'", "''")}', [ref]17)",
+                            "  $doc.Close([ref]0)",
+                            "  Write-Output 'SUCCESS'",
+                            "} catch {",
+                            "  Write-Error $_.Exception.Message",
+                            "} finally {",
+                            "  $w.Quit()",
+                            "}"
+                        });
+
+                        System.IO.File.WriteAllText(tempPs1, psScript, System.Text.Encoding.UTF8);
+
+                        var psi = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "powershell.exe",
+                            Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{tempPs1}\"",
+                            UseShellExecute = false,
+                            CreateNoWindow = true,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true
+                        };
+
+                        using (var proc = System.Diagnostics.Process.Start(psi))
+                        {
+                            proc?.WaitForExit(45000);
+                        }
+
+                        try { if (System.IO.File.Exists(tempPs1)) System.IO.File.Delete(tempPs1); } catch { }
+                        try { if (System.IO.File.Exists(tempDocx)) System.IO.File.Delete(tempDocx); } catch { }
+
+                        if (System.IO.File.Exists(tempPdf) && new System.IO.FileInfo(tempPdf).Length > 100)
+                        {
+                            byte[] pdfBytes = System.IO.File.ReadAllBytes(tempPdf);
+                            try { System.IO.File.Delete(tempPdf); } catch { }
+                            string pdfBase64Result = "data:application/pdf;base64," + Convert.ToBase64String(pdfBytes);
+                            var resData = new { success = true, pdfBase64 = pdfBase64Result, size = pdfBytes.Length };
+                            byte[] okBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(resData));
+                            res.OutputStream.Write(okBytes, 0, okBytes.Length);
+                            res.Close();
+                            return;
+                        }
+                        else
+                        {
+                            try { if (System.IO.File.Exists(tempPdf)) System.IO.File.Delete(tempPdf); } catch { }
+                            res.StatusCode = 500;
+                            byte[] failBytes = System.Text.Encoding.UTF8.GetBytes("{\"success\":false,\"message\":\"Không thể xuất tệp PDF từ Microsoft Word cục bộ\"}");
+                            res.OutputStream.Write(failBytes, 0, failBytes.Length);
+                            res.Close();
+                            return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        res.StatusCode = 500;
+                        byte[] errBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { success = false, message = ex.Message }));
+                        res.OutputStream.Write(errBytes, 0, errBytes.Length);
+                        res.Close();
+                        return;
+                    }
+                }
+
                 if (path == "/api/local-sign-doc" && req.HttpMethod == "POST")
                 {
                     using var streamReader = new StreamReader(req.InputStream, req.ContentEncoding);
