@@ -1959,14 +1959,27 @@ app.post('/api/drive/test', requireAdmin, async (req, res) => {
   const pathToUpload = fs.existsSync(samplePdf) ? samplePdf : fallbackPdf;
 
   try {
+    const driveCfg = googleDriveService.getDriveConfig();
+    const hasRealWebhook = Boolean(driveCfg.gasWebhookUrl && driveCfg.gasWebhookUrl.startsWith('http'));
     const result = await googleDriveService.uploadToGoogleDrive(sampleDoc, pathToUpload);
-    res.json({
-      success: true,
-      message: 'Kiểm thử kết nối Google Drive thành công 100%!',
-      data: result
-    });
+
+    if (hasRealWebhook && result.isRealCloud) {
+      res.json({
+        success: true,
+        isRealCloud: true,
+        message: '🎉 KẾT NỐI GOOGLE DRIVE THẬT THÀNH CÔNG!\n\nTệp kiểm thử đã được lưu vào Google Drive của trường. Thầy/Cô có thể nhấp vào liên kết để kiểm tra trực tiếp trên Google Drive.',
+        data: result
+      });
+    } else {
+      res.json({
+        success: false,
+        isRealCloud: false,
+        message: '⚠️ CHƯA KẾT NỐI GOOGLE DRIVE THẬT!\n\nBạn chưa điền "Webhook URL Google Apps Script". Hệ thống hiện đang lưu tạm vào thư mục mô phỏng cục bộ (GoogleDrive_KhoTruong/). Vui lòng làm theo hướng dẫn trong file google-apps-script-template.js để kích hoạt kết nối Google Drive thật.',
+        data: result
+      });
+    }
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Kiểm thử kết nối thất bại: ' + err.message });
+    res.status(500).json({ success: false, message: 'Kiểm thử kết nối Google Drive thất bại: ' + err.message });
   }
 });
 

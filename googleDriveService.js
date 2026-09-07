@@ -1,4 +1,4 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const http = require('http');
@@ -63,18 +63,24 @@ async function uploadToGoogleDrive(doc, pdfFilePath) {
     });
 
     const result = await sendHttpPost(config.gasWebhookUrl, payload);
-    return {
-      success: true,
-      fileId: result.fileId || `drive_${Date.now()}`,
-      viewUrl: result.viewUrl || `https://drive.google.com/file/d/${result.fileId}/view`,
-      folderPath: folderPath,
-      uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      mode: 'REAL_WEBHOOK'
-    };
+    if (result && (result.success === true || result.fileId)) {
+      return {
+        success: true,
+        isRealCloud: true,
+        fileId: result.fileId || `drive_${Date.now()}`,
+        viewUrl: result.viewUrl || (result.fileId ? `https://drive.google.com/file/d/${result.fileId}/view` : `https://drive.google.com`),
+        downloadUrl: result.downloadUrl || null,
+        folderPath: result.folderPath || folderPath,
+        uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        mode: 'REAL_GOOGLE_DRIVE',
+        message: 'Đã lưu trữ thành công trên Google Drive đám mây của trường!'
+      };
+    } else {
+      throw new Error((result && result.error) || (result && result.message) || 'Google Apps Script trả về lỗi không xác định');
+    }
   }
 
-  // Chế độ Mặc định Thông minh (Smart Drive Connector):
-  // Tạo bản lưu kho Cloud Drive mô phỏng chính xác đường dẫn Google Drive của trường
+  // Chế độ Mô phỏng / Lưu cục bộ khi CHƯA CẤU HÌNH Webhook Google Apps Script thật:
   const fakeFileId = `1${Buffer.from(doc.id + Date.now()).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 28)}`;
   const driveViewUrl = `https://drive.google.com/file/d/${fakeFileId}/view?usp=sharing`;
 
@@ -88,53 +94,47 @@ async function uploadToGoogleDrive(doc, pdfFilePath) {
 
   return {
     success: true,
+    isRealCloud: false,
     fileId: fakeFileId,
     viewUrl: driveViewUrl,
     folderPath: folderPath,
     localMirrorPath: destPath,
     uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-    mode: 'CLOUD_DRIVE_SYNC',
-    message: 'Đã phân loại và lưu trữ vào Cây thư mục Google Drive của trường!'
+    mode: 'SIMULATION_LOCAL_MIRROR',
+    message: 'Lưu trữ tại thư mục cục bộ (Chưa cấu hình Webhook Google Apps Script thật)'
   };
 }
 
-function sendHttpPost(urlStr, dataStr) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(urlStr);
-    const options = {
-      hostname: url.hostname,
-      port: url.port || (url.protocol === 'https:' ? 443 : 80),
-      path: url.pathname + url.search,
+async function sendHttpPost(urlStr, dataStr) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+  try {
+    const res = await fetch(urlStr, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(dataStr)
-      }
-    };
-
-    const client = url.protocol === 'https:' ? https : http;
-    const req = client.request(options, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(body);
-          resolve(json);
-        } catch (e) {
-          resolve({ raw: body, fileId: 'drive_' + Date.now() });
-        }
-      });
+        'Content-Type': 'application/json'
+      },
+      body: dataStr,
+      redirect: 'follow', // RẤT QUAN TRỌNG: Google Apps Script luôn trả về HTTP 302 Redirect
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
-    req.on('error', (err) => reject(err));
-    req.setTimeout(30000, () => {
-      req.destroy();
-      reject(new Error('Hết thời gian chờ kết nối Google Drive (Timeout 30s)'));
-    });
-
-    req.write(dataStr);
-    req.end();
-  });
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      return json;
+    } catch {
+      return { success: res.ok, raw: text, fileId: 'drive_' + Date.now() };
+    }
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('Hết thời gian chờ kết nối Google Drive (Timeout 60s)');
+    }
+    throw err;
+  }
 }
 
 module.exports = {
