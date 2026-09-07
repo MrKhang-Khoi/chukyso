@@ -1387,7 +1387,7 @@ namespace RealPdfSigner
 
                         System.IO.File.WriteAllBytes(tempDocx, fileBytes);
 
-                        string psScript = "\uFEFF" + string.Join("\r\n", new[]
+                        string psScript = string.Join("\r\n", new[]
                         {
                             "$w = New-Object -ComObject Word.Application",
                             "$w.Visible = $false",

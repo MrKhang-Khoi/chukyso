@@ -2164,16 +2164,19 @@
           throw new Error('Không thể chuyển đổi tệp Word sang PDF.');
         }
 
-        // Cập nhật dữ liệu file thành PDF
-        selectedUploadFileBase64 = convertedPdfBase64;
+        // Bóc tách phần payload Base64 an toàn tuyệt đối (bỏ qua mọi tiền tố data:...;base64,)
+        const commaIdx = convertedPdfBase64.indexOf(',');
+        const rawBase64 = (commaIdx >= 0 ? convertedPdfBase64.substring(commaIdx + 1) : convertedPdfBase64).trim().replace(/\s/g, '');
         
-        // Chuyển base64 sang Blob và File object
-        const byteCharacters = atob(convertedPdfBase64.replace(/^data:[^;]+;base64,/, ''));
-        const byteNumbers = new Array(byteCharacters.length);
+        // Đảm bảo selectedUploadFileBase64 luôn chuẩn định dạng data:application/pdf;base64,...
+        selectedUploadFileBase64 = 'data:application/pdf;base64,' + rawBase64;
+        
+        // Chuyển Base64 sang Blob và File object
+        const byteCharacters = atob(rawBase64);
+        const byteArray = new Uint8Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
+          byteArray[i] = byteCharacters.charCodeAt(i);
         }
-        const byteArray = new Uint8Array(byteNumbers);
         const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
         selectedUploadFile = new File([pdfBlob], newPdfName, { type: 'application/pdf' });
 
@@ -2407,7 +2410,9 @@
         };
 
         const pdfDataUri = await html2pdf().from(container).set(opt).outputPdf('datauristring');
-        return pdfDataUri;
+        const cIdx = pdfDataUri.indexOf(',');
+        const b64 = (cIdx >= 0 ? pdfDataUri.substring(cIdx + 1) : pdfDataUri).trim().replace(/\s/g, '');
+        return 'data:application/pdf;base64,' + b64;
       } finally {
         if (container.parentNode) {
           container.parentNode.removeChild(container);
