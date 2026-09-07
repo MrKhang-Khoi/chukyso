@@ -1404,7 +1404,7 @@ namespace RealPdfSigner
                             "}"
                         });
 
-                        System.IO.File.WriteAllText(tempPs1, psScript, System.Text.Encoding.UTF8);
+                        System.IO.File.WriteAllText(tempPs1, psScript, new System.Text.UTF8Encoding(true));
 
                         var psi = new System.Diagnostics.ProcessStartInfo
                         {
@@ -1416,9 +1416,16 @@ namespace RealPdfSigner
                             RedirectStandardError = true
                         };
 
+                        string stdOut = "";
+                        string stdErr = "";
                         using (var proc = System.Diagnostics.Process.Start(psi))
                         {
-                            proc?.WaitForExit(45000);
+                            if (proc != null)
+                            {
+                                stdOut = proc.StandardOutput.ReadToEnd();
+                                stdErr = proc.StandardError.ReadToEnd();
+                                proc.WaitForExit(45000);
+                            }
                         }
 
                         try { if (System.IO.File.Exists(tempPs1)) System.IO.File.Delete(tempPs1); } catch { }
@@ -1439,7 +1446,8 @@ namespace RealPdfSigner
                         {
                             try { if (System.IO.File.Exists(tempPdf)) System.IO.File.Delete(tempPdf); } catch { }
                             res.StatusCode = 500;
-                            byte[] failBytes = System.Text.Encoding.UTF8.GetBytes("{\"success\":false,\"message\":\"Không thể xuất tệp PDF từ Microsoft Word cục bộ\"}");
+                            string failMsg = "Không thể xuất tệp PDF từ Microsoft Word cục bộ: " + (!string.IsNullOrWhiteSpace(stdErr) ? stdErr : stdOut);
+                            byte[] failBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { success = false, message = failMsg }));
                             res.OutputStream.Write(failBytes, 0, failBytes.Length);
                             res.Close();
                             return;

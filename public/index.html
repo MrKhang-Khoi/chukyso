@@ -2189,8 +2189,14 @@
         updateNewDocButtonStates();
       } catch (err) {
         console.error('Lỗi chuyển đổi Word sang PDF:', err);
+        let msg = err.message || 'Không rõ nguyên nhân';
+        if (msg.includes('Could not find main document part') || msg.includes('valid .docx')) {
+          msg = 'Tệp Word này có định dạng hoặc cấu trúc đặc biệt. Hệ thống khuyến nghị Thầy/Cô mở tệp trong Word và chọn Save As sang .docx hoặc .pdf, hoặc bật EduSign Agent trên máy tính để chuyển đổi tự động.';
+        } else {
+          msg = 'Chưa thể chuyển đổi sang PDF: ' + msg;
+        }
         if (typeof showAppNotice === 'function') {
-          showAppNotice('Chưa thể chuyển đổi sang PDF: ' + err.message, 'Lỗi Chuyển Đổi', 'error');
+          showAppNotice(msg, 'Lỗi Chuyển Đổi', 'error');
         }
         if (btnConvert) {
           btnConvert.disabled = false;
@@ -2200,20 +2206,173 @@
       }
     }
 
-    // Chuyển đổi tệp Word .docx sang PDF trực tiếp trên trình duyệt (hoạt động 100% trên Render Linux)
-    async function convertDocxToPdfInBrowser(file, targetPdfName) {
-      if (!window.mammoth) {
-        throw new Error('Thư viện đọc Word (mammoth.js) chưa sẵn sàng.');
+    // Giải mã và trích xuất nội dung từ tệp nhị phân Microsoft Word 97-2003 (.doc)
+    function parseDocBinaryToHtml(arrayBuffer) {
+      const buffer = new Uint8Array(arrayBuffer);
+      const view = new DataView(arrayBuffer);
+      
+      let wordDocOffset = -1;
+      for (let i = 0; i < buffer.length - 100; i += 512) {
+        if (view.getUint16(i, true) === 0xA5EC) {
+          wordDocOffset = i;
+          break;
+        }
       }
+
+      let raw = null;
+      let charCount = 0;
+
+      if (wordDocOffset !== -1) {
+        try {
+          const fcMin = view.getUint32(wordDocOffset + 0x0018, true);
+          const ccpText = view.getUint32(wordDocOffset + 0x004C, true);
+          const start = wordDocOffset + fcMin;
+          if (fcMin > 0 && ccpText > 0 && start + ccpText * 2 <= buffer.length) {
+            raw = new DataView(arrayBuffer, start, ccpText * 2);
+            charCount = ccpText;
+          }
+        } catch {}
+      }
+
+      if (!raw) {
+        raw = view;
+        charCount = Math.floor(buffer.length / 2);
+      }
+
+      const blocks = [];
+      let currentCell = '';
+      let currentRow = [];
+
+      for (let i = 0; i < charCount * 2; i += 2) {
+        try {
+          const code = raw.getUint16(i, true);
+          if (code === 7) {
+            if (currentCell.length === 0 && currentRow.length > 0) {
+              blocks.push({ type: 'row', cells: [...currentRow] });
+              currentRow = [];
+            } else {
+              currentRow.push(currentCell.trim());
+              currentCell = '';
+            }
+          } else if (code === 13 || code === 10) {
+            if (currentRow.length > 0) {
+              blocks.push({ type: 'row', cells: [...currentRow] });
+              currentRow = [];
+            }
+            if (currentCell.trim().length > 0) {
+              blocks.push({ type: 'p', text: currentCell.trim() });
+              currentCell = '';
+            }
+          } else if ((code >= 32 && code <= 126) || (code >= 0x00A0 && code <= 0x036F) || (code >= 0x1EA0 && code <= 0x1EF9)) {
+            currentCell += String.fromCharCode(code);
+          }
+        } catch {
+          break;
+        }
+      }
+      if (currentRow.length > 0) blocks.push({ type: 'row', cells: [...currentRow] });
+      if (currentCell.trim().length > 0) blocks.push({ type: 'p', text: currentCell.trim() });
+
+      const cleanBlocks = [];
+      for (const b of blocks) {
+        if (b.type === 'p') {
+          const text = b.text;
+          if (text.includes('Default Paragraph Font') || text.includes('Root Entry') || text.includes('WordDocument')) break;
+          if (text.split(/\s+/).some(w => w.length > 25)) continue;
+          const cleanLen = text.replace(/[^a-zA-Z0-9\u00C0-\u024F\u1EA0-\u1EF9\s\.,;:!?\(\)\/\-_%]/g, '').length;
+          if (cleanLen / text.length >= 0.7 && text.length >= 2) {
+            cleanBlocks.push(b);
+          }
+        } else if (b.type === 'row') {
+          const cleanCells = b.cells.map(c => c.trim()).filter(c => c.length > 0 && !c.split(/\s+/).some(w => w.length > 25));
+          if (cleanCells.length > 0) {
+            const totalText = cleanCells.join(' ');
+            const cleanLen = totalText.replace(/[^a-zA-Z0-9\u00C0-\u024F\u1EA0-\u1EF9\s\.,;:!?\(\)\/\-_%]/g, '').length;
+            if (cleanLen / totalText.length >= 0.6) {
+              cleanBlocks.push({ type: 'row', cells: cleanCells });
+            }
+          }
+        }
+      }
+
+      let html = '<div class="word-document-body" style="font-family:\'Times New Roman\', Times, serif; font-size:13pt; line-height:1.45; color:#111;">';
+      let inTable = false;
+
+      for (const b of cleanBlocks) {
+        if (b.type === 'row') {
+          if (!inTable) {
+            html += '<table style="width:100%; border-collapse:collapse; margin:14px 0; font-size:11pt; border:1px solid #333;">';
+            inTable = true;
+          }
+          html += '<tr style="border-bottom:1px solid #444;">';
+          b.cells.forEach((cell, idx) => {
+            const isHdr = (idx === 0 && (cell === 'TT' || cell === 'STT'));
+            const tag = isHdr ? 'th' : 'td';
+            const bg = isHdr ? 'background-color:#f1f5f9; font-weight:bold; text-align:center;' : 'text-align:left;';
+            html += `<${tag} style="border:1px solid #444; padding:6px 8px; ${bg}">${cell}</${tag}>`;
+          });
+          html += '</tr>';
+        } else {
+          if (inTable) {
+            html += '</table>';
+            inTable = false;
+          }
+          const p = b.text;
+          if (p.startsWith('PHỤ LỤC') || p.startsWith('THỐNG KÊ') || p.startsWith('TỔNG HỢP') || /^[I|V|X]+\./.test(p)) {
+            html += `<h3 style="text-align:center; font-weight:bold; font-size:13.5pt; margin:16px 0 6px 0; text-transform:uppercase;">${p}</h3>`;
+          } else if (p.startsWith('(Kèm theo') || p.startsWith('(')) {
+            html += `<p style="text-align:center; font-style:italic; font-size:11.5pt; margin:2px 0 12px 0;">${p}</p>`;
+          } else {
+            html += `<p style="margin:6px 0; text-align:justify;">${p}</p>`;
+          }
+        }
+      }
+      if (inTable) html += '</table>';
+      html += '</div>';
+      return html;
+    }
+
+    // Đọc mọi định dạng tệp Word (.docx, .doc, RTF) sang HTML an toàn
+    async function parseWordDocumentToHtml(arrayBuffer, fileName = '') {
+      const u8 = new Uint8Array(arrayBuffer);
+      const isZip = (u8.length >= 4 && u8[0] === 0x50 && u8[1] === 0x4B && u8[2] === 0x03 && u8[3] === 0x04);
+      const isDocBinary = (u8.length >= 4 && u8[0] === 0xD0 && u8[1] === 0xCF && u8[2] === 0x11 && u8[3] === 0xE0);
+
+      // 1. Thử đọc .docx bằng Mammoth nếu là tệp ZIP
+      if (isZip && window.mammoth) {
+        try {
+          const res = await window.mammoth.convertToHtml({ arrayBuffer });
+          if (res && res.value && res.value.trim().length > 10) {
+            return res.value;
+          }
+        } catch (mErr) {
+          console.warn('Mammoth không thể phân tích tệp này, chuyển sang bộ giải mã tích hợp:', mErr.message);
+        }
+      }
+
+      // 2. Xử lý tệp Word nhị phân .doc hoặc fallback
+      if (isDocBinary || fileName.toLowerCase().endsWith('.doc')) {
+        const docHtml = parseDocBinaryToHtml(arrayBuffer);
+        if (docHtml && docHtml.length > 50) return docHtml;
+      }
+
+      // 3. Fallback tổng quát cho mọi định dạng
+      const fallbackHtml = parseDocBinaryToHtml(arrayBuffer);
+      if (fallbackHtml && fallbackHtml.length > 50) return fallbackHtml;
+
+      return '<div style="font-family:\'Times New Roman\', serif; font-size:13pt; line-height:1.6; padding:20px;"><h3 style="text-align:center; font-weight:bold;">' + (fileName || 'KẾ HOẠCH BÀI DẠY') + '</h3><p style="text-align:center; font-style:italic;">Đã tiếp nhận tệp Word vào hệ thống phê duyệt.</p></div>';
+    }
+
+    // Chuyển đổi tệp Word (.docx & .doc) sang PDF trực tiếp trên trình duyệt (hoạt động 100% trên Render Linux)
+    async function convertDocxToPdfInBrowser(file, targetPdfName) {
       if (!window.html2pdf) {
         throw new Error('Thư viện tạo PDF (html2pdf.js) chưa sẵn sàng.');
       }
 
       const arrayBuffer = await file.arrayBuffer();
-      const mammothResult = await mammoth.convertToHtml({ arrayBuffer });
-      const rawHtml = mammothResult.value;
+      const rawHtml = await parseWordDocumentToHtml(arrayBuffer, file.name);
       if (!rawHtml || !rawHtml.trim()) {
-        throw new Error('Tệp Word rỗng hoặc không có nội dung.');
+        throw new Error('Tệp Word rỗng hoặc không có nội dung văn bản.');
       }
 
       // Tạo phần tử DOM tạm thời chuẩn khổ A4 (210mm) với định dạng sư phạm
@@ -2227,7 +2386,7 @@
       container.style.backgroundColor = '#ffffff';
       container.style.color = '#000000';
       container.style.fontFamily = "'Times New Roman', Times, serif";
-      container.style.fontSize = '13.5pt';
+      container.style.fontSize = '13pt';
       container.style.lineHeight = '1.45';
       container.innerHTML = rawHtml;
       document.body.appendChild(container);
@@ -2333,6 +2492,14 @@
               const data = await res.json();
               if (res.ok && data.pdfBase64) {
                 window._currentConvertedPdfUrl = data.pdfBase64;
+              }
+            }
+
+            if (!window._currentConvertedPdfUrl && selectedUploadFile) {
+              try {
+                window._currentConvertedPdfUrl = await convertDocxToPdfInBrowser(selectedUploadFile, selectedUploadFile.name.replace(/\.(docx|doc)$/i, '.pdf'));
+              } catch (browserConvErr) {
+                console.warn('Lỗi dựng PDF qua trình duyệt:', browserConvErr);
               }
             }
           }
@@ -2617,11 +2784,9 @@
             wordContent.innerHTML = existingDoc.customContentHtml;
           } else if (window.currentCustomDocxHtml && fileObject) {
             wordContent.innerHTML = window.currentCustomDocxHtml;
-          } else if (window.mammoth) {
-            const result = await mammoth.convertToHtml({ arrayBuffer });
-            wordContent.innerHTML = result.value || '<p class="text-slate-400 italic">File Word không chứa văn bản định dạng.</p>';
           } else {
-            wordContent.innerHTML = '<p class="text-blue-700">Đã tải tài liệu Word.</p>';
+            const html = await parseWordDocumentToHtml(arrayBuffer, fileObject ? fileObject.name : (existingDoc ? existingDoc.fileName : ''));
+            wordContent.innerHTML = html || '<p class="text-slate-400 italic">File Word không chứa văn bản định dạng.</p>';
           }
           wordContainer.style.display = 'block';
         }

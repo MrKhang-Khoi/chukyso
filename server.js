@@ -486,8 +486,8 @@ app.get('/api/documents/:id/prepare-signing-pdf', async (req, res) => {
 
 // Chuẩn bị tệp PDF đã đóng dấu ảnh chữ ký cho hồ sơ mới tải lên
 app.post('/api/documents/prepare-signing-pdf', async (req, res) => {
+  const docData = req.body || {};
   try {
-    const docData = req.body || {};
     const isCopy = (docData.signType === 'COPY' || docData.isCopySign === true);
     const tempDoc = {
       id: docData.id || 'DOC_' + Date.now(),
@@ -526,7 +526,7 @@ app.post('/api/documents/prepare-signing-pdf', async (req, res) => {
     });
   } catch (err) {
     console.error('Lỗi chuẩn bị tệp PDF nộp mới:', err.message);
-    const isRenderOrLinux = (err.message && (err.message.includes('Word COM') || err.message.includes('Render') || err.message.includes('Linux')));
+    const isRenderOrLinux = (process.platform !== 'win32') || (err.message && (err.message.includes('Word COM') || err.message.includes('Render') || err.message.includes('Linux')));
     if (docData && docData.onlyConvert && isRenderOrLinux) {
       return res.status(200).json({
         success: false,
