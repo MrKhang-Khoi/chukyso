@@ -37,6 +37,15 @@
         }
         return originalFetch(resource, init);
       };
+
+      // Tự động chuyển đổi các liên kết tải công cụ ký số /downloads sang Render khi chạy trên GitHub Pages
+      if (isGitHubPages) {
+        window.addEventListener('DOMContentLoaded', function() {
+          document.querySelectorAll('a[href^="/downloads/"], a[href^="/api/"]').forEach(function(el) {
+            el.href = BACKEND_URL + el.getAttribute('href');
+          });
+        });
+      }
     })();
   </script>
   <!-- html2pdf.js để chuyển đổi tài liệu Word sang PDF chuẩn xác ngay trên trình duyệt (hoạt động trên Render Linux) -->
@@ -662,7 +671,7 @@
         <div>
           <label class="block font-bold text-slate-700 mb-1.5">Bản xem trước chữ ký (Nền trong suốt):</label>
           <div class="h-28 bg-[linear-gradient(45deg,#f1f5f9_25%,transparent_25%),linear-gradient(-45deg,#f1f5f9_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f1f5f9_75%),linear-gradient(-45deg,transparent_75%,#f1f5f9_75%)] bg-[size:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0] rounded-xl border border-slate-200 flex items-center justify-center p-2 overflow-hidden">
-            <img id="userSigPreviewCanvas" src="/uploads/signatures/sig_user_cvaty.png" class="max-h-full max-w-full object-contain" alt="Chữ ký cá nhân">
+            <img id="userSigPreviewCanvas" src="./uploads/signatures/sig_user_cvaty.png" class="max-h-full max-w-full object-contain" alt="Chữ ký cá nhân">
           </div>
           <p class="text-[10px] text-slate-400 mt-1 italic text-center">Ô kẻ ca-rô mô phỏng nền trong suốt khi đóng dấu lên văn bản</p>
         </div>
@@ -937,7 +946,7 @@
           <div class="relative border-2 border-dashed border-blue-500 hover:border-blue-700 bg-transparent hover:bg-blue-500/5 rounded-xl p-0.5 transition shadow-sm">
             <!-- Ảnh chữ ký giáo viên hiển thị trong suốt -->
             <div class="flex items-center justify-center p-0.5 bg-transparent">
-              <img id="draggableSignatureImg" src="/uploads/signatures/sig_user_cvaty.png" class="max-h-20 w-auto object-contain pointer-events-none select-none drop-shadow-sm transition-all duration-100" alt="Chữ ký giáo viên">
+              <img id="draggableSignatureImg" src="./uploads/signatures/sig_user_cvaty.png" class="max-h-20 w-auto object-contain pointer-events-none select-none drop-shadow-sm transition-all duration-100" alt="Chữ ký giáo viên">
             </div>
             <!-- Ẩn hoàn toàn vùng hiển thị tọa độ theo yêu cầu để nhìn rõ văn bản bên dưới và kéo cho khớp -->
             <div class="hidden">
@@ -1170,7 +1179,7 @@
       <!-- Khung Chứng thư số Ban Cơ yếu Chính phủ & Dấu đỏ -->
       <div class="p-3 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl space-y-2 text-xs">
         <div class="flex items-center gap-3">
-          <img src="/school_seal.png" onerror="this.src='/uploads/signatures/school_seal.png'" class="w-14 h-14 object-contain drop-shadow" alt="Dấu đỏ">
+          <img src="./school_seal.png" onerror="this.onerror=null; this.src='./uploads/signatures/school_seal.png';" class="w-14 h-14 object-contain drop-shadow" alt="Dấu đỏ">
           <div class="space-y-0.5">
             <div class="font-bold text-red-900">TRƯỜNG THCS CHU VĂN AN</div>
             <div class="text-[11px] text-red-700 font-medium">Chứng thư số: Ban Cơ yếu Chính phủ (VGCA)</div>
@@ -3273,7 +3282,7 @@
       if (nameEl) nameEl.innerText = currentUser.name || 'Hà Văn Tý';
       if (deptEl) deptEl.innerText = currentUser.department || 'Tổ Toán - Tin';
 
-      const sigImg = currentUser.signatureImage || '/uploads/signatures/sig_user_cvaty.png';
+      const sigImg = currentUser.signatureImage || './uploads/signatures/sig_user_cvaty.png';
       const previewImg = document.getElementById('newDocSigPreviewImg');
       if (previewImg) previewImg.src = sigImg;
 
@@ -3335,7 +3344,7 @@
     // ==================== BƯỚC 2: QUẢN LÝ VÀ TẢI CHỮ KÝ SỐ LÊN HỆ THỐNG ====================
     function openUploadSignatureModal() {
       const previewImg = document.getElementById('userSigPreviewCanvas');
-      const sigImg = (currentUser && currentUser.signatureImage) || '/uploads/signatures/sig_user_cvaty.png';
+      const sigImg = (currentUser && currentUser.signatureImage) || './uploads/signatures/sig_user_cvaty.png';
       if (previewImg) previewImg.src = sigImg;
       window._tempSelectedUserSignature = null;
       openModal('modalUploadSignature');
@@ -3454,7 +3463,7 @@
         if (btnText) btnText.innerText = 'Ẩn Vị Trí Ký';
 
         // Cập nhật ảnh chữ ký giáo viên (chuẩn thuần túy Hình 2)
-        const sigImg = (currentUser && currentUser.signatureImage) || '/uploads/signatures/sig_user_cvaty.png';
+        const sigImg = (currentUser && currentUser.signatureImage) || './uploads/signatures/sig_user_cvaty.png';
         const dragImg = document.getElementById('draggableSignatureImg');
         if (dragImg) dragImg.src = sigImg;
 
@@ -5288,7 +5297,7 @@
       const title = p.title || (document.getElementById('newDocTitle') ? document.getElementById('newDocTitle').value.trim() : '') || 'Kế hoạch bài dạy';
       const grade = p.grade || (document.getElementById('newDocGrade') ? document.getElementById('newDocGrade').value : 'Khối 9');
       const week = p.week || (document.getElementById('newDocWeek') ? document.getElementById('newDocWeek').value : 'Tuần 1');
-      const signatureToSubmit = currentUser ? (currentUser.signatureImage || '/uploads/signatures/sig_user_cvaty.png') : '/uploads/signatures/sig_user_cvaty.png';
+      const signatureToSubmit = currentUser ? (currentUser.signatureImage || './uploads/signatures/sig_user_cvaty.png') : './uploads/signatures/sig_user_cvaty.png';
 
       const payload = {
         title,
