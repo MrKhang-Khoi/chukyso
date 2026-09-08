@@ -1427,7 +1427,7 @@ app.post('/api/vgca/initiate-session', (req, res) => {
       txId,
       status: session.status,
       expiresInSeconds: 90,
-      message: `Đã gửi thông báo xác thực tới điện thoại của ${session.signerName}. Xin mời mở ứng dụng SmartCA và chọn [Xác nhận].`
+      message: `Phiên ký số cho ${session.signerName} (${session.vgcaAccount}) đã sẵn sàng. Vui lòng xác nhận trên thiết bị hoặc nhấn nút xác nhận trên màn hình để hoàn tất niêm phong.`
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Lỗi khởi tạo phiên ký số: ' + err.message });

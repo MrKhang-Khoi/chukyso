@@ -1,5 +1,1465 @@
 [
   {
+    "id": "KHBD-2026-550955",
+    "title": "Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:29:10",
+    "status": "COMPLETED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": false,
+    "fileName": "KHGD_PL3_SaoY.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-550955_1788852550997.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "top-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Người chứng thực bản sao",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:29:10",
+        "signType": "Ký số bản sao (SAO Y - NĐ 30/2020/NĐ-CP)",
+        "status": "VALID",
+        "placement": "top-right",
+        "coordinates": null,
+        "visualSignImage": null,
+        "visualSign": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-08 07:29:10",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:29:11",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-547570",
+    "title": "Kế hoạch bài dạy đã xác thực điện thoại chuẩn",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 16",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:29:07",
+    "status": "COMPLETED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": false,
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-547570_1788852547656.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:29:07",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-08 07:29:07",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy đã xác thực điện thoại chuẩn\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:29:08",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": "VGCA-2026-TX985934"
+    }
+  },
+  {
+    "id": "KHBD-2026-545825",
+    "title": "Kế hoạch bài dạy ký qua Local Bridge",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 15",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:29:05",
+    "status": "COMPLETED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": false,
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/signed_vgca_KHBD-2026-545825_1788852545849.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:29:05",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1zzHFgWztWzkIOHA0BnsswMmUsuUGijif",
+      "viewUrl": "https://drive.google.com/file/d/1zzHFgWztWzkIOHA0BnsswMmUsuUGijif/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
+      "uploadedAt": "2026-09-08 07:29:11"
+    },
+    "logs": [
+      {
+        "time": "2026-09-08 07:29:05",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy ký qua Local Bridge\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:29:05",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-533976",
+    "title": "Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:28:53",
+    "status": "ARCHIVED",
+    "currentSignerRole": null,
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": true,
+    "fileName": "GiaoAn_Toan9_T12.pdf",
+    "fileType": "application/pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-533976_1788852550183.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-left",
+    "fileSize": 24843,
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:01:42+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:28:53",
+        "signType": "Ký duyệt cấp 1",
+        "status": "VALID",
+        "placement": "bottom-left",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      },
+      {
+        "step": 2,
+        "role": "Tổ trưởng Tổ Toán - Tin",
+        "signerName": "Trần Văn Nam",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:28:54",
+        "signType": "PAdES Incremental Update",
+        "status": "VALID",
+        "placement": "middle-right",
+        "visualSignImage": null,
+        "visualSign": "Ký nháy duyệt chuyên môn: Đạt chuẩn phân phối chương trình"
+      },
+      {
+        "step": 3,
+        "role": "Hiệu trưởng / Ban Giám hiệu phê duyệt",
+        "signerName": "Ngô Thị Liền",
+        "signerUnit": "TRƯỜNG THCS CHU VĂN AN",
+        "certIssuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+        "certSerial": "025E056A3F133DA9",
+        "signedAt": "2026-09-08 07:28:54",
+        "signType": "PAdES LTV (VGCA Hardware USB Token)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "visualSignImage": "data:image/png;base64,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",
+        "visualSign": "Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ (Ngô Thị Liền)"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1IZJCoKrhLrqx13uq9W2MZsxtGYC7PUah",
+      "viewUrl": "https://drive.google.com/file/d/1IZJCoKrhLrqx13uq9W2MZsxtGYC7PUah/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
+      "uploadedAt": "2026-09-08 07:29:04"
+    },
+    "logs": [
+      {
+        "time": "2026-09-08 07:28:53",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)\" (Giáo án cá nhân)"
+      },
+      {
+        "time": "2026-09-08 07:28:54",
+        "actor": "Trần Văn Nam (Tổ trưởng)",
+        "action": "Ký nháy duyệt chuyên môn: \"Đạt chuẩn phân phối chương trình\" và chuyển trình Ban Giám hiệu phê duyệt"
+      },
+      {
+        "time": "2026-09-08 07:28:54",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Ký phê duyệt chính thức, đóng dấu số cơ quan và lưu trữ vào Kho hồ sơ số trường"
+      },
+      {
+        "time": "2026-09-08 07:29:04",
+        "actor": "Hà Văn Tý",
+        "action": "Đã lưu trữ Google Drive (Năm học 2026 - 2027 / Hà Văn Tý) và xóa sạch dữ liệu tạm trên Render."
+      },
+      {
+        "time": "2026-09-08 07:29:04",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã nộp thành công vào OneDrive trường (5TB): 2. KẾ HOẠCH BÀI DẠY / [Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf"
+      },
+      {
+        "time": "2026-09-08 07:29:04",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / Test_GiaoAn_DaKySo.pdf"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:29:10",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": null
+    },
+    "archivedAt": "2026-09-08 07:29:04",
+    "isCleanedOnRender": true,
+    "oneDriveSynced": true,
+    "oneDrivePath": "C:\\Users\\HPZBook\\OneDrive - Sở GD&ĐT Quảng Ngãi\\Trường THCS Chu Văn An (Đăk Hà)'s files - 15. HÀ VĂN TÝ 26-27\\2. KẾ HOẠCH BÀI DẠY\\[Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf",
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-08 07:29:04",
+    "oneDriveInfo": {
+      "success": true,
+      "category": "2. KẾ HOẠCH BÀI DẠY",
+      "fileName": "Test_GiaoAn_DaKySo.pdf",
+      "sharedFolder": "15. HÀ VĂN TÝ 26-27",
+      "syncedAt": "2026-09-08 07:29:04"
+    }
+  },
+  {
+    "id": "KHBD-2026-427390",
+    "title": "Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:27:07",
+    "status": "COMPLETED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": false,
+    "fileName": "KHGD_PL3_SaoY.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-427390_1788852427442.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "top-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Người chứng thực bản sao",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:27:07",
+        "signType": "Ký số bản sao (SAO Y - NĐ 30/2020/NĐ-CP)",
+        "status": "VALID",
+        "placement": "top-right",
+        "coordinates": null,
+        "visualSignImage": null,
+        "visualSign": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-08 07:27:07",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:27:09",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-421926",
+    "title": "Kế hoạch bài dạy đã xác thực điện thoại chuẩn",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 16",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:27:01",
+    "status": "COMPLETED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": false,
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-421926_1788852422090.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:27:01",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-08 07:27:01",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy đã xác thực điện thoại chuẩn\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:27:04",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": "VGCA-2026-TX402258"
+    }
+  },
+  {
+    "id": "KHBD-2026-420615",
+    "title": "Kế hoạch bài dạy ký qua Local Bridge",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 15",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:27:00",
+    "status": "ARCHIVED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": true,
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/signed_vgca_KHBD-2026-420615_1788852420639.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:27:00",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "10V5Qk9aMCYSCKowyAvEj8c71oyzZkyvr",
+      "viewUrl": "https://drive.google.com/file/d/10V5Qk9aMCYSCKowyAvEj8c71oyzZkyvr/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
+      "uploadedAt": "2026-09-08 07:27:05"
+    },
+    "logs": [
+      {
+        "time": "2026-09-08 07:27:00",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy ký qua Local Bridge\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:27:00",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    },
+    "archivedAt": "2026-09-08 07:27:00"
+  },
+  {
+    "id": "KHBD-2026-411802",
+    "title": "Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:26:51",
+    "status": "ARCHIVED",
+    "currentSignerRole": null,
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": true,
+    "fileName": "GiaoAn_Toan9_T12.pdf",
+    "fileType": "application/pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-411802_1788852426313.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-left",
+    "fileSize": 24843,
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:01:42+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:26:51",
+        "signType": "Ký duyệt cấp 1",
+        "status": "VALID",
+        "placement": "bottom-left",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      },
+      {
+        "step": 2,
+        "role": "Tổ trưởng Tổ Toán - Tin",
+        "signerName": "Trần Văn Nam",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:26:51",
+        "signType": "PAdES Incremental Update",
+        "status": "VALID",
+        "placement": "middle-right",
+        "visualSignImage": null,
+        "visualSign": "Ký nháy duyệt chuyên môn: Đạt chuẩn phân phối chương trình"
+      },
+      {
+        "step": 3,
+        "role": "Hiệu trưởng / Ban Giám hiệu phê duyệt",
+        "signerName": "Ngô Thị Liền",
+        "signerUnit": "TRƯỜNG THCS CHU VĂN AN",
+        "certIssuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+        "certSerial": "025E056A3F133DA9",
+        "signedAt": "2026-09-08 07:26:51",
+        "signType": "PAdES LTV (VGCA Hardware USB Token)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "visualSignImage": "data:image/png;base64,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",
+        "visualSign": "Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ (Ngô Thị Liền)"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1gkR9fKVS5leUHisHGFKlEJYCs1-C8fUu",
+      "viewUrl": "https://drive.google.com/file/d/1gkR9fKVS5leUHisHGFKlEJYCs1-C8fUu/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
+      "uploadedAt": "2026-09-08 07:26:59"
+    },
+    "logs": [
+      {
+        "time": "2026-09-08 07:26:51",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)\" (Giáo án cá nhân)"
+      },
+      {
+        "time": "2026-09-08 07:26:51",
+        "actor": "Trần Văn Nam (Tổ trưởng)",
+        "action": "Ký nháy duyệt chuyên môn: \"Đạt chuẩn phân phối chương trình\" và chuyển trình Ban Giám hiệu phê duyệt"
+      },
+      {
+        "time": "2026-09-08 07:26:51",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Ký phê duyệt chính thức, đóng dấu số cơ quan và lưu trữ vào Kho hồ sơ số trường"
+      },
+      {
+        "time": "2026-09-08 07:26:59",
+        "actor": "Hà Văn Tý",
+        "action": "Đã lưu trữ Google Drive (Năm học 2026 - 2027 / Hà Văn Tý) và xóa sạch dữ liệu tạm trên Render."
+      },
+      {
+        "time": "2026-09-08 07:26:59",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã nộp thành công vào OneDrive trường (5TB): 2. KẾ HOẠCH BÀI DẠY / [Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf"
+      },
+      {
+        "time": "2026-09-08 07:26:59",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / Test_GiaoAn_DaKySo.pdf"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:27:07",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": null
+    },
+    "archivedAt": "2026-09-08 07:26:59",
+    "isCleanedOnRender": true,
+    "oneDriveSynced": true,
+    "oneDrivePath": "C:\\Users\\HPZBook\\OneDrive - Sở GD&ĐT Quảng Ngãi\\Trường THCS Chu Văn An (Đăk Hà)'s files - 15. HÀ VĂN TÝ 26-27\\2. KẾ HOẠCH BÀI DẠY\\[Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf",
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-08 07:26:59",
+    "oneDriveInfo": {
+      "success": true,
+      "category": "2. KẾ HOẠCH BÀI DẠY",
+      "fileName": "Test_GiaoAn_DaKySo.pdf",
+      "sharedFolder": "15. HÀ VĂN TÝ 26-27",
+      "syncedAt": "2026-09-08 07:26:59"
+    }
+  },
+  {
+    "id": "KHBD-2026-389141",
+    "title": "Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:26:29",
+    "status": "COMPLETED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": false,
+    "fileName": "KHGD_PL3_SaoY.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-389141_1788852389183.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "top-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Người chứng thực bản sao",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:26:29",
+        "signType": "Ký số bản sao (SAO Y - NĐ 30/2020/NĐ-CP)",
+        "status": "VALID",
+        "placement": "top-right",
+        "coordinates": null,
+        "visualSignImage": null,
+        "visualSign": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-08 07:26:29",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:26:30",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-385364",
+    "title": "Kế hoạch bài dạy đã xác thực điện thoại chuẩn",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 16",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:26:25",
+    "status": "COMPLETED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": false,
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-385364_1788852385481.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:26:25",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-08 07:26:25",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy đã xác thực điện thoại chuẩn\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:26:27",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": "VGCA-2026-TX999939"
+    }
+  },
+  {
+    "id": "KHBD-2026-383124",
+    "title": "Kế hoạch bài dạy ký qua Local Bridge",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 15",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:26:23",
+    "status": "ARCHIVED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": true,
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/signed_vgca_KHBD-2026-383124_1788852383148.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:26:23",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1I92ahYbH1fPyVRlBWlLfvEmAj3YgkGOe",
+      "viewUrl": "https://drive.google.com/file/d/1I92ahYbH1fPyVRlBWlLfvEmAj3YgkGOe/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
+      "uploadedAt": "2026-09-08 07:26:27"
+    },
+    "logs": [
+      {
+        "time": "2026-09-08 07:26:23",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy ký qua Local Bridge\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:26:23",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    },
+    "archivedAt": "2026-09-08 07:26:23"
+  },
+  {
+    "id": "KHBD-2026-370728",
+    "title": "Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:26:10",
+    "status": "ARCHIVED",
+    "currentSignerRole": null,
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": true,
+    "fileName": "GiaoAn_Toan9_T12.pdf",
+    "fileType": "application/pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-370728_1788852388350.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-left",
+    "fileSize": 24843,
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:01:42+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:26:10",
+        "signType": "Ký duyệt cấp 1",
+        "status": "VALID",
+        "placement": "bottom-left",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      },
+      {
+        "step": 2,
+        "role": "Tổ trưởng Tổ Toán - Tin",
+        "signerName": "Trần Văn Nam",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:26:10",
+        "signType": "PAdES Incremental Update",
+        "status": "VALID",
+        "placement": "middle-right",
+        "visualSignImage": null,
+        "visualSign": "Ký nháy duyệt chuyên môn: Đạt chuẩn phân phối chương trình"
+      },
+      {
+        "step": 3,
+        "role": "Hiệu trưởng / Ban Giám hiệu phê duyệt",
+        "signerName": "Ngô Thị Liền",
+        "signerUnit": "TRƯỜNG THCS CHU VĂN AN",
+        "certIssuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+        "certSerial": "025E056A3F133DA9",
+        "signedAt": "2026-09-08 07:26:10",
+        "signType": "PAdES LTV (VGCA Hardware USB Token)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAALdUlEQVR4nO2cS47kNhBEeZq6/zG89rrXXvsIRsMoQNDwk59IMklGAA1UlfhJkk+pkKiZUiiKoiiKoiiKohLq5/P5Z3UMFFXVL5yz/laPlTpMM+El5BRcq2El4JRbq4Ek3JRbq8Ej3JRbqwEj3BREuwKya9xUgE6F4NRxUQ3dttC3jfcacVE5B0co2wL+fD5/v/+sdZ1xpJoXSqBZi1WDqwauB+ZIEerkil6gKBg9JwHiJCHYyRS5IGiIvXajVR9xFSDYCRSxACMgeuBIs22k7ZgNdswoLtSsSdfAaIHICr62jCEuQj1Dq0DGjUDfd4TdUJQj2FGK8sjPxfVmvpWWw9IPGmzIQG5QhE/WZLOopw5W6K0nXS/TC2Il1F5lAtk9GGV/I8g9doNgL9CMpxc9WCTtZbEdVrthBZtQK4WaMC3Io3Zm2Q7LmFrtjepZTzJCLVRkVs5qO7LYjSiwNe0dpcjJQdqOEUwzLUeE3SDUAHkmRQqf5HdJO9EZexTH6DjabghPEkL9FRJmyfeRD26VXwVxTbPthhB8Qo2aAM8NlcV2ZFOE3Wid3II+7oQamZUtMK/MvD+fz19B7YrmxpqVFTblLqgjYfZk61ofGv2Civ6zxvIcj+cm0DHHd0C9Embw3T0c3kjIR2D35oJQN4SAWTO51nqdOJZBjILbaze083c01N6BgSda+oRgmj2Y2X8WqDUxpxLiTEXZDmFfSwBeGZdkPo327KwsjfLN72NSwJWxpoO4pUivLfmtVb/x+xlQe2DuTdpMfywf7Tp54kdZi1Z7j9/3hxoNs6Sssv7WIL9lHY8X6lqSaZTbF2gUzNJJbP3WqHsUyG9Zxie98mnqN8rtB7Xl8mKZwFH9Rr1jQX4Lla0RZR9l9rIeqJtAzR22B2b9CPdTFNTWG/GtoEZYDS3MgpiuBPktrQVp/a5Zq62txyyYvU8wbKM7Q4RaIa/VIMxzFPF4z7IJkxpolG/2fH8dI8gDIaDWfG+0mQ9qRFCSyRFexpiVFfI82iunQu0NCOjJCLNByOfVmo2tR508QKODIcxrhIa6Va/TZg6oNYFoBy2dqELPDJH2WbV0bVp1XsfWA20NwnpGS7OzfUQUegNGmZTWQo3IzopdPsI8SR6oJWVSZumo7Nw6yxttEeYgeefWsfO7BuqI7OzZNPGPiHrL85x6u91DdHbWwk2Y50gLtHRNLVkaMyJFh6jsPPLVzM7zJJlrqYVMm6VXZmfCPF9o69E69mpjDtArszNhXqfR3FvXd3mWzpKdMaOhNLJaj9H6d/rLC/TzM7PznkJmaWF/sUAjLgPMznvLk6UNfcXaDk3j2h0kZuc9pM3Sgva65VMC7dnaLszO6WR94jE6PhVobfpHXXqYnfNJk6Ub9TV7DjG2QwvzN0jvzQFhzintuow2XFrlSlSW9mRnCdyNdpidk0q7g/j+3mOk0g4WaO1mijRwwZlJmBNLsj4WFiptYG1HtN0YwUygc8rynofVii4FGjQAwryBJECDElwOoCUDa7RDoDeQBugi5KPRDgZopH+ulaPd2Fue10uVO8UYH42wG6NBVdohzBtpK9uBthvCwK8B+ufz+ff3b3UcHiFtx6CfuUC/B9H6LN3mPh3oL8y7Q+21HYp+1gHdaY/ZuQLzSVA3jrvevCsIFi1G3Brso/7xQLdgPhloUB++G0PN0w3N50GfRwPdg/k2oC1PPFICLfXQoiA30+1Ae9/zmQq09252N5gtUJ4KdBGun2f3uBDoOI3ArMF5MsxlsH5ARuKBfgbhPPuOAvoNKYG2fX61Mxfo52eDP9oG6GKAmkDbPr/ayQV0b2PlVKAt9mRHoYGGb397ga4FdxLQBQj16nEgRKD/rL8d0AUE9eoxIIQAesRJGqBrQVfqbwl0AduPXaG/FuhO/W2BLoQaajlq30tGoAf9bQ30V7dCbQHa0IcN6FZF8dmgD/So10ZvBzpqDV1cooEenaWnAM0Mrf/PZxS2dN7WtybQE4Gmh/b9Px21z5X6c4BG7NXvDPTtMBfB+nnf4ygEeo5ugFUiDdCWd33KCqB7wZ0I9C3ZVyIC/Wc7WwF9k52QyAp0j59KG3OeQxPoMaynQ639h7IEOpEsmZdA+971KRmBfgZeaeMooLV11owEJw/Qz88DRtYDrTj7tgG6dAC11DkB6qOBtvijsiHUWp0KdMSmSkqgW4F1+iTQGypi23sa0OIGDDod6DKAenVsVqHWzXJDqOIRCbQka98AdDH678xK/eooshHtbtBpr5H2dCLMIw9t2R18lFkDtPZutlL/CqDLA+rVcXhk/ZcqhmQ3D2jLIxkCfYaQ/5bwfezVVhzQvYYAZ+I1tmN3jdZK+zJSK9FBH1BYgKbtuEPSdZLuTYRmZ21jtB33yeufp9oNbWPgAdB2JJfUbow+CxNcPNBS22F9XEOgc0sDs5SFcP88arQ1EA3EzNL7SbM2qeyGtlEvxJX2CHRCadYlld0YNWp92tEqX/mNWTqZPGuCerrhBrrXuDToRpuSLU8CnUjaV0UlZaZmZ23jhj360SuDzNJJJFkL7ZW5V2YJ0JYOPLuHjiFQTlle5NfC/SgbZzdGnQjrmvfymaXXy5udDfdUsTBbOrEMjlk6p5DZufdU41FmHdCtjqwDZJbOpcjsPG0zpTM4FdCoS1Ah1EukeYH/+Tl9dh515s3StbKN9gj1JKH+NUra7DzqtFFWNVg+m84j7/b26Fijrbkw9zq1Zmlaj3yyzvF22dnSMQLiSpuEOkjSm8DRb6jsHA60pfPeYDt9jCaAUINlhblWZovs7AlAcsZqwSfUOFlg7ty875OdrUEobvq0k0GonUI/nuvVqRxfD7M1EMsZPYL6vRiEWifp/CGeUDXazQE0MhjJjSOhxisCZg3cqWD2BjTyY7XvhBonBMzv47XvgxhyAe0NygK1oE1CPZDFMyO+v47lg9kbnOXyZYGaYP8vz7yMrpia/YXUMJcJu4eSm8nKMUL90GyYtwa6EOrUssxDb76Ph7kMArX6aSnE2mfVt4BtBdkKcxknGBcj0xUBNaJsaSzuqWBbx2oAVJOE9oL5K6T16JWtlbc82jsJbM/4WjBrrpJHWI2aoqCWTro1W+8Ktnc8Wpgl9V/H94W5GC8vnslDPt7bCWxE/JL51CaZ1/E9rcZbSKilAGt2qV51m2BkgxsZK2Jer4D5K+SApHfYVqiLAJZVcKPiGoGJuvKVE2H+yjoozQRrF0oQ8xCgSMDR/QvuKSBz/Sp7HszFeaaiobZkbw1cs/4UsYv8Mare49iZ2fmrFVD3FirKa2eAuDU/vd97xw3Pps+G+asZUEvqFQDYr7aWwvseV+t3pO3otHEHzF8hoEbaDc9Nj1Yrbiitc9YqQ5gr8g58NNGIrIzK3rPUAtZiO6RlXuXvhPmr0QRYLEjtOMJuIO0JSs+YpFlUWh6Zla+A+SvEZEgzjSRTScFdBfYbYu8JKWmHMCuFnhSk3YjIzLW2R31JY0HbjsE4CHNLUVCj7cYoy0kBRSkiWwvbIMwjSSYpAuxaWYk3l/ZruLnq1kHbDumYStAaHS3EhGW2G632tVeBUfutuq1YhHETZotQE3e63WjFoK0jLE+YvZoB9vt7lN3YwXY0yhNkpJATmsFu9PpB2Y5aGeNJRZgjJJ1YJNhFCPdKq9GLw9kWdL6phqIm2pP5Rm15QLP0pWm/0h5Bni3NpFsmflaWlVoOr+0QxhI6p9RA2gVAgK2xG9o+tLGh2psxj5RCMxfE8tRhhq82WhmCnFm7LpD1JLCeGLvO05WyLBZi0bx2I9qvr5oXCiTPAp6yiJyDA+Vd1N0W9rbxXivEQmdc8FPHRSmEhGAmDLvGTU1SBCC7/K2eeypYqwEjxFSYVoNHiKkwrQaSEFOhWg0rAabCRXip60U4KYqiKIqijtF/4mx9vKElJJQAAAAASUVORK5CYII=",
+        "visualSign": "Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ (Ngô Thị Liền)"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1M9IYTetmC45JAAy3Zv5s55sj87RZn79G",
+      "viewUrl": "https://drive.google.com/file/d/1M9IYTetmC45JAAy3Zv5s55sj87RZn79G/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
+      "uploadedAt": "2026-09-08 07:26:21"
+    },
+    "logs": [
+      {
+        "time": "2026-09-08 07:26:10",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)\" (Giáo án cá nhân)"
+      },
+      {
+        "time": "2026-09-08 07:26:10",
+        "actor": "Trần Văn Nam (Tổ trưởng)",
+        "action": "Ký nháy duyệt chuyên môn: \"Đạt chuẩn phân phối chương trình\" và chuyển trình Ban Giám hiệu phê duyệt"
+      },
+      {
+        "time": "2026-09-08 07:26:10",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Ký phê duyệt chính thức, đóng dấu số cơ quan và lưu trữ vào Kho hồ sơ số trường"
+      },
+      {
+        "time": "2026-09-08 07:26:21",
+        "actor": "Hà Văn Tý",
+        "action": "Đã lưu trữ Google Drive (Năm học 2026 - 2027 / Hà Văn Tý) và xóa sạch dữ liệu tạm trên Render."
+      },
+      {
+        "time": "2026-09-08 07:26:21",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã nộp thành công vào OneDrive trường (5TB): 2. KẾ HOẠCH BÀI DẠY / [Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf"
+      },
+      {
+        "time": "2026-09-08 07:26:21",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / Test_GiaoAn_DaKySo.pdf"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:26:29",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": null
+    },
+    "archivedAt": "2026-09-08 07:26:21",
+    "isCleanedOnRender": true,
+    "oneDriveSynced": true,
+    "oneDrivePath": "C:\\Users\\HPZBook\\OneDrive - Sở GD&ĐT Quảng Ngãi\\Trường THCS Chu Văn An (Đăk Hà)'s files - 15. HÀ VĂN TÝ 26-27\\2. KẾ HOẠCH BÀI DẠY\\[Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf",
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-08 07:26:21",
+    "oneDriveInfo": {
+      "success": true,
+      "category": "2. KẾ HOẠCH BÀI DẠY",
+      "fileName": "Test_GiaoAn_DaKySo.pdf",
+      "sharedFolder": "15. HÀ VĂN TÝ 26-27",
+      "syncedAt": "2026-09-08 07:26:21"
+    }
+  },
+  {
+    "id": "KHBD-2026-329592",
+    "title": "Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:25:29",
+    "status": "COMPLETED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": false,
+    "fileName": "KHGD_PL3_SaoY.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-329592_1788852329644.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "top-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Người chứng thực bản sao",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:25:29",
+        "signType": "Ký số bản sao (SAO Y - NĐ 30/2020/NĐ-CP)",
+        "status": "VALID",
+        "placement": "top-right",
+        "coordinates": null,
+        "visualSignImage": null,
+        "visualSign": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:20:00+07:00"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-08 07:25:29",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch giáo dục (Phụ lục 3) - Sao y bản chính\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:25:31",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    }
+  },
+  {
+    "id": "KHBD-2026-323307",
+    "title": "Kế hoạch bài dạy đã xác thực điện thoại chuẩn",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 16",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:25:23",
+    "status": "ARCHIVED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": true,
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-323307_1788852323413.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:25:23",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "11vTqowsUuFiFzyT80qMg0V-e-KxPzbhp",
+      "viewUrl": "https://drive.google.com/file/d/11vTqowsUuFiFzyT80qMg0V-e-KxPzbhp/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
+      "uploadedAt": "2026-09-08 07:25:29"
+    },
+    "logs": [
+      {
+        "time": "2026-09-08 07:25:23",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy đã xác thực điện thoại chuẩn\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:25:25",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": "VGCA-2026-TX399886"
+    },
+    "archivedAt": "2026-09-08 07:25:23"
+  },
+  {
+    "id": "KHBD-2026-321636",
+    "title": "Kế hoạch bài dạy ký qua Local Bridge",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 15",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:25:21",
+    "status": "ARCHIVED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": true,
+    "fileName": "GiaoAn_Chuan.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/signed_vgca_KHBD-2026-321636_1788852321678.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:25:21",
+        "signType": "Ký số mật mã thật Ban Cơ yếu Chính phủ (VGCA X.509 PAdES)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1no7TKouilj9IjgyshGXVHtJzzV_ly3Yv",
+      "viewUrl": "https://drive.google.com/file/d/1no7TKouilj9IjgyshGXVHtJzzV_ly3Yv/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
+      "uploadedAt": "2026-09-08 07:25:29"
+    },
+    "logs": [
+      {
+        "time": "2026-09-08 07:25:21",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy ký qua Local Bridge\" (Giáo án cá nhân)"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:25:21",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true
+    },
+    "archivedAt": "2026-09-08 07:25:21"
+  },
+  {
+    "id": "KHBD-2026-306221",
+    "title": "Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_48965ee0",
+    "authorUsername": "hvty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 12",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 07:25:06",
+    "status": "ARCHIVED",
+    "currentSignerRole": null,
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": true,
+    "fileName": "GiaoAn_Toan9_T12.pdf",
+    "fileType": "application/pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": "uploads/documents/RealSigned_KHBD-2026-306221_1788852328103.pdf",
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-left",
+    "fileSize": 1509,
+    "pages": 12,
+    "signType": "COPY",
+    "isCopySign": true,
+    "copyType": "SAO Y",
+    "copyText": "SAO Y; Hà Văn Tý; Thời gian ký: 2026-09-06T16:01:42+07:00",
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:25:06",
+        "signType": "Ký duyệt cấp 1",
+        "status": "VALID",
+        "placement": "bottom-left",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      },
+      {
+        "step": 2,
+        "role": "Tổ trưởng Tổ Toán - Tin",
+        "signerName": "Trần Văn Nam",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 07:25:10",
+        "signType": "PAdES Incremental Update",
+        "status": "VALID",
+        "placement": "middle-right",
+        "visualSignImage": null,
+        "visualSign": "Ký nháy duyệt chuyên môn: Đạt chuẩn phân phối chương trình"
+      },
+      {
+        "step": 3,
+        "role": "Hiệu trưởng / Ban Giám hiệu phê duyệt",
+        "signerName": "Ngô Thị Liền",
+        "signerUnit": "TRƯỜNG THCS CHU VĂN AN",
+        "certIssuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+        "certSerial": "025E056A3F133DA9",
+        "signedAt": "2026-09-08 07:25:10",
+        "signType": "PAdES LTV (VGCA Hardware USB Token)",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "visualSignImage": "data:image/png;base64,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",
+        "visualSign": "Dấu tròn đỏ cơ quan + Chữ ký số Ban Cơ yếu Chính phủ (Ngô Thị Liền)"
+      }
+    ],
+    "driveInfo": {
+      "fileId": "1YsJQyyUEUZngOBJ6fOurkxC0SYvX__jJ",
+      "viewUrl": "https://drive.google.com/file/d/1YsJQyyUEUZngOBJ6fOurkxC0SYvX__jJ/view?usp=drivesdk",
+      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
+      "uploadedAt": "2026-09-08 07:25:20"
+    },
+    "logs": [
+      {
+        "time": "2026-09-08 07:25:06",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học: Đường tròn & Góc nội tiếp)\" (Giáo án cá nhân)"
+      },
+      {
+        "time": "2026-09-08 07:25:10",
+        "actor": "Trần Văn Nam (Tổ trưởng)",
+        "action": "Ký nháy duyệt chuyên môn: \"Đạt chuẩn phân phối chương trình\" và chuyển trình Ban Giám hiệu phê duyệt"
+      },
+      {
+        "time": "2026-09-08 07:25:10",
+        "actor": "Ban Giám hiệu - Quản trị viên (Ban Giám hiệu)",
+        "action": "Ký phê duyệt chính thức, đóng dấu số cơ quan và lưu trữ vào Kho hồ sơ số trường"
+      },
+      {
+        "time": "2026-09-08 07:25:20",
+        "actor": "Hà Văn Tý",
+        "action": "Đã lưu trữ Google Drive (Năm học 2026 - 2027 / Hà Văn Tý) và xóa sạch dữ liệu tạm trên Render."
+      },
+      {
+        "time": "2026-09-08 07:25:20",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã nộp thành công vào OneDrive trường (5TB): 2. KẾ HOẠCH BÀI DẠY / [Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf"
+      },
+      {
+        "time": "2026-09-08 07:25:20",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / Test_GiaoAn_DaKySo.pdf"
+      }
+    ],
+    "realVgcaSigned": true,
+    "realSignedAt": "2026-09-08 07:25:29",
+    "vgcaInfo": {
+      "signer": "Hà Văn Tý",
+      "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
+      "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
+      "verified": true,
+      "txId": null
+    },
+    "archivedAt": "2026-09-08 07:25:20",
+    "isCleanedOnRender": true,
+    "oneDriveSynced": true,
+    "oneDrivePath": "C:\\Users\\HPZBook\\OneDrive - Sở GD&ĐT Quảng Ngãi\\Trường THCS Chu Văn An (Đăk Hà)'s files - 15. HÀ VĂN TÝ 26-27\\2. KẾ HOẠCH BÀI DẠY\\[Tổ Toán - Tin]_Tuần_12_Kế hoạch bài dạy Tuần 12 - Môn Toán 9 (Hình học_ Đường tròn & Góc nội tiếp)_DaKySo.pdf",
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-08 07:25:20",
+    "oneDriveInfo": {
+      "success": true,
+      "category": "2. KẾ HOẠCH BÀI DẠY",
+      "fileName": "Test_GiaoAn_DaKySo.pdf",
+      "sharedFolder": "15. HÀ VĂN TÝ 26-27",
+      "syncedAt": "2026-09-08 07:25:20"
+    }
+  },
+  {
+    "id": "KHBD-2026-169219",
+    "title": "Giáo án Đại số 9 - Kiểm thử Ẩn OneDrive Tức Thì",
+    "category": "PERSONAL",
+    "author": "Hà Văn Tý",
+    "authorId": "user_cvaty",
+    "authorUsername": "cva.ty",
+    "department": "Tổ Toán - Tin",
+    "grade": "Khối 9",
+    "week": "Tuần 15",
+    "term": "Học kỳ I",
+    "createdAt": "2026-09-08 06:32:49",
+    "status": "ARCHIVED",
+    "currentSignerRole": "Hoàn tất tự ký cá nhân",
+    "nextSignerId": null,
+    "nextSignerName": null,
+    "nextSignerRole": null,
+    "isArchived": true,
+    "fileName": "GiaoAn_DaiSo9_Test.pdf",
+    "fileType": "pdf",
+    "filePath": null,
+    "fileBase64": null,
+    "customContentHtml": null,
+    "realSignedPath": null,
+    "signedPdfBase64": null,
+    "signPlacement": "bottom-right",
+    "fileSize": "1.8 MB",
+    "pages": 12,
+    "signType": "STANDARD",
+    "isCopySign": false,
+    "copyType": null,
+    "copyText": null,
+    "copySignBannerBase64": null,
+    "copySignBannerWidthPt": null,
+    "copySignBannerHeightPt": null,
+    "signatures": [
+      {
+        "step": 1,
+        "role": "Giáo viên soạn thảo",
+        "signerName": "Hà Văn Tý",
+        "signerUnit": "Tổ Toán - Tin",
+        "signedAt": "2026-09-08 06:32:49",
+        "signType": "Ký duyệt cấp 1",
+        "status": "VALID",
+        "placement": "bottom-right",
+        "coordinates": null,
+        "visualSignImage": "data:image/png;base64,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",
+        "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
+      }
+    ],
+    "driveInfo": null,
+    "logs": [
+      {
+        "time": "2026-09-08 06:32:49",
+        "actor": "Hà Văn Tý",
+        "action": "Khởi tạo và nộp hồ sơ \"Giáo án Đại số 9 - Kiểm thử Ẩn OneDrive Tức Thì\" (Giáo án cá nhân)"
+      },
+      {
+        "time": "2026-09-08 06:32:50",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / GiaoAn_DaiSo9_DaLuuOneDrive.pdf"
+      }
+    ],
+    "oneDriveSynced": true,
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-08 06:32:50",
+    "oneDriveInfo": {
+      "success": true,
+      "category": "2. KẾ HOẠCH BÀI DẠY",
+      "fileName": "GiaoAn_DaiSo9_DaLuuOneDrive.pdf",
+      "sharedFolder": "OneDrive",
+      "syncedAt": "2026-09-08 06:32:50"
+    },
+    "archivedAt": "2026-09-08 06:32:50"
+  },
+  {
     "id": "KHBD-2026-285255",
     "title": "Giáo án Hình học 9 - Tiết 24",
     "category": "PERSONAL",
@@ -11,12 +1471,12 @@
     "week": "Tuần 1",
     "term": "Học kỳ I",
     "createdAt": "2026-09-08 06:01:25",
-    "status": "COMPLETED",
+    "status": "ARCHIVED",
     "currentSignerRole": "Hoàn tất tự ký cá nhân",
     "nextSignerId": null,
     "nextSignerName": null,
     "nextSignerRole": null,
-    "isArchived": false,
+    "isArchived": true,
     "fileName": "GiaoAn_Chuan.pdf",
     "fileType": "pdf",
     "filePath": null,
@@ -66,6 +1526,11 @@
         "time": "2026-09-08 06:01:32",
         "actor": "Hà Văn Tý",
         "action": "Đã lưu trữ Google Drive (Năm học 2026 - 2027 / Hà Văn Tý) và xóa sạch dữ liệu tạm trên Render."
+      },
+      {
+        "time": "2026-09-08 06:30:20",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / GiaoAn_DaLuuOneDrive.pdf"
       }
     ],
     "realVgcaSigned": true,
@@ -76,7 +1541,18 @@
       "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
       "verified": true
     },
-    "isCleanedOnRender": true
+    "isCleanedOnRender": true,
+    "oneDriveSynced": true,
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-08 06:30:20",
+    "oneDriveInfo": {
+      "success": true,
+      "category": "2. KẾ HOẠCH BÀI DẠY",
+      "fileName": "GiaoAn_DaLuuOneDrive.pdf",
+      "sharedFolder": "OneDrive",
+      "syncedAt": "2026-09-08 06:30:20"
+    },
+    "archivedAt": "2026-09-08 06:30:20"
   },
   {
     "id": "KHBD-2026-183717",
@@ -201,12 +1677,12 @@
     "week": "Tuần 1",
     "term": "Học kỳ I",
     "createdAt": "2026-09-08 04:19:32",
-    "status": "COMPLETED",
+    "status": "ARCHIVED",
     "currentSignerRole": "Hoàn tất tự ký cá nhân",
     "nextSignerId": null,
     "nextSignerName": null,
     "nextSignerRole": null,
-    "isArchived": false,
+    "isArchived": true,
     "fileName": "GiaoAn_Tin9.pdf",
     "fileType": "pdf",
     "filePath": null,
@@ -249,9 +1725,30 @@
         "time": "2026-09-08 04:19:38",
         "actor": "Hà Văn Tý",
         "action": "Đã lưu trữ Google Drive (Năm học 2026 - 2027 / Hà Văn Tý) và xóa sạch dữ liệu tạm trên Render."
+      },
+      {
+        "time": "2026-09-08 06:31:12",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / GiaoAn_DaLuuOneDrive.pdf"
+      },
+      {
+        "time": "2026-09-08 06:32:04",
+        "actor": "Hà Văn Tý (TEACHER)",
+        "action": "Đã lưu thành công vào OneDrive (5TB) máy tính: 2. KẾ HOẠCH BÀI DẠY / GiaoAn_DaLuuOneDrive.pdf"
       }
     ],
-    "isCleanedOnRender": true
+    "isCleanedOnRender": true,
+    "oneDriveSynced": true,
+    "oneDriveCategory": "2. KẾ HOẠCH BÀI DẠY",
+    "oneDriveSyncedAt": "2026-09-08 06:32:04",
+    "oneDriveInfo": {
+      "success": true,
+      "category": "2. KẾ HOẠCH BÀI DẠY",
+      "fileName": "GiaoAn_DaLuuOneDrive.pdf",
+      "sharedFolder": "OneDrive",
+      "syncedAt": "2026-09-08 06:32:04"
+    },
+    "archivedAt": "2026-09-08 06:32:04"
   },
   {
     "id": "KHBD-2026-562078",
