@@ -1755,10 +1755,10 @@
               <i class="fa-solid fa-mobile-screen-button text-base animate-pulse"></i>
             </div>
             <h4 class="text-sm font-bold text-emerald-950 tracking-tight leading-snug">
-              Xác nhận Phiên Ký số Di động (SmartCA / Cloud CA)
+              Thầy/cô mở ứng dụng SmartCA / VGCA trên điện thoại và nhấn [ĐỒNG Ý]
             </h4>
             <p class="text-[11px] text-emerald-800/80 font-medium">
-              Nếu tài khoản đã liên kết ứng dụng SmartCA trên điện thoại, Thầy/Cô mở ứng dụng để xác nhận. Để hoàn tất quy trình niêm phong chữ ký số vào văn bản, vui lòng nhấn nút bên dưới:
+              Sau khi đã bấm [Đồng ý] trên màn hình điện thoại, Thầy/Cô vui lòng nhấn nút bên dưới để hoàn tất niêm phong chữ ký số:
             </p>
             <button type="button" id="btnVgcaConfirmFromPhone" onclick="handleUserConfirmedOnPhone()" 
               class="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer mt-1">
@@ -5750,47 +5750,6 @@
       if (appEl) appEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-600"></i> Đang kiểm tra...';
       if (tokenEl) tokenEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-600"></i> Đang kiểm tra...';
 
-      // 1. ƯU TIÊN 1: Kiểm tra trực tiếp Viettel EDOC-CA Plugin (ws://localhost:9834/general)
-      try {
-        const viettelOk = await ViettelEdocPlugin.isAvailable(1000);
-        if (viettelOk) {
-          let certRes = null;
-          try {
-            certRes = await ViettelEdocPlugin.getAllCerts();
-          } catch (eCert) {}
-
-          const certs = (certRes && certRes.data && Array.isArray(certRes.data)) ? certRes.data : [];
-          const tyCert = certs.find(c => (c.subject || '').includes('Hà Văn Tý') || (c.serial || '').toUpperCase().includes('7C4C44A8671300AE')) || certs[0];
-
-          if (appEl) {
-            appEl.className = 'font-bold text-emerald-700 flex items-center gap-1';
-            appEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> <span>Đang hoạt động (Viettel EDOC-CA Plugin v2.0.4)</span>`;
-          }
-
-          if (tokenEl) {
-            if (tyCert) {
-              const cn = ((tyCert.subject || '').match(/CN=([^,]+)/) || [])[1] || 'Hà Văn Tý';
-              tokenEl.className = 'font-bold text-emerald-700 flex items-center gap-1';
-              tokenEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> <span>Đã nhận diện: ${cn} (Ban Cơ yếu G2)</span>`;
-            } else {
-              tokenEl.className = 'font-bold text-amber-700 flex items-center gap-1';
-              tokenEl.innerHTML = `<i class="fa-solid fa-circle-exclamation text-amber-500"></i> <span>Cần cắm USB Token Ban Cơ yếu</span>`;
-            }
-          }
-
-          if (showToast) {
-            alert('✅ Đã kết nối Viettel EDOC-CA Plugin:\n\n' +
-                  `• Phần mềm ký số: ĐANG HOẠT ĐỘNG (Viettel EDOC-CA Plugin v2.0.4 - Cổng 9834)\n` +
-                  `• Chứng thư số nhận diện: ${tyCert ? ((tyCert.subject || '').match(/CN=([^,]+)/) || [])[1] || 'Hà Văn Tý' : 'Chưa tìm thấy cert trong Windows Store'}\n` +
-                  `• Lưu ý: Cắm USB Token vào cổng USB máy tính để nạp Khóa bí mật (Private Key).`);
-          }
-          return;
-        }
-      } catch (eViet) {
-        console.warn('Lỗi kiểm tra Viettel Plugin:', eViet);
-      }
-
-      // 2. ƯU TIÊN 2: Kiểm tra Virtual CSP / EduSign Agent qua API
       try {
         let status = null;
         const res = await fetch('/api/check-vgca-status?refresh=1');
@@ -6381,35 +6340,13 @@
         modalContent.innerHTML = `
           <div class="py-8 text-center space-y-3">
             <i class="fa-solid fa-spinner fa-spin text-3xl text-emerald-600"></i>
-            <h4 class="font-black text-sm text-slate-800">ĐANG KẾT NỐI THIẾT BỊ KÝ SỐ MÁY TÍNH...</h4>
+            <h4 class="font-black text-sm text-slate-800">ĐANG NIÊM PHONG BẰNG USB TOKEN VGCA...</h4>
             <p class="text-xs text-slate-500">Đang truy xuất khóa riêng và thực hiện ký mật mã số X.509 SHA256withRSA...</p>
           </div>
         `;
       }
 
       try {
-        // Kiểm tra xem có Viettel EDOC-CA Plugin không
-        try {
-          const isViettel = await ViettelEdocPlugin.isAvailable(800);
-          if (isViettel) {
-            const certRes = await ViettelEdocPlugin.getAllCerts();
-            const certs = (certRes && certRes.data && Array.isArray(certRes.data)) ? certRes.data : [];
-            const tyCert = certs.find(c => (c.subject || '').includes('Hà Văn Tý') || (c.serial || '').toUpperCase().includes('7C4C44A8671300AE'));
-            if (tyCert) {
-              // Thử kiểm tra Private Key với hash mẫu
-              const testHash = '47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=';
-              const signRes = await ViettelEdocPlugin.signHash(tyCert.certBase64, testHash);
-              if (signRes && signRes.status === 0 && signRes.message && signRes.message.includes('PrivateKey not found')) {
-                throw new Error('Viettel EDOC-CA Plugin phản hồi: Không tìm thấy khóa bí mật (PrivateKey not found) của Thầy Hà Văn Tý. Xin vui lòng cắm USB Token Ban Cơ yếu / Viettel vào cổng USB máy tính để thực hiện ký số.');
-              }
-            }
-          }
-        } catch (eViet) {
-          if (eViet.message && eViet.message.includes('PrivateKey not found')) {
-            throw eViet;
-          }
-        }
-
         if (currentVgcaSigningOptions && typeof currentVgcaSigningOptions.action === 'function') {
           const signResult = await currentVgcaSigningOptions.action({
             tokenPin: pin,
@@ -6429,7 +6366,7 @@
           }, 1200);
         }
       } catch (err) {
-        alert('⚠️ Lỗi ký số bằng USB Token:\n\n' + (err.message || err));
+        alert('⚠️ Lỗi ký số bằng USB Token: ' + (err.message || err));
         if (modalContent) modalContent.innerHTML = origContent;
         closeVgcaMobileAuthModal();
       }
@@ -6483,161 +6420,14 @@
       closeModal('modalVgcaMobileAuth');
     }
 
-    // ==================== CẦU NỐI VIETTEL EDOC-CA PLUGIN (CHUẨN CHÍNH THỨC VIETTEL) ====================
-    // Kết nối trực tiếp vào Viettel EDOC-CA Plugin chạy nền trên máy qua ws://localhost:9834/general
-    const ViettelEdocPlugin = {
-      WS_URL: 'ws://localhost:9834/general',
-      ws: null,
-      isConnected: false,
-
-      async isAvailable(timeoutMs = 1200) {
-        return new Promise((resolve) => {
-          try {
-            const socket = new WebSocket(this.WS_URL);
-            const timer = setTimeout(() => {
-              try { socket.close(); } catch (e) {}
-              resolve(false);
-            }, timeoutMs);
-
-            socket.onopen = () => {
-              clearTimeout(timer);
-              try { socket.close(); } catch (e) {}
-              resolve(true);
-            };
-
-            socket.onerror = () => {
-              clearTimeout(timer);
-              resolve(false);
-            };
-          } catch (e) {
-            resolve(false);
-          }
-        });
-      },
-
-      async connect(timeoutMs = 2500) {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          this.isConnected = true;
-          return true;
-        }
-
-        return new Promise((resolve) => {
-          try {
-            const socket = new WebSocket(this.WS_URL);
-            const timer = setTimeout(() => {
-              try { socket.close(); } catch (e) {}
-              this.isConnected = false;
-              resolve(false);
-            }, timeoutMs);
-
-            socket.onopen = () => {
-              clearTimeout(timer);
-              this.ws = socket;
-              this.isConnected = true;
-              resolve(true);
-            };
-
-            socket.onerror = () => {
-              clearTimeout(timer);
-              this.isConnected = false;
-              resolve(false);
-            };
-
-            socket.onclose = () => {
-              this.isConnected = false;
-              this.ws = null;
-            };
-          } catch (e) {
-            this.isConnected = false;
-            resolve(false);
-          }
-        });
-      },
-
-      async sendCommand(functionName, data = null, timeoutMs = 15000) {
-        const ok = await this.connect();
-        if (!ok) {
-          throw new Error('Không thể kết nối với Viettel EDOC-CA Plugin (ws://localhost:9834/general). Vui lòng chắc chắn EDOC-CA Plugin của Viettel đang được bật trên máy tính.');
-        }
-
-        return new Promise((resolve, reject) => {
-          const timer = setTimeout(() => {
-            reject(new Error(`Quá thời gian chờ phản hồi lệnh "${functionName}" từ Viettel EDOC-CA Plugin.`));
-          }, timeoutMs);
-
-          const handler = (event) => {
-            try {
-              const res = JSON.parse(event.data);
-              clearTimeout(timer);
-              this.ws.removeEventListener('message', handler);
-              resolve(res);
-            } catch (err) {
-              clearTimeout(timer);
-              this.ws.removeEventListener('message', handler);
-              reject(err);
-            }
-          };
-
-          this.ws.addEventListener('message', handler);
-
-          const payload = { functionName };
-          if (data) payload.data = data;
-          this.ws.send(JSON.stringify(payload));
-        });
-      },
-
-      async getVersion() {
-        return await this.sendCommand('get_version');
-      },
-
-      async getAllCerts() {
-        return await this.sendCommand('get_all_certs');
-      },
-
-      async signHash(certBase64, hashBase64) {
-        const uniqueId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : ('00000000-0000-4000-8000-' + Date.now().toString(16).padStart(12, '0'));
-        return await this.sendCommand('sign_hash', {
-          certBase64,
-          listSign: [
-            {
-              uniqueId,
-              hashBase64
-            }
-          ]
-        }, 30000);
-      }
-    };
-
     // ==================== CẦU NỐI KÝ SỐ CỤC BỘ (LOCAL SIGNER BRIDGE) ====================
-    // Phục vụ kết nối thiết bị ký số VGCA / Viettel EDOC-CA trên máy tính khi truy cập từ Render Cloud
+    // Phục vụ kết nối thiết bị ký số VGCA trên máy tính khi truy cập từ Render Cloud
     let cachedLocalSignerHost = null;
 
     async function pingLocalSigner(timeoutMs = 1200, forceFresh = false) {
       if (forceFresh) {
         cachedLocalSignerHost = null;
       }
-
-      // 1. ƯU TIÊN 1: Kiểm tra Viettel EDOC-CA Plugin chính thức (Cổng WebSocket 9834)
-      try {
-        const viettelAvailable = await ViettelEdocPlugin.isAvailable(Math.min(timeoutMs, 1000));
-        if (viettelAvailable) {
-          return {
-            available: true,
-            isViettel: true,
-            host: 'ws://localhost:9834/general',
-            appName: 'Viettel EDOC-CA Plugin (2.0.4)',
-            data: {
-              success: true,
-              appName: 'Viettel EDOC-CA Plugin',
-              appRunning: true,
-              tokenConnected: true,
-              port: 9834
-            }
-          };
-        }
-      } catch (eViet) {}
-
-      // 2. ƯU TIÊN 2: Kiểm tra EduSign Agent cục bộ (Port 18888 hoặc 3000)
       if (cachedLocalSignerHost && !forceFresh) {
         try {
           const controller = new AbortController();

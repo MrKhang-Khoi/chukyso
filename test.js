@@ -72,7 +72,7 @@ async function runTests() {
   };
   const testPdf = path.join(__dirname, 'GiaoAn_DaKy_That.pdf');
   const fallbackPdf = path.join(__dirname, 'GiaoAn_CanKy.pdf');
-  const pdfToTest = (fs.existsSync(testPdf) && fs.statSync(testPdf).size > 100) ? testPdf : fallbackPdf;
+  const pdfToTest = fs.existsSync(testPdf) ? testPdf : fallbackPdf;
 
   const driveResult = await googleDriveService.uploadToGoogleDrive(sampleDoc, pdfToTest);
   assert(driveResult.success === true, 'Đồng bộ Google Drive thành công');
@@ -487,10 +487,6 @@ async function runTests() {
       grade: 'Khối 8',
       week: 'Tuần 13',
       term: 'Học kỳ I',
-      category: 'REPORT',
-      nextSignerId: 'u_to_truong',
-      nextSignerName: 'Trần Văn Nam',
-      nextSignerRole: 'Tổ trưởng chuyên môn',
       fileName: 'KHBD_Test_ThuHoi.docx',
       fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       fileSize: 1024,
@@ -503,7 +499,7 @@ async function runTests() {
       }
     });
     const recallDocId = docToRecallRes.body.data.id;
-    assert(docToRecallRes.status === 200 && (docToRecallRes.body.data.status === 'WAITING_LEADER_APPROVAL' || docToRecallRes.body.data.status === 'WAITING_NEXT_SIGN'), 'Nộp hồ sơ chờ duyệt thành công để kiểm tra thu hồi');
+    assert(docToRecallRes.status === 200 && docToRecallRes.body.data.status === 'WAITING_LEADER_APPROVAL', 'Nộp hồ sơ chờ duyệt thành công để kiểm tra thu hồi');
 
     const recallActionRes = await httpRequest({
       hostname: '127.0.0.1',
