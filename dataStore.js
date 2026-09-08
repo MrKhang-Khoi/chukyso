@@ -367,23 +367,23 @@ function getSigners() {
  */
 function isDocArchived(d) {
   if (!d) return false;
-  return Boolean(
-    d.isArchived === true ||
-    d.status === 'ARCHIVED' ||
-    d.driveInfo != null ||
+  // CHỈ ẨN KHI ĐÃ ĐƯỢC LƯU THÀNH CÔNG VÀO ONEDRIVE HOẶC GOOGLE DRIVE!
+  const hasCloudSaved = Boolean(
     d.oneDriveSynced === true ||
     d.oneDriveUploaded === true ||
-    d.googleDriveUrl != null ||
-    d.archivedAt != null
+    (d.driveInfo && (d.driveInfo.fileId || d.driveInfo.folderPath)) ||
+    d.googleDriveUrl != null
   );
+  return Boolean((d.isArchived === true || d.status === 'ARCHIVED') && hasCloudSaved);
 }
 
 let _hasRunSanitization = false;
 
 /**
- * Cơ chế Tự Động Di Chuyển & Dọn Dẹp Dữ Liệu (Self-Healing Auto-Migration)
- * - Tự động đồng bộ cờ isArchived cho các file đã lưu Drive / OneDrive
- * - Tự động dọn sạch các trường nhị phân nặng (fileBase64, signedPdfBase64) khỏi DB để máy chủ siêu nhẹ
+ * Cơ chế Đồng bộ & Dọn dẹp Dữ liệu:
+ * - CHỈ lưu trữ và ẩn các file khi đã thực sự lưu thành công vào OneDrive / Drive
+ * - Phục hồi các file chưa lưu OneDrive để hiển thị trên bảng làm việc chính
+ * - Dọn sạch các trường nhị phân nặng (fileBase64, signedPdfBase64) khỏi DB để máy chủ siêu nhẹ
  */
 function sanitizeDocuments(docs) {
   if (!Array.isArray(docs)) return [];
@@ -391,14 +391,29 @@ function sanitizeDocuments(docs) {
   docs.forEach(doc => {
     if (!doc) return;
 
-    // 1. Tự động lưu trữ & ẩn triệt để các tài liệu đã ký số / đã hoàn tất / đã có Drive
-    const hasSigs = Array.isArray(doc.signatures) && doc.signatures.length > 0;
-    const isCompleted = doc.status === 'COMPLETED' || doc.status === 'APPROVED' || doc.status === 'ARCHIVED';
-    if ((isDocArchived(doc) || hasSigs || isCompleted) && !doc.isArchived) {
-      doc.isArchived = true;
-      doc.status = 'ARCHIVED';
-      if (!doc.archivedAt) doc.archivedAt = doc.createdAt || new Date().toISOString().replace('T', ' ').substring(0, 19);
-      changed = true;
+    const hasCloudSaved = Boolean(
+      doc.oneDriveSynced === true ||
+      doc.oneDriveUploaded === true ||
+      (doc.driveInfo && (doc.driveInfo.fileId || doc.driveInfo.folderPath)) ||
+      doc.googleDriveUrl != null
+    );
+
+    // 1. Nếu ĐÃ lưu OneDrive/Drive thành công -> đánh dấu isArchived = true
+    if (hasCloudSaved) {
+      if (!doc.isArchived || doc.status !== 'ARCHIVED') {
+        doc.isArchived = true;
+        doc.status = 'ARCHIVED';
+        if (!doc.archivedAt) doc.archivedAt = doc.createdAt || new Date().toISOString().replace('T', ' ').substring(0, 19);
+        changed = true;
+      }
+    } else {
+      // 2. Nếu CHƯA lưu OneDrive/Drive -> TUYỆT ĐỐI KHÔNG ẨN, giữ nguyên trên bảng chính!
+      if (doc.isArchived === true || doc.status === 'ARCHIVED') {
+        doc.isArchived = false;
+        doc.status = 'COMPLETED';
+        delete doc.archivedAt;
+        changed = true;
+      }
     }
 
     // 2. Chuẩn hóa category nếu thiếu

@@ -3675,19 +3675,17 @@
 
     /**
      * Xác định chính xác hồ sơ đã thuộc diện Lưu trữ Drive / OneDrive hay chưa
-     * Để đảm bảo ẩn triệt để các file đã hoàn thành khỏi bảng chính, chống nặng server & giao diện
+     * QUY TẮC CHUẨN: Chỉ ẩn khi người dùng ĐÃ LƯU THÀNH CÔNG vào OneDrive hoặc Google Drive!
      */
     function isDocArchived(d) {
       if (!d) return false;
-      return Boolean(
-        d.isArchived === true ||
-        d.status === 'ARCHIVED' ||
-        d.driveInfo != null ||
+      const hasCloudSaved = Boolean(
         d.oneDriveSynced === true ||
         d.oneDriveUploaded === true ||
-        d.googleDriveUrl != null ||
-        d.archivedAt != null
+        (d.driveInfo && (d.driveInfo.fileId || d.driveInfo.folderPath)) ||
+        d.googleDriveUrl != null
       );
+      return Boolean((d.isArchived === true || d.status === 'ARCHIVED') && hasCloudSaved);
     }
 
     // Bật/tắt xem hồ sơ đã lưu trữ (isArchived)
@@ -4022,11 +4020,11 @@
           </button>
         `;
 
-        if (d.category === 'PERSONAL') {
+        if (d.category === 'PERSONAL' || d.status === 'COMPLETED') {
           actionBtns += `
-            <button onclick="handleSyncDocToOneDrive('${d.id}')" id="btnRowSyncOneDrive_${d.id}" title="${isOneDriveSynced ? 'Đã lưu vào OneDrive (5TB) - Bấm để đồng bộ lại' : 'Lưu vào OneDrive (5TB) của trường'}" class="px-2.5 py-1.5 rounded-xl ${isOneDriveSynced ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'} border font-semibold transition text-xs flex items-center gap-1 cursor-pointer">
+            <button onclick="handleSyncDocToOneDrive('${d.id}')" id="btnRowSyncOneDrive_${d.id}" title="${isOneDriveSynced ? 'Đã lưu vào OneDrive máy tính - Nhấn để lưu lại' : 'Nhấn để chọn thư mục lưu vào OneDrive (5TB) máy tính'}" class="px-2.5 py-1.5 rounded-xl ${isOneDriveSynced ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-300'} border font-bold transition text-xs flex items-center gap-1 cursor-pointer">
               <i class="fa-brands fa-microsoft ${isOneDriveSynced ? 'text-sky-700' : 'text-sky-600'}"></i>
-              <span>${isOneDriveSynced ? 'OneDrive ✔' : 'OneDrive'}</span>
+              <span>${isOneDriveSynced ? 'OneDrive ✔' : 'Lưu OneDrive'}</span>
             </button>
           `;
         }
@@ -6762,15 +6760,16 @@
           loadDocuments();
 
           const doc = (data && data.data) ? data.data : data;
-          if (doc && (doc.category === 'PERSONAL' || !doc.category)) {
-            showDriveSaveAndCleanProcess({
-              docId: doc.id,
-              docTitle: doc.title,
-              authorName: doc.author,
-              fileName: doc.fileName,
-              folderPath: doc.driveInfo ? doc.driveInfo.folderPath : null
-            });
+          if (typeof showToast === 'function') {
+            showToast(`Ký số niêm phong thành công hồ sơ: "${doc ? doc.title : 'Kế hoạch bài dạy'}"!`, 'success');
           }
+          showAppNotice(
+            `<p class="font-bold text-emerald-800 text-sm">🎉 KÝ SỐ NIÊM PHONG THÀNH CÔNG!</p>` +
+            `<p class="text-slate-700 text-xs mt-1.5">Hồ sơ <strong>"${doc ? doc.title : 'Kế hoạch bài dạy'}"</strong> đã được ký số chuyên dùng Ban Cơ yếu Chính phủ và hiển thị trên bảng làm việc.</p>` +
+            `<p class="text-slate-600 text-xs mt-2">👉 <em>Thầy/Cô có thể nhấn nút <strong>[OneDrive]</strong> trên dòng hồ sơ để chọn thư mục lưu vào OneDrive (5TB) máy tính. Hồ sơ chỉ được chuyển vào mục lưu trữ sau khi Thầy/Cô đã chọn thư mục và lưu thành công.</em></p>`,
+            'Ký Số Thành Công',
+            'success'
+          );
         }
       });
     }
@@ -6801,15 +6800,16 @@
         loadDocuments();
 
         const doc = (data && data.data) ? data.data : data;
-        if (doc && (doc.category === 'PERSONAL' || !doc.category)) {
-          showDriveSaveAndCleanProcess({
-            docId: doc.id,
-            docTitle: doc.title,
-            authorName: doc.author,
-            fileName: doc.fileName,
-            folderPath: doc.driveInfo ? doc.driveInfo.folderPath : null
-          });
+        if (typeof showToast === 'function') {
+          showToast(`Đã nộp thành công hồ sơ: "${doc ? doc.title : 'Kế hoạch bài dạy'}"!`, 'success');
         }
+        showAppNotice(
+          `<p class="font-bold text-emerald-800 text-sm">🎉 ĐÃ NỘP HỒ SƠ THÀNH CÔNG!</p>` +
+          `<p class="text-slate-700 text-xs mt-1.5">Hồ sơ <strong>"${doc ? doc.title : 'Kế hoạch bài dạy'}"</strong> đã được nộp và hiển thị trên bảng.</p>` +
+          `<p class="text-slate-600 text-xs mt-2">👉 Thầy/Cô có thể nhấn nút <strong>[OneDrive]</strong> trên dòng hồ sơ để chọn thư mục lưu trữ vào OneDrive máy tính.</p>`,
+          'Nộp Hồ Sơ Thành Công',
+          'success'
+        );
       } catch (err) {
         alert('Lỗi nộp bài: ' + err.message);
       } finally {

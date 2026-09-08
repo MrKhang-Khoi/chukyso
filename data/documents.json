@@ -11,12 +11,12 @@
     "week": "Tuần 1",
     "term": "Học kỳ I",
     "createdAt": "2026-09-08 06:01:25",
-    "status": "ARCHIVED",
+    "status": "COMPLETED",
     "currentSignerRole": "Hoàn tất tự ký cá nhân",
     "nextSignerId": null,
     "nextSignerName": null,
     "nextSignerRole": null,
-    "isArchived": true,
+    "isArchived": false,
     "fileName": "GiaoAn_Chuan.pdf",
     "fileType": "pdf",
     "filePath": null,
@@ -56,12 +56,6 @@
         "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
       }
     ],
-    "driveInfo": {
-      "fileId": "1OidvzcG8X90M7kCh76iMPyXMf4qeqVID",
-      "viewUrl": "https://drive.google.com/file/d/1OidvzcG8X90M7kCh76iMPyXMf4qeqVID/view?usp=drivesdk",
-      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
-      "uploadedAt": "2026-09-08 06:01:32"
-    },
     "logs": [
       {
         "time": "2026-09-08 06:01:25",
@@ -82,7 +76,6 @@
       "standard": "PAdES /adbe.pkcs7.detached (RFC 3279 ECDSA SHA-256)",
       "verified": true
     },
-    "archivedAt": "2026-09-08 06:01:32",
     "isCleanedOnRender": true
   },
   {
@@ -208,12 +201,12 @@
     "week": "Tuần 1",
     "term": "Học kỳ I",
     "createdAt": "2026-09-08 04:19:32",
-    "status": "ARCHIVED",
+    "status": "COMPLETED",
     "currentSignerRole": "Hoàn tất tự ký cá nhân",
     "nextSignerId": null,
     "nextSignerName": null,
     "nextSignerRole": null,
-    "isArchived": true,
+    "isArchived": false,
     "fileName": "GiaoAn_Tin9.pdf",
     "fileType": "pdf",
     "filePath": null,
@@ -246,12 +239,6 @@
         "visualSign": "Đã ký duyệt điện tử và đính kèm chữ ký số cá nhân"
       }
     ],
-    "driveInfo": {
-      "fileId": "1osErMDuASZa28LMKxEnbMEcTDOzoSWTZ",
-      "viewUrl": "https://drive.google.com/file/d/1osErMDuASZa28LMKxEnbMEcTDOzoSWTZ/view?usp=drivesdk",
-      "folderPath": "Năm học 2026 - 2027 / Hà Văn Tý",
-      "uploadedAt": "2026-09-08 04:19:38"
-    },
     "logs": [
       {
         "time": "2026-09-08 04:19:32",
@@ -264,7 +251,6 @@
         "action": "Đã lưu trữ Google Drive (Năm học 2026 - 2027 / Hà Văn Tý) và xóa sạch dữ liệu tạm trên Render."
       }
     ],
-    "archivedAt": "2026-09-08 04:19:38",
     "isCleanedOnRender": true
   },
   {
