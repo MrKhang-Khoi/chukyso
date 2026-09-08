@@ -986,6 +986,15 @@ namespace RealPdfSigner
                         continue;
                     }
 
+                    // LOẠI TRỪ CÁC THIẾT BỊ USB TOKEN PHẦN CỨNG (bit4id, TokenME, Safenet, ePass, Feitian, v.v.)
+                    // Giáo viên ký VGCA Mobile / SmartCA / Virtual CSP -> TUYỆT ĐỐI KHÔNG ĐƯỢC CHỌN THIẾT BỊ USB!
+                    string friendlyName = (cert.FriendlyName ?? "").ToLowerInvariant();
+                    if (friendlyName.Contains("bit4id") || friendlyName.Contains("tokenme") || friendlyName.Contains("safenet") || friendlyName.Contains("epass") || friendlyName.Contains("feitian") || friendlyName.Contains("etoken") ||
+                        subjectLower.Contains("bit4id") || subjectLower.Contains("tokenme") || issuer.Contains("bit4id") || issuer.Contains("tokenme"))
+                    {
+                        continue;
+                    }
+
                     bool isGovCa = issuer.Contains("ban c") || issuer.Contains("vgca") || issuer.Contains("nhà nước") || issuer.Contains("nha nuoc") || subjectLower.Contains("quangngai.gov.vn");
 
                     if (isGovCa)
@@ -1062,6 +1071,7 @@ namespace RealPdfSigner
         {
             if (signMode.Equals("PERSONAL", StringComparison.OrdinalIgnoreCase) || signMode.Equals("VGCA", StringComparison.OrdinalIgnoreCase) || signMode.Equals("TEACHER", StringComparison.OrdinalIgnoreCase))
             {
+                // GIÁO VIÊN KÝ CÁ NHÂN: TUYỆT ĐỐI KHÔNG FALLBACK SANG USB TOKEN PHẦN CỨNG!
                 return FindVgcaPersonalCertificate(expectedSerial);
             }
 
@@ -1218,9 +1228,9 @@ namespace RealPdfSigner
             return outputStream.ToArray();
         }
 
-        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location, bool strict = false, byte[]? visualSignImageBytes = null, iText.Kernel.Geom.Rectangle? signRect = null, int targetPage = 0, string? expectedSerial = null)
+        public static byte[] KySoPdfBytes(byte[] inputPdfBytes, string reason, string location, bool strict = false, byte[]? visualSignImageBytes = null, iText.Kernel.Geom.Rectangle? signRect = null, int targetPage = 0, string? expectedSerial = null, string signMode = "AUTO")
         {
-            var cert = FindVgcaCertificate(expectedSerial);
+            var cert = FindVgcaCertificate(expectedSerial, signMode);
             if (!string.IsNullOrWhiteSpace(expectedSerial) && cert == null)
             {
                 throw new InvalidOperationException($"Không tìm thấy USB Token khớp với số Serial [{expectedSerial}] đã đăng ký của Ban Giám hiệu! Vui lòng cắm đúng thiết bị USB Token.");
@@ -2365,10 +2375,13 @@ namespace RealPdfSigner
             }
             res.AddHeader("Access-Control-Allow-Origin", origin);
             res.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD");
-            res.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Access-Control-Request-Private-Network, targetaddressspace");
+            res.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Access-Control-Request-Private-Network, targetaddressspace, Cache-Control, Pragma, *");
             res.AddHeader("Access-Control-Allow-Private-Network", "true");
             res.AddHeader("Access-Control-Allow-Credentials", "true");
             res.AddHeader("Access-Control-Max-Age", "86400");
+            res.AddHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+            res.AddHeader("Pragma", "no-cache");
+            res.AddHeader("Expires", "0");
 
             if (req.HttpMethod == "OPTIONS")
             {
@@ -2386,8 +2399,23 @@ namespace RealPdfSigner
                 {
                     string? checkSerial = req.QueryString["serial"];
                     string signMode = req.QueryString["mode"] ?? req.QueryString["signType"] ?? "AUTO";
+                    string? role = req.QueryString["role"];
                     string? expectedSigner = req.QueryString["signer"] ?? req.QueryString["email"] ?? req.QueryString["cccd"];
-                    var cert = FindVgcaCertificate(checkSerial ?? expectedSigner, signMode);
+
+                    bool isTeacherOrVgca = signMode.Equals("PERSONAL", StringComparison.OrdinalIgnoreCase)
+                                         || signMode.Equals("VGCA", StringComparison.OrdinalIgnoreCase)
+                                         || signMode.Equals("TEACHER", StringComparison.OrdinalIgnoreCase)
+                                         || (!string.IsNullOrEmpty(role) && !role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) && !role.Equals("BGH", StringComparison.OrdinalIgnoreCase));
+
+                    if (isTeacherOrVgca && signMode.Equals("AUTO", StringComparison.OrdinalIgnoreCase))
+                    {
+                        signMode = "PERSONAL";
+                    }
+
+                    var cert = isTeacherOrVgca
+                        ? FindVgcaPersonalCertificate(expectedSigner ?? checkSerial)
+                        : FindVgcaCertificate(checkSerial ?? expectedSigner, signMode);
+
                     string detectedCccd = cert != null ? ExtractCccdOrUid(cert.Subject) : "";
                     string certSigner = cert != null ? ExtractCn(cert.Subject) : "";
 
@@ -2400,6 +2428,18 @@ namespace RealPdfSigner
                         {
                             if (c.HasPrivateKey)
                             {
+                                // Nếu là giáo viên, không hiển thị các chứng thư USB Token phần cứng để tránh kích hoạt popup nhầm
+                                if (isTeacherOrVgca)
+                                {
+                                    string sLower = (c.Subject ?? "").ToLowerInvariant();
+                                    string fLower = (c.FriendlyName ?? "").ToLowerInvariant();
+                                    if (sLower.Contains("mst:") || sLower.Contains("cn=trường") || sLower.Contains("cn=truong") ||
+                                        fLower.Contains("bit4id") || fLower.Contains("tokenme") || sLower.Contains("bit4id") || sLower.Contains("tokenme"))
+                                    {
+                                        continue;
+                                    }
+                                }
+
                                 availableCerts.Add(new
                                 {
                                     serialNumber = c.SerialNumber,
@@ -2417,35 +2457,68 @@ namespace RealPdfSigner
                     bool hasCspError = false;
                     string cspErrorMessage = "";
 
-                    if (cert != null && cert.HasPrivateKey)
+                    if (isTeacherOrVgca)
                     {
-                        try
+                        // DÀNH CHO GIÁO VIÊN (Ký số di động VGCA Mobile / SmartCA / Virtual CSP):
+                        // TUYỆT ĐỐI KHÔNG gọi cert.GetRSAPrivateKey() vì lệnh này sẽ kích hoạt KSP driver của USB Token (TokenME) đòi PIN hoặc gây false-positive "Private key handle is null"!
+                        if (cert != null)
                         {
-                            using var rsa = cert.GetRSAPrivateKey();
-                            if (rsa == null)
+                            if (cert.NotAfter < DateTime.Now)
                             {
                                 cspHealthy = false;
                                 hasCspError = true;
-                                cspErrorMessage = "Không thể liên kết khóa riêng của chứng thư số (Private key handle is null).";
+                                cspErrorMessage = $"Chứng thư số Ban Cơ yếu của Thầy/Cô đã hết hạn hiệu lực ({cert.NotAfter:dd/MM/yyyy}). Vui lòng gia hạn chữ ký số chuyên dùng công vụ.";
                             }
                             else
                             {
-                                // Mở thử tham chiếu để phát hiện lỗi tính nhất quán CryptographicException: An internal consistency check failed
-                                var keyExchange = rsa.KeyExchangeAlgorithm;
-                                var sigAlg = rsa.SignatureAlgorithm;
+                                cspHealthy = true;
+                                hasCspError = false;
+                                cspErrorMessage = "";
                             }
                         }
-                        catch (CryptographicException cEx)
+                        else
                         {
                             cspHealthy = false;
-                            hasCspError = true;
-                            cspErrorMessage = $"Lỗi tính nhất quán Virtual CSP: {cEx.Message}. Vui lòng kiểm tra lại dịch vụ Virtual CSP trên máy tính.";
+                            hasCspError = false;
+                            cspErrorMessage = "Chưa nhận diện được Chứng thư số chuyên dùng công vụ Ban Cơ yếu của Giáo viên trên máy tính.";
                         }
-                        catch (Exception ex)
+                    }
+                    else
+                    {
+                        // DÀNH CHO BAN GIÁM HIỆU / ADMIN (Ký qua USB Token phần cứng đóng dấu trường):
+                        if (cert != null && cert.HasPrivateKey)
                         {
-                            cspHealthy = false;
-                            hasCspError = true;
-                            cspErrorMessage = $"Lỗi kết nối thiết bị ký số: {ex.Message}";
+                            try
+                            {
+                                using var rsa = cert.GetRSAPrivateKey();
+                                if (rsa == null)
+                                {
+                                    using var ecdsa = cert.GetECDsaPrivateKey();
+                                    if (ecdsa == null)
+                                    {
+                                        cspHealthy = false;
+                                        hasCspError = true;
+                                        cspErrorMessage = "Không thể liên kết khóa riêng của chứng thư số (Private key handle is null).";
+                                    }
+                                }
+                                else
+                                {
+                                    var keyExchange = rsa.KeyExchangeAlgorithm;
+                                    var sigAlg = rsa.SignatureAlgorithm;
+                                }
+                            }
+                            catch (CryptographicException cEx)
+                            {
+                                cspHealthy = false;
+                                hasCspError = true;
+                                cspErrorMessage = $"Lỗi tính nhất quán Virtual CSP: {cEx.Message}. Vui lòng kiểm tra lại dịch vụ Virtual CSP trên máy tính.";
+                            }
+                            catch (Exception ex)
+                            {
+                                cspHealthy = false;
+                                hasCspError = true;
+                                cspErrorMessage = $"Lỗi kết nối thiết bị ký số: {ex.Message}";
+                            }
                         }
                     }
 
@@ -2884,7 +2957,7 @@ namespace RealPdfSigner
 
                     try
                     {
-                        byte[] signedBytes = KySoPdfBytes(pdfBytes, signReason, "Quảng Ngãi", strict: true, visualSignImageBytes: sigImgBytes, signRect: signRect, targetPage: targetPage, expectedSerial: expectedSerial);
+                        byte[] signedBytes = KySoPdfBytes(pdfBytes, signReason, "Quảng Ngãi", strict: true, visualSignImageBytes: sigImgBytes, signRect: signRect, targetPage: targetPage, expectedSerial: expectedSerial, signMode: signMode);
                         Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] 🎉 Niêm phong PAdES X.509 thành công! Dung lượng: {signedBytes.Length} bytes.");
 
                         var resObj = new

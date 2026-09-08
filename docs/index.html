@@ -5301,12 +5301,15 @@
       if (!detailEl) return;
       detailEl.innerHTML = '<span class="text-blue-600 flex items-center gap-1.5"><i class="fa-solid fa-spinner fa-spin"></i> Đang quét thiết bị USB Token trên máy tính...</span>';
       try {
-        const ping = await pingLocalSigner(800);
+        const ping = await pingLocalSigner(1500, true);
         if (!ping || !ping.available) {
           detailEl.innerHTML = '<span class="text-rose-600 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Chưa kết nối EduSign Agent. Vui lòng mở EduSign_Agent.exe trên máy.</span>';
           return;
         }
-        const res = await fetch(`${ping.host}/api/check-vgca-status`, { signal: AbortSignal.timeout(1500) });
+        const res = await fetch(`${ping.host}/api/check-vgca-status?signType=USB_TOKEN&mode=HARDWARE&role=ADMIN&_t=${Date.now()}`, {
+          cache: 'no-store',
+          signal: AbortSignal.timeout(2500)
+        });
         const data = await res.json();
         if (data && data.success && data.certInfo && data.certInfo.hasPrivateKey) {
           detailEl.innerHTML = `
@@ -5342,11 +5345,12 @@
       const origHtml = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang kiểm tra kết nối với EduSign Agent...</span>';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang kết nối lại với EduSign Agent...</span>';
       }
 
       try {
-        const ping = await pingLocalSigner(1500);
+        cachedLocalSignerHost = null; // Xóa cache ngay lập tức để ép ping mới!
+        const ping = await pingLocalSigner(2500, true);
         if (ping && ping.available) {
           closeModal('modalAgentConnectionRequired');
           if (typeof showToast === 'function') {
@@ -5404,9 +5408,12 @@
 
       (async () => {
         try {
-          const ping = await pingLocalSigner(600);
+          const ping = await pingLocalSigner(1500);
           if (!ping || !ping.available) return;
-          const res = await fetch(`${ping.host}/api/check-vgca-status`, { signal: AbortSignal.timeout(1200) });
+          const res = await fetch(`${ping.host}/api/check-vgca-status?signer=${encodeURIComponent(defaultAdminName)}&signType=VGCA&mode=PERSONAL&role=TEACHER&_t=${Date.now()}`, {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(2000)
+          });
           const data = await res.json();
           if (data && data.success && data.certInfo && data.certInfo.hasPrivateKey) {
             window._lastDetectedVgcaCert = data.certInfo;
@@ -5814,6 +5821,10 @@
       if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
       if (vgcaPollTimer) clearInterval(vgcaPollTimer);
 
+      // QUY TẮC CỐT LÕI: Mỗi lần ký thì phải kiểm tra lại độc lập từ đầu, không lưu trạng thái trước đó
+      window._verifiedVgcaStatus = null;
+      cachedLocalSignerHost = null; // Reset cache kết nối cục bộ
+
       // =======================================================================
       // BƯỚC 1: KIỂM TRA TÀI KHOẢN KÝ SỐ (Hình h2)
       // Nếu người chưa đăng nhập thông tin như h2 thì khi ký yêu cầu đăng nhập
@@ -5839,7 +5850,7 @@
 
       let ping = { available: false };
       try {
-        ping = await pingLocalSigner(1500);
+        ping = await pingLocalSigner(2000, true);
       } catch (e) {
         ping = { available: false };
       }
@@ -5862,9 +5873,17 @@
       const signerName = (vgcaUser && vgcaUser.signerName) || (options && options.signerName) || (currentUser ? currentUser.name : 'Hà Văn Tý');
       const account = (vgcaUser && vgcaUser.account) || '';
 
+      const isTeacher = (currentUser && currentUser.role !== 'ADMIN' && currentUser.role !== 'BGH');
+      const userRole = (currentUser && currentUser.role) || (isTeacher ? 'TEACHER' : 'ADMIN');
+      const signType = (options && options.signType) ? options.signType : (isTeacher ? 'VGCA' : 'USB_TOKEN');
+      const signMode = isTeacher ? 'PERSONAL' : (signType === 'VGCA' ? 'PERSONAL' : 'HARDWARE');
+
       try {
-        const checkUrl = `${ping.host}/api/check-vgca-status?signer=${encodeURIComponent(signerName)}&cccd=${encodeURIComponent(account)}`;
-        const res = await fetch(checkUrl, { signal: AbortSignal.timeout(3000) });
+        const checkUrl = `${ping.host}/api/check-vgca-status?signer=${encodeURIComponent(signerName)}&cccd=${encodeURIComponent(account)}&signType=${encodeURIComponent(signType)}&mode=${encodeURIComponent(signMode)}&role=${encodeURIComponent(userRole)}&_t=${Date.now()}`;
+        const res = await fetch(checkUrl, {
+          cache: 'no-store',
+          signal: AbortSignal.timeout(3500)
+        });
         if (!res.ok) {
           throw new Error(`Dịch vụ kiểm tra CSP phản hồi lỗi HTTP ${res.status}`);
         }
@@ -6447,14 +6466,18 @@
     // Phục vụ kết nối thiết bị ký số VGCA trên máy tính khi truy cập từ Render Cloud
     let cachedLocalSignerHost = null;
 
-    async function pingLocalSigner(timeoutMs = 800) {
-      if (cachedLocalSignerHost) {
+    async function pingLocalSigner(timeoutMs = 1200, forceFresh = false) {
+      if (forceFresh) {
+        cachedLocalSignerHost = null;
+      }
+      if (cachedLocalSignerHost && !forceFresh) {
         try {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 600);
-          const res = await fetch(`${cachedLocalSignerHost}/api/ping-local-signer`, {
+          const timer = setTimeout(() => controller.abort(), Math.min(timeoutMs, 1000));
+          const res = await fetch(`${cachedLocalSignerHost}/api/ping-local-signer?_t=${Date.now()}`, {
             method: 'GET',
             mode: 'cors',
+            cache: 'no-store',
             signal: controller.signal
           });
           clearTimeout(timer);
@@ -6478,9 +6501,10 @@
         try {
           const controller = new AbortController();
           const timer = setTimeout(() => controller.abort(), timeoutMs);
-          const res = await fetch(`${host}/api/ping-local-signer`, {
+          const res = await fetch(`${host}/api/ping-local-signer?_t=${Date.now()}`, {
             method: 'GET',
             mode: 'cors',
+            cache: 'no-store',
             signal: controller.signal
           });
           clearTimeout(timer);
@@ -6504,11 +6528,23 @@
       }
       activeLocalSignPromise = (async () => {
         try {
+          const isTeacher = (currentUser && currentUser.role !== 'ADMIN' && currentUser.role !== 'BGH');
+          const finalDocPayload = {
+            ...docPayload,
+            signMode: isTeacher ? 'PERSONAL' : (docPayload.signMode || 'AUTO'),
+            signType: isTeacher ? 'VGCA' : (docPayload.signType || 'AUTO')
+          };
           const fetchOpts = {
             method: 'POST',
             mode: 'cors',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ doc: docPayload, fileBase64 })
+            body: JSON.stringify({ 
+              doc: finalDocPayload, 
+              fileBase64,
+              signMode: isTeacher ? 'PERSONAL' : (docPayload.signMode || 'AUTO'),
+              signType: isTeacher ? 'VGCA' : (docPayload.signType || 'AUTO'),
+              role: (currentUser && currentUser.role) || (isTeacher ? 'TEACHER' : 'ADMIN')
+            })
           };
           try { fetchOpts.targetAddressSpace = 'loopback'; } catch (e) {}
 
@@ -7763,8 +7799,9 @@
       feedback.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang truy vấn thiết bị USB Token từ EduSign Agent (cổng 18888)...';
 
       try {
-        const res = await fetch('http://127.0.0.1:18888/api/check-vgca-status', {
-          headers: { 'Access-Control-Request-Private-Network': 'true' }
+        const res = await fetch(`http://127.0.0.1:18888/api/check-vgca-status?signType=USB_TOKEN&mode=HARDWARE&role=ADMIN&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Access-Control-Request-Private-Network': 'true', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
         });
         const data = await res.json();
         
@@ -7868,10 +7905,11 @@
 
       try {
         const queryUrl = cfg.serialNumber
-          ? `http://127.0.0.1:18888/api/check-vgca-status?serial=${encodeURIComponent(cfg.serialNumber)}`
-          : 'http://127.0.0.1:18888/api/check-vgca-status';
+          ? `http://127.0.0.1:18888/api/check-vgca-status?serial=${encodeURIComponent(cfg.serialNumber)}&signType=USB_TOKEN&mode=HARDWARE&role=ADMIN&_t=${Date.now()}`
+          : `http://127.0.0.1:18888/api/check-vgca-status?signType=USB_TOKEN&mode=HARDWARE&role=ADMIN&_t=${Date.now()}`;
         const res = await fetch(queryUrl, {
-          headers: { 'Access-Control-Request-Private-Network': 'true' }
+          cache: 'no-store',
+          headers: { 'Access-Control-Request-Private-Network': 'true', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
         });
         const data = await res.json();
 
@@ -7962,8 +8000,9 @@
         let usbMatched = false;
 
         try {
-          const res = await fetch(`http://127.0.0.1:18888/api/check-vgca-status?serial=${encodeURIComponent(cfg.serialNumber)}`, {
-            headers: { 'Access-Control-Request-Private-Network': 'true' }
+          const res = await fetch(`http://127.0.0.1:18888/api/check-vgca-status?serial=${encodeURIComponent(cfg.serialNumber)}&signType=USB_TOKEN&mode=HARDWARE&role=ADMIN&_t=${Date.now()}`, {
+            cache: 'no-store',
+            headers: { 'Access-Control-Request-Private-Network': 'true', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
           });
           const status = await res.json();
           if (status.certInfo && status.certInfo.serialNumber) {
