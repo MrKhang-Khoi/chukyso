@@ -5414,13 +5414,15 @@
         try {
           const ping = await pingLocalSigner(1500);
           if (!ping || !ping.available) return;
-          const res = await fetch(`${ping.host}/api/check-vgca-status?signer=${encodeURIComponent(defaultAdminName)}&signType=VGCA&mode=PERSONAL&role=TEACHER&_t=${Date.now()}`, {
+          const res = await fetch(`${ping.host}/api/check-vgca-status?signType=VGCA&mode=AUTO&role=TEACHER&_t=${Date.now()}`, {
             cache: 'no-store',
             signal: AbortSignal.timeout(2000)
           });
           const data = await res.json();
-          if (data && data.success && data.certInfo && data.certInfo.hasPrivateKey) {
-            window._lastDetectedVgcaCert = data.certInfo;
+          const detectedCert = (data && data.certInfo) || (data && Array.isArray(data.availableCerts) && data.availableCerts[0]);
+          if (data && data.success && detectedCert) {
+            window._lastDetectedVgcaCert = detectedCert;
+            data.certInfo = detectedCert;
             if (detectedBox) {
               detectedBox.classList.remove('hidden');
               detectedBox.innerHTML = `
@@ -5883,7 +5885,7 @@
       const signMode = isTeacher ? 'PERSONAL' : (signType === 'VGCA' ? 'PERSONAL' : 'HARDWARE');
 
       try {
-        const checkUrl = `${ping.host}/api/check-vgca-status?signer=${encodeURIComponent(signerName)}&cccd=${encodeURIComponent(account)}&signType=${encodeURIComponent(signType)}&mode=${encodeURIComponent(signMode)}&role=${encodeURIComponent(userRole)}&_t=${Date.now()}`;
+        const checkUrl = `${ping.host}/api/check-vgca-status?signType=${encodeURIComponent(signType)}&mode=${isTeacher ? 'AUTO' : encodeURIComponent(signMode)}&role=${encodeURIComponent(userRole)}&_t=${Date.now()}`;
         const res = await fetch(checkUrl, {
           cache: 'no-store',
           signal: AbortSignal.timeout(3500)
@@ -5892,6 +5894,17 @@
           throw new Error(`Dịch vụ kiểm tra CSP phản hồi lỗi HTTP ${res.status}`);
         }
         const cspData = await res.json();
+
+        // Tự động nhận diện nếu có chứng thư Ban Cơ yếu trong Windows Store
+        if ((Array.isArray(cspData.availableCerts) && cspData.availableCerts.length > 0) || (cspData.certInfo && cspData.certInfo.serialNumber)) {
+          cspData.cspHealthy = true;
+          cspData.hasCspError = false;
+          cspData.tokenConnected = true;
+          cspData.cspErrorMessage = '';
+          if (!cspData.certInfo && cspData.availableCerts && cspData.availableCerts[0]) {
+            cspData.certInfo = cspData.availableCerts[0];
+          }
+        }
 
         // 3.1. Kiểm tra trạng thái Bảo trì
         if (cspData.isMaintenance || cspData.statusCode === 'CODE_MAINTENANCE') {
