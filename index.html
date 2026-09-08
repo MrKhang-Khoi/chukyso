@@ -3653,26 +3653,72 @@
       }
     }
 
-    // Hiển thị thanh tiến trình trực quan chuẩn DocuSign Mobile cho Báo cáo
+    // Hiển thị thanh tiến trình trực quan chuẩn DocuSign Mobile cho Báo cáo luân chuyển
     function renderReportStepper(d) {
       const sigs = d.signatures || [];
-      const hasAuthor = sigs.some(s => s.step === 1 || (s.role && (s.role.includes('lập') || s.role.includes('soạn') || s.role.includes('Giáo viên'))));
-      const hasLeader = sigs.some(s => s.step === 2 || (s.role && s.role.includes('Tổ trưởng')));
-      const hasBgh = sigs.some(s => s.step === 3 || (s.role && (s.role.includes('Hiệu trưởng') || s.role.includes('Ban Giám hiệu'))));
+      const isCompleted = d.status === 'COMPLETED' || d.isArchived || d.status === 'ARCHIVED';
+      const isApproved = d.status === 'APPROVED';
+      const isRecalled = d.status === 'RECALLED';
+      const isRejected = d.status === 'REJECTED';
+
+      let steps = [];
+
+      // 1. Các chữ ký đã ký thực tế
+      if (sigs.length > 0) {
+        sigs.forEach(s => {
+          const shortName = s.signerName ? s.signerName.split(' ').pop() : (s.role || 'Đã ký');
+          steps.push(`
+            <span class="text-emerald-700 font-bold flex items-center gap-0.5" title="${s.signerName || ''} (${s.role || ''})">
+              <i class="fa-solid fa-check text-[9px]"></i> ${shortName}
+            </span>
+          `);
+        });
+      } else {
+        steps.push(`
+          <span class="text-emerald-700 font-bold flex items-center gap-0.5">
+            <i class="fa-solid fa-check text-[9px]"></i> Người lập
+          </span>
+        `);
+      }
+
+      // 2. Bước hiện tại tùy theo trạng thái
+      if (isRecalled) {
+        steps.push(`
+          <span class="text-amber-600 font-bold flex items-center gap-0.5 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+            <i class="fa-solid fa-rotate-left text-[9px]"></i> Đã thu hồi
+          </span>
+        `);
+      } else if (isRejected) {
+        steps.push(`
+          <span class="text-rose-600 font-bold flex items-center gap-0.5 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+            <i class="fa-solid fa-ban text-[9px]"></i> Yêu cầu sửa
+          </span>
+        `);
+      } else if (isApproved) {
+        steps.push(`
+          <span class="text-blue-700 font-bold flex items-center gap-0.5 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+            <i class="fa-solid fa-flag-checkered text-[9px]"></i> Chờ bấm hoàn thành
+          </span>
+        `);
+      } else if (isCompleted) {
+        steps.push(`
+          <span class="text-emerald-800 font-bold flex items-center gap-0.5 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
+            <i class="fa-solid fa-cloud-arrow-up text-[9px]"></i> Đã lưu Drive
+          </span>
+        `);
+      } else {
+        // Đang chờ người tiếp theo ký
+        const nextTitle = d.nextSignerName ? d.nextSignerName.split(' ').pop() : (d.status === 'WAITING_PRINCIPAL_APPROVAL' ? 'BGH' : (d.status === 'WAITING_LEADER_APPROVAL' ? 'Tổ trưởng' : 'Người duyệt'));
+        steps.push(`
+          <span class="text-blue-600 font-bold animate-pulse flex items-center gap-0.5 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+            <i class="fa-solid fa-hourglass-half text-[9px]"></i> Chờ ${nextTitle}
+          </span>
+        `);
+      }
 
       return `
-        <div class="flex items-center gap-1 text-[10px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl flex-wrap">
-          <span class="${hasAuthor ? 'text-emerald-700 font-bold' : 'text-slate-500'}">
-            ${hasAuthor ? '✔' : '⏳'} Người lập
-          </span>
-          <span class="text-slate-300">➔</span>
-          <span class="${hasLeader ? 'text-emerald-700 font-bold' : (d.status === 'WAITING_LEADER_APPROVAL' || d.status === 'WAITING_NEXT_SIGN' ? 'text-blue-600 font-bold' : 'text-slate-500')}">
-            ${hasLeader ? '✔' : '⏳'} ${d.nextSignerName ? d.nextSignerName.split(' ').pop() : 'Tổ trưởng'}
-          </span>
-          <span class="text-slate-300">➔</span>
-          <span class="${hasBgh ? 'text-emerald-700 font-bold' : (d.status === 'WAITING_PRINCIPAL_APPROVAL' ? 'text-amber-600 font-bold' : 'text-slate-500')}">
-            ${hasBgh ? '✔' : '⏳'} BGH
-          </span>
+        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl flex-wrap">
+          ${steps.join('<span class="text-slate-300">➔</span>')}
         </div>
       `;
     }

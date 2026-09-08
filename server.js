@@ -1916,14 +1916,28 @@ app.post('/api/documents/:id/forward-sign', requireAuth, async (req, res) => {
   const doc = dataStore.getDocumentById(req.params.id);
   if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
 
+  const isAuthor = doc.authorId === currentUser.id || doc.authorUsername === currentUser.username || doc.createdBy === currentUser.id || doc.createdBy === currentUser.username;
   const isDesignated = doc.nextSignerId === currentUser.id || doc.nextSignerId === currentUser.username;
   const isAdminOrBgh = currentUser.role === 'ADMIN' || currentUser.role === 'BGH';
   const isLeaderSameDept = currentUser.role === 'HEAD_DEPT' && doc.department === currentUser.department;
-  if (!isDesignated && !isAdminOrBgh && !isLeaderSameDept) {
+  const canAuthorResubmit = isAuthor && (doc.status === 'RECALLED' || doc.status === 'REJECTED' || doc.status === 'DRAFT' || doc.status === 'PENDING' || !doc.nextSignerId);
+
+  if (!isDesignated && !isAdminOrBgh && !isLeaderSameDept && !canAuthorResubmit) {
     return res.status(403).json({ success: false, message: 'Bạn không nằm trong danh sách người ký duyệt của hồ sơ này!' });
   }
 
-  const { comment, signPlacement, signatureImage, realSignedPdfBase64, nextSignerId, nextSignerName, nextSignerRole, isFinalBgh, isFinish } = req.body;
+  const { comment, signPlacement, signatureImage, realSignedPdfBase64, nextSignerId, isFinalBgh, isFinish } = req.body;
+  let nextSignerName = req.body.nextSignerName;
+  let nextSignerRole = req.body.nextSignerRole;
+
+  if (nextSignerId && (!nextSignerName || !nextSignerRole)) {
+    const targetUser = dataStore.getUserById(nextSignerId);
+    if (targetUser) {
+      nextSignerName = nextSignerName || targetUser.name;
+      nextSignerRole = nextSignerRole || targetUser.roleTitle || (targetUser.role === 'BGH' ? 'Ban Giám hiệu' : (targetUser.role === 'HEAD_DEPT' ? 'Tổ trưởng' : 'Giáo viên'));
+    }
+  }
+
   const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   let activeSigImage = signatureImage || currentUser.signatureImage || null;
@@ -1935,29 +1949,36 @@ app.post('/api/documents/:id/forward-sign', requireAuth, async (req, res) => {
   }
 
   const isCompletedSign = Boolean(isFinish || isFinalBgh || !nextSignerId);
-  const newStep = (doc.signatures && doc.signatures.length ? doc.signatures.length : 1) + 1;
-  const sig = {
-    step: newStep,
-    role: currentUser.roleTitle || (currentUser.role === 'BGH' ? 'Ban Giám hiệu' : (currentUser.role === 'HEAD_DEPT' ? `Tổ trưởng ${doc.department}` : 'Giáo viên tham gia ký')),
-    signerName: currentUser.name,
-    signerUnit: currentUser.department || 'Ban Giám hiệu',
-    signedAt: now,
-    signType: realSignedPdfBase64 ? 'Ký số mật mã thật (X.509 PAdES)' : 'Ký số điện tử chuẩn hóa',
-    status: 'VALID',
-    placement: signPlacement || (newStep === 2 ? 'middle-right' : (newStep >= 3 ? 'bottom-left' : 'bottom-right')),
-    visualSignImage: activeSigImage,
-    visualSign: `Ký duyệt cấp ${newStep}: ${comment || 'Đã ký xác nhận nội dung'}`
-  };
+  let newStep = doc.currentStep || 1;
+  let updatedSignatures = doc.signatures || [];
 
-  const updatedSignatures = [...(doc.signatures || []), sig];
+  if (!canAuthorResubmit) {
+    newStep = (doc.signatures && doc.signatures.length ? doc.signatures.length : 1) + 1;
+    const sig = {
+      step: newStep,
+      role: currentUser.roleTitle || (currentUser.role === 'BGH' ? 'Ban Giám hiệu' : (currentUser.role === 'HEAD_DEPT' ? `Tổ trưởng ${doc.department}` : 'Giáo viên tham gia ký')),
+      signerName: currentUser.name,
+      signerUnit: currentUser.department || 'Ban Giám hiệu',
+      signedAt: now,
+      signType: realSignedPdfBase64 ? 'Ký số mật mã thật (X.509 PAdES)' : 'Ký số điện tử chuẩn hóa',
+      status: 'VALID',
+      placement: signPlacement || (newStep === 2 ? 'middle-right' : (newStep >= 3 ? 'bottom-left' : 'bottom-right')),
+      visualSignImage: activeSigImage,
+      visualSign: `Ký duyệt cấp ${newStep}: ${comment || 'Đã ký xác nhận nội dung'}`
+    };
+    updatedSignatures = [...updatedSignatures, sig];
+  }
+
   const updatedLogs = [
     ...(doc.logs || []),
     {
       time: now,
       actor: `${currentUser.name} (${currentUser.roleTitle || currentUser.role})`,
-      action: isCompletedSign
-        ? `Đã ký duyệt cấp ${newStep}. Hồ sơ đã hoàn tất mọi chữ ký, sẵn sàng bấm [Xác nhận hoàn thành & Lưu trữ]!`
-        : `Đã ký duyệt cấp ${newStep} và chuyển tiếp cho ${nextSignerName || 'người tiếp theo'}`
+      action: canAuthorResubmit
+        ? `Tác giả đã chỉnh sửa nội dung và gửi lại báo cáo cho ${nextSignerName || 'người duyệt tiếp theo'}: "${comment || 'Đã cập nhật nội dung'}"`
+        : (isCompletedSign
+          ? `Đã ký duyệt cấp ${newStep}. Hồ sơ đã hoàn tất mọi chữ ký, sẵn sàng bấm [Xác nhận hoàn thành & Lưu trữ]!`
+          : `Đã ký duyệt cấp ${newStep} và chuyển tiếp cho ${nextSignerName || 'người tiếp theo'}`)
     }
   ];
 
