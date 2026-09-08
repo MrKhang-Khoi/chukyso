@@ -2730,6 +2730,13 @@ app.post('/api/documents/:id/mark-onedrive-synced', requireAuth, (req, res) => {
     oneDriveSynced: true,
     oneDriveCategory: category || '2. KẾ HOẠCH BÀI DẠY',
     oneDriveSyncedAt: now,
+    oneDriveInfo: {
+      success: true,
+      category: category || '2. KẾ HOẠCH BÀI DẠY',
+      fileName: fileName || (doc.title + '.pdf'),
+      sharedFolder: folderName || 'OneDrive Trường',
+      syncedAt: now
+    },
     isArchived: true,
     status: 'ARCHIVED',
     archivedAt: now,

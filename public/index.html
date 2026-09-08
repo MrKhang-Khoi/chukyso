@@ -3679,13 +3679,15 @@
      */
     function isDocArchived(d) {
       if (!d) return false;
-      const hasCloudSaved = Boolean(
+      return Boolean(
+        d.isArchived === true ||
+        d.status === 'ARCHIVED' ||
         d.oneDriveSynced === true ||
         d.oneDriveUploaded === true ||
+        Boolean(d.oneDriveInfo) ||
         (d.driveInfo && (d.driveInfo.fileId || d.driveInfo.folderPath)) ||
         d.googleDriveUrl != null
       );
-      return Boolean((d.isArchived === true || d.status === 'ARCHIVED') && hasCloudSaved);
     }
 
     // Bật/tắt xem hồ sơ đã lưu trữ (isArchived)
@@ -3695,7 +3697,7 @@
       if (subHeading) {
         subHeading.innerText = checked ? 'Kho hồ sơ lưu trữ an toàn trên Google Drive / OneDrive' : 'Theo dõi tiến trình phê duyệt của Tổ trưởng và BGH';
       }
-      loadDocuments();
+      return loadDocuments();
     }
 
     // Quản trị viên & BGH: Tự động lưu trữ và ẩn hàng loạt hồ sơ hoàn thành vào Kho Drive
@@ -7245,6 +7247,34 @@
       return '2. KẾ HOẠCH BÀI DẠY';
     }
 
+    // Tự động chuyển hồ sơ sang trạng thái ĐÃ LƯU TRỮ và ẨN NGAY LẬP TỨC khỏi bảng làm việc chính (Optimistic UI Update)
+    function applyOptimisticDocArchived(docId, extraInfo = {}) {
+      const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      const target = currentDocList.find(d => d.id === docId);
+      if (target) {
+        target.oneDriveSynced = true;
+        target.isArchived = true;
+        target.status = 'ARCHIVED';
+        target.archivedAt = now;
+        target.oneDriveSyncedAt = now;
+        target.oneDriveInfo = {
+          success: true,
+          fileName: extraInfo.fileName || (target.title + '.pdf'),
+          category: extraInfo.category || '2. KẾ HOẠCH BÀI DẠY',
+          folderName: extraInfo.folderName || 'OneDrive',
+          syncedAt: now
+        };
+      }
+      // Render lại bảng ngay lập tức - File sẽ BIẾN MẤT NGAY TỨC THÌ (0.01s) khỏi bảng chính mà KHÔNG CẦN F5!
+      renderDocsTable(currentDocList);
+      updateCategoryBadges();
+
+      // Đồng bộ ngay lên Firebase Realtime Database nếu có kết nối
+      if (window.EduSignFirebase && typeof window.EduSignFirebase.syncDocumentsToFirebase === 'function') {
+        window.EduSignFirebase.syncDocumentsToFirebase(currentDocList);
+      }
+    }
+
     async function saveSingleDocToLocalOneDrive(doc, dirHandle) {
       let blob = null;
       let usedExt = '.pdf';
@@ -7298,6 +7328,13 @@
       const writable = await fileHandle.createWritable();
       await writable.write(blob);
       await writable.close();
+
+      // Cập nhật ẩn ngay lập tức trên UI
+      applyOptimisticDocArchived(doc.id, {
+        fileName: finalFileName,
+        category: subCategory,
+        folderName: dirHandle.name
+      });
 
       try {
         await fetch(`/api/documents/${doc.id}/mark-onedrive-synced`, {
@@ -7407,8 +7444,16 @@
             await writable.close();
 
             const savedName = fileHandle.name || defaultFileName;
+            const subCategory = resolveOneDriveSubCategory(targetDoc.title, targetDoc.fileName);
 
-            // Ghi nhận trạng thái đã lưu vào máy chủ
+            // 1. LẬP TỨC ẨN HỒ SƠ KHỎI BẢNG LÀM VIỆC CHÍNH (Optimistic UI Update 0.01s - KHÔNG CẦN F5!)
+            applyOptimisticDocArchived(docId, {
+              fileName: savedName,
+              category: subCategory,
+              folderName: 'OneDrive'
+            });
+
+            // 2. Ghi nhận trạng thái đã lưu vào máy chủ
             try {
               await fetch(`/api/documents/${docId}/mark-onedrive-synced`, {
                 method: 'POST',
@@ -7418,18 +7463,25 @@
                 },
                 body: JSON.stringify({
                   fileName: savedName,
-                  category: resolveOneDriveSubCategory(targetDoc.title, targetDoc.fileName),
+                  category: subCategory,
                   folderName: 'OneDrive'
                 })
               });
             } catch (e) {}
 
-            await loadDocuments();
+            // 3. Tải lại ngầm để xác nhận với máy chủ
+            loadDocuments().catch(() => {});
+
             const detailsModal = document.getElementById('modalDocDetails');
             if (detailsModal && !detailsModal.classList.contains('hidden')) {
-              openDocDetails(docId);
+              closeModal('modalDocDetails');
             }
-            alert('🎉 Hồ sơ đã được lưu thành công vào OneDrive (5TB)!\n\nHồ sơ đã được tự động lưu trữ và ẩn khỏi danh sách để làm nhẹ ứng dụng.\nThầy/Cô có thể tick chọn mục "Lưu trữ Drive" trên thanh công cụ để xem lại bất cứ lúc nào.');
+
+            showAppNotice(
+              '🎉 <b>Hồ sơ đã được lưu thành công vào OneDrive (5TB)!</b><br><br>Hồ sơ đã được tự động lưu trữ và ẩn khỏi danh sách để làm nhẹ ứng dụng.<br><br>Thầy/Cô có thể tick chọn mục <b>"Lưu trữ Drive"</b> trên thanh công cụ để xem lại bất cứ lúc nào.',
+              'Lưu OneDrive Thành Công',
+              'success'
+            );
             return;
           }
         }
@@ -7439,14 +7491,22 @@
           const dirHandle = await promptSelectOneDriveFolder(false);
           if (!dirHandle) return;
 
-          await saveSingleDocToLocalOneDrive(targetDoc, dirHandle);
+          const savedInfo = await saveSingleDocToLocalOneDrive(targetDoc, dirHandle);
 
-          await loadDocuments();
+          applyOptimisticDocArchived(docId, savedInfo || {});
+
+          loadDocuments().catch(() => {});
+
           const detailsModal = document.getElementById('modalDocDetails');
           if (detailsModal && !detailsModal.classList.contains('hidden')) {
-            openDocDetails(docId);
+            closeModal('modalDocDetails');
           }
-          alert('🎉 Hồ sơ đã được lưu thành công vào OneDrive (5TB)!\n\nHồ sơ đã được tự động lưu trữ và ẩn khỏi danh sách để làm nhẹ ứng dụng.\nThầy/Cô có thể tick chọn mục "Lưu trữ Drive" trên thanh công cụ để xem lại bất cứ lúc nào.');
+
+          showAppNotice(
+            '🎉 <b>Hồ sơ đã được lưu thành công vào OneDrive (5TB)!</b><br><br>Hồ sơ đã được tự động lưu trữ và ẩn khỏi danh sách để làm nhẹ ứng dụng.<br><br>Thầy/Cô có thể tick chọn mục <b>"Lưu trữ Drive"</b> trên thanh công cụ để xem lại bất cứ lúc nào.',
+            'Lưu OneDrive Thành Công',
+            'success'
+          );
           return;
         }
 
@@ -7461,13 +7521,21 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Lỗi khi lưu lên OneDrive');
 
-        await loadDocuments();
+        applyOptimisticDocArchived(docId, data.oneDriveInfo || {});
+
+        loadDocuments().catch(() => {});
+
         const detailsModal = document.getElementById('modalDocDetails');
         if (detailsModal && !detailsModal.classList.contains('hidden')) {
-          openDocDetails(docId);
+          closeModal('modalDocDetails');
         }
-        alert('🎉 Hồ sơ đã được lưu thành công vào OneDrive (5TB)!\n\nHồ sơ đã được tự động lưu trữ và ẩn khỏi danh sách để làm nhẹ ứng dụng.\nThầy/Cô có thể tick chọn mục "Lưu trữ Drive" trên thanh công cụ để xem lại bất cứ lúc nào.');
-      } catch (err) {
+
+        showAppNotice(
+          '🎉 <b>Hồ sơ đã được lưu thành công vào OneDrive (5TB)!</b><br><br>Hồ sơ đã được tự động lưu trữ và ẩn khỏi danh sách để làm nhẹ ứng dụng.<br><br>Thầy/Cô có thể tick chọn mục <b>"Lưu trữ Drive"</b> trên thanh công cụ để xem lại bất cứ lúc nào.',
+          'Lưu OneDrive Thành Công',
+          'success'
+        );
+        return;} catch (err) {
         if (typeof showAppNotice === 'function') {
           showAppNotice('Không thể lưu vào OneDrive: ' + err.message, 'Thông Báo', 'error');
         } else {

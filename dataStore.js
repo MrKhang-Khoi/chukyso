@@ -367,14 +367,19 @@ function getSigners() {
  */
 function isDocArchived(d) {
   if (!d) return false;
-  // CHỈ ẨN KHI ĐÃ ĐƯỢC LƯU THÀNH CÔNG VÀO ONEDRIVE HOẶC GOOGLE DRIVE!
-  const hasCloudSaved = Boolean(
+  // Hồ sơ được coi là ĐÃ LƯU TRỮ và ẨN KHỎI BẢNG CHÍNH khi:
+  // 1. Đã được lưu vào OneDrive (oneDriveSynced === true hoặc oneDriveUploaded === true hoặc oneDriveInfo)
+  // 2. Đã được lưu vào Google Drive (driveInfo có fileId/folderPath hoặc googleDriveUrl)
+  // 3. Đã có cờ lưu trữ hệ thống (isArchived === true hoặc status === 'ARCHIVED')
+  return Boolean(
+    d.isArchived === true ||
+    d.status === 'ARCHIVED' ||
     d.oneDriveSynced === true ||
     d.oneDriveUploaded === true ||
+    Boolean(d.oneDriveInfo) ||
     (d.driveInfo && (d.driveInfo.fileId || d.driveInfo.folderPath)) ||
     d.googleDriveUrl != null
   );
-  return Boolean((d.isArchived === true || d.status === 'ARCHIVED') && hasCloudSaved);
 }
 
 let _hasRunSanitization = false;
