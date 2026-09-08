@@ -574,8 +574,13 @@ app.get('/api/documents', requireAuth, (req, res) => {
   const showArchived = req.query.archived === 'true' || req.query.archived === '1';
   const categoryFilter = req.query.category; // 'PERSONAL' hoặc 'REPORT'
 
-  // Mặc định ẩn hồ sơ đã xác nhận hoàn thành (isArchived) để giao diện siêu nhẹ và tải nhanh
-  let pool = allDocs.filter(d => showArchived ? d.isArchived === true : d.isArchived !== true);
+  // Lọc nghiêm ngặt trạng thái lưu trữ:
+  // - Khi xem thông thường (showArchived = false): ẨN TRIỆT ĐỂ mọi hồ sơ đã hoàn thành/lưu Drive (giữ server và UI siêu nhẹ)
+  // - Khi xem lưu trữ (showArchived = true): Chỉ hiển thị các hồ sơ đã lưu trữ
+  let pool = allDocs.filter(d => {
+    const isArchived = dataStore.isDocArchived(d);
+    return showArchived ? isArchived : !isArchived;
+  });
 
   if (categoryFilter) {
     pool = pool.filter(d => (d.category || 'PERSONAL') === categoryFilter);
@@ -2107,6 +2112,65 @@ app.post('/api/documents/:id/confirm-complete', requireAuth, async (req, res) =>
     console.error('Lỗi khi xác nhận hoàn thành:', err);
     res.status(500).json({ success: false, message: 'Lỗi khi xác nhận hoàn thành: ' + err.message });
   }
+});
+
+// Quản trị viên: Tự động lưu trữ & ẩn toàn bộ hồ sơ đã hoàn thành / đã duyệt vào Kho Lưu Trữ Drive
+app.post('/api/admin/archive-completed-docs', requireAuth, (req, res) => {
+  if (req.user.role !== 'ADMIN' && req.user.role !== 'BGH') {
+    return res.status(403).json({ success: false, message: 'Chỉ Quản trị viên mới có quyền thực hiện thao tác này!' });
+  }
+
+  const docs = dataStore.getDocuments();
+  let archivedCount = 0;
+  let freedBytes = 0;
+  const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+  docs.forEach(d => {
+    const hasSigs = d.signatures && d.signatures.length > 0;
+    const isDone = d.status === 'COMPLETED' || d.status === 'APPROVED' || d.status === 'ARCHIVED' || d.driveInfo || d.oneDriveSynced;
+
+    if (hasSigs || isDone) {
+      if (!d.isArchived) {
+        d.isArchived = true;
+        d.status = 'ARCHIVED';
+        d.archivedAt = d.archivedAt || now;
+        archivedCount++;
+      }
+    }
+
+    if (d.fileBase64) {
+      freedBytes += d.fileBase64.length;
+      delete d.fileBase64;
+    }
+    if (d.signedPdfBase64) {
+      freedBytes += d.signedPdfBase64.length;
+      delete d.signedPdfBase64;
+    }
+  });
+
+  dataStore.saveDocuments(docs);
+
+  // Đồng bộ lên Firebase RTDB nếu có
+  try {
+    const cleanDocs = docs.map(d => {
+      const c = { ...d };
+      delete c.fileBase64;
+      delete c.signedPdfBase64;
+      return c;
+    });
+    fetch('https://edusign-school-default-rtdb.asia-southeast1.firebasedatabase.app/documents.json', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanDocs)
+    }).catch(() => {});
+  } catch (e) {}
+
+  res.json({
+    success: true,
+    message: `Đã tự động lưu trữ và ẩn ${archivedCount} hồ sơ hoàn thành vào Kho Lưu Trữ Drive! Đã giải phóng bộ nhớ máy chủ.`,
+    archivedCount,
+    freedKb: Math.round(freedBytes / 1024)
+  });
 });
 
 // Cấp 2: Tổ trưởng ký nháy phê duyệt chuyên môn

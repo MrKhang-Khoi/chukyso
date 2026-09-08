@@ -354,9 +354,83 @@ function getSigners() {
     }));
 }
 
-// =================== QUẢN LÝ HỒ SƠ GIÁO ÁN ===================
+// =================== QUẢN LÝ HỒ SƠ GIÁO ÁN & TỐI ƯU HÓA LƯU TRỮ ===================
+
+/**
+ * Kiểm tra hồ sơ đã được lưu trữ / ẩn khỏi bảng chính hay chưa
+ * Hồ sơ được coi là ĐÃ LƯU TRỮ (Archived) nếu:
+ * 1. isArchived === true
+ * 2. status === 'ARCHIVED'
+ * 3. Đã lưu Google Drive (driveInfo != null)
+ * 4. Đã lưu OneDrive (oneDriveSynced === true hoặc oneDriveUploaded === true)
+ * 5. Đã có thời gian lưu trữ archivedAt
+ */
+function isDocArchived(d) {
+  if (!d) return false;
+  return Boolean(
+    d.isArchived === true ||
+    d.status === 'ARCHIVED' ||
+    d.driveInfo != null ||
+    d.oneDriveSynced === true ||
+    d.oneDriveUploaded === true ||
+    d.googleDriveUrl != null ||
+    d.archivedAt != null
+  );
+}
+
+let _hasRunSanitization = false;
+
+/**
+ * Cơ chế Tự Động Di Chuyển & Dọn Dẹp Dữ Liệu (Self-Healing Auto-Migration)
+ * - Tự động đồng bộ cờ isArchived cho các file đã lưu Drive / OneDrive
+ * - Tự động dọn sạch các trường nhị phân nặng (fileBase64, signedPdfBase64) khỏi DB để máy chủ siêu nhẹ
+ */
+function sanitizeDocuments(docs) {
+  if (!Array.isArray(docs)) return [];
+  let changed = false;
+  docs.forEach(doc => {
+    if (!doc) return;
+
+    // 1. Tự động lưu trữ & ẩn triệt để các tài liệu đã ký số / đã hoàn tất / đã có Drive
+    const hasSigs = Array.isArray(doc.signatures) && doc.signatures.length > 0;
+    const isCompleted = doc.status === 'COMPLETED' || doc.status === 'APPROVED' || doc.status === 'ARCHIVED';
+    if ((isDocArchived(doc) || hasSigs || isCompleted) && !doc.isArchived) {
+      doc.isArchived = true;
+      doc.status = 'ARCHIVED';
+      if (!doc.archivedAt) doc.archivedAt = doc.createdAt || new Date().toISOString().replace('T', ' ').substring(0, 19);
+      changed = true;
+    }
+
+    // 2. Chuẩn hóa category nếu thiếu
+    if (!doc.category) {
+      doc.category = (doc.title && (doc.title.includes('Báo cáo') || doc.title.includes('Kế hoạch giáo dục'))) ? 'REPORT' : 'PERSONAL';
+      changed = true;
+    }
+
+    // 3. Giải phóng bộ nhớ máy chủ triệt để: Xóa bỏ chuỗi nhị phân base64 nặng khỏi JSON/RAM
+    if (doc.fileBase64) {
+      delete doc.fileBase64;
+      changed = true;
+    }
+    if (doc.signedPdfBase64) {
+      delete doc.signedPdfBase64;
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    saveDocuments(docs);
+  }
+  return docs;
+}
+
 function getDocuments() {
-  return readJsonSafe(DOCS_FILE, []);
+  const docs = readJsonSafe(DOCS_FILE, []);
+  if (!_hasRunSanitization) {
+    _hasRunSanitization = true;
+    return sanitizeDocuments(docs);
+  }
+  return docs;
 }
 
 function saveDocuments(docs) {
@@ -577,5 +651,7 @@ module.exports = {
   normalizeFilePath,
   resolveFilePath,
   getBghSigningConfig,
-  saveBghSigningConfig
+  saveBghSigningConfig,
+  isDocArchived,
+  sanitizeDocuments
 };

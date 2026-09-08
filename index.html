@@ -478,6 +478,12 @@
               <span class="text-[11px] text-slate-600 font-medium hidden sm:inline">Lưu trữ Drive</span>
             </label>
 
+            <button type="button" id="btnAdminArchiveCleanup" onclick="handleAdminArchiveCleanup()" title="Tự động lưu trữ & ẩn toàn bộ hồ sơ hoàn thành vào Kho Lưu Trữ Drive để chống nặng máy chủ"
+              class="hidden px-2.5 py-1.5 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+              <i class="fa-solid fa-box-archive text-purple-600"></i>
+              <span class="hidden md:inline">Lưu trữ & Dọn dẹp</span>
+            </button>
+
             <button type="button" id="btnWebPushToggle" onclick="handleToggleWebPush()" title="Nhận thông báo khi có báo cáo cần ký"
               class="p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5 text-xs cursor-pointer">
               <i id="webPushIcon" class="fa-regular fa-bell text-blue-600"></i>
@@ -2717,6 +2723,8 @@
       const isAdmin = currentUser.role === 'ADMIN';
       const btnBgh = document.getElementById('btnBghSignConfig');
       if (btnBgh) btnBgh.classList.toggle('hidden', !isAdmin);
+      const btnCleanup = document.getElementById('btnAdminArchiveCleanup');
+      if (btnCleanup) btnCleanup.classList.toggle('hidden', !isAdmin && currentUser.role !== 'BGH');
       document.getElementById('navTabUsers').classList.toggle('hidden', !isAdmin);
       document.getElementById('navTabStats').classList.toggle('hidden', !isAdmin);
       document.getElementById('navTabDrive').classList.toggle('hidden', !isAdmin);
@@ -3659,10 +3667,55 @@
       loadDocuments();
     }
 
+    // ==================== QUẢN LÝ LƯU TRỮ & ẨN HỒ SƠ ====================
+
+    /**
+     * Xác định chính xác hồ sơ đã thuộc diện Lưu trữ Drive / OneDrive hay chưa
+     * Để đảm bảo ẩn triệt để các file đã hoàn thành khỏi bảng chính, chống nặng server & giao diện
+     */
+    function isDocArchived(d) {
+      if (!d) return false;
+      return Boolean(
+        d.isArchived === true ||
+        d.status === 'ARCHIVED' ||
+        d.driveInfo != null ||
+        d.oneDriveSynced === true ||
+        d.oneDriveUploaded === true ||
+        d.googleDriveUrl != null ||
+        d.archivedAt != null
+      );
+    }
+
     // Bật/tắt xem hồ sơ đã lưu trữ (isArchived)
     function onToggleArchived(checked) {
       isShowingArchived = checked;
+      const subHeading = document.getElementById('docsViewSubHeading');
+      if (subHeading) {
+        subHeading.innerText = checked ? 'Kho hồ sơ lưu trữ an toàn trên Google Drive / OneDrive' : 'Theo dõi tiến trình phê duyệt của Tổ trưởng và BGH';
+      }
       loadDocuments();
+    }
+
+    // Quản trị viên & BGH: Tự động lưu trữ và ẩn hàng loạt hồ sơ hoàn thành vào Kho Drive
+    async function handleAdminArchiveCleanup() {
+      if (!confirm('Bạn có chắc chắn muốn TỰ ĐỘNG LƯU TRỮ VÀ ẨN toàn bộ hồ sơ đã hoàn thành / đã duyệt vào Kho Lưu Trữ Drive?\n\nThao tác này sẽ:\n1. Ẩn toàn bộ hồ sơ đã hoàn tất khỏi bảng làm việc chính.\n2. Giải phóng dung lượng RAM và xóa sạch file tạm base64 trên máy chủ.\n3. Toàn bộ hồ sơ vẫn được bảo toàn an toàn 100% khi tick chọn "Lưu trữ Drive".')) {
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/archive-completed-docs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.message || 'Lỗi khi lưu trữ');
+        alert('🎉 ' + data.message);
+        await loadDocuments();
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      }
     }
 
     async function loadDocuments() {
@@ -3698,7 +3751,15 @@
         renderDocsTable(currentDocList);
 
         const badge = document.getElementById('docCountBadge');
-        if (badge) badge.innerText = currentDocList.length;
+        if (badge) {
+          if (isShowingArchived) {
+            badge.innerText = `Kho ${currentDocList.length}`;
+            badge.className = 'ml-0.5 px-1.5 py-0.2 rounded-full bg-purple-200 text-purple-800 text-[10px] font-bold';
+          } else {
+            badge.innerText = currentDocList.length;
+            badge.className = 'ml-0.5 px-1.5 py-0.2 rounded-full bg-blue-200 text-blue-800 text-[10px] font-bold';
+          }
+        }
 
         updateCategoryBadges();
         initOneDriveFolderUI();
@@ -3707,7 +3768,7 @@
       }
     }
 
-    // Cập nhật số lượng đếm hiển thị trên các Tabs
+    // Cập nhật số lượng đếm hiển thị trên các Tabs (Chỉ đếm các hồ sơ đang chờ xử lý thực sự)
     async function updateCategoryBadges() {
       try {
         const resAll = await fetch('/api/documents', {
@@ -3715,18 +3776,26 @@
         });
         const r = await resAll.json();
         const allDocs = r.data || [];
-        const personalCount = allDocs.filter(d => (d.category || 'PERSONAL') === 'PERSONAL').length;
-        const reportCount = allDocs.filter(d => d.category === 'REPORT').length;
+        // Lọc nghiêm ngặt chỉ lấy hồ sơ chưa lưu trữ để đếm trên badge
+        const activeDocs = allDocs.filter(d => !isDocArchived(d));
+        const personalCount = activeDocs.filter(d => (d.category || 'PERSONAL') === 'PERSONAL').length;
+        const reportCount = activeDocs.filter(d => d.category === 'REPORT').length;
         const bP = document.getElementById('badgePersonalCount');
         const bR = document.getElementById('badgeReportCount');
         if (bP) bP.innerText = personalCount;
         if (bR) bR.innerText = reportCount;
+
+        // Cập nhật số lượng trên nav tab chính nếu không ở chế độ xem kho lưu trữ
+        const navBadge = document.getElementById('docCountBadge');
+        if (navBadge && !isShowingArchived) {
+          navBadge.innerText = activeDocCategory === 'REPORT' ? reportCount : personalCount;
+        }
       } catch (e) {}
     }
 
     // Trích xuất huy hiệu trạng thái văn bản chuẩn hóa
     function getDocStatusInfo(d) {
-      if (d.status === 'ARCHIVED' || d.isArchived) {
+      if (isDocArchived(d)) {
         return {
           badge: '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 inline-flex items-center gap-1"><i class="fa-solid fa-box-archive"></i> Đã lưu Drive</span>',
           text: 'Đã lưu Drive',
@@ -3868,9 +3937,9 @@
 
       // LỌC NGHIÊM NGẶT THEO TAB HIỆN TẠI & TRẠNG THÁI LƯU TRỮ (Tab 1: Cá nhân vs Tab 2: Báo cáo luân chuyển)
       const filteredDocs = (docs || []).filter(d => {
-        const isArchived = Boolean(d.isArchived || d.status === 'ARCHIVED');
-        if (!isShowingArchived && isArchived) return false;
-        if (isShowingArchived && !isArchived) return false;
+        const archived = isDocArchived(d);
+        if (!isShowingArchived && archived) return false;
+        if (isShowingArchived && !archived) return false;
 
         if (activeDocCategory === 'REPORT') {
           return d.category === 'REPORT';
