@@ -5431,6 +5431,21 @@
         }
 
         if (status) {
+          if (status.isMaintenance || status.statusCode === 'CODE_MAINTENANCE') {
+            if (appEl) {
+              appEl.className = 'font-bold text-amber-700 flex items-center gap-1';
+              appEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-500"></i> <span>Đang bảo trì hệ thống</span>`;
+            }
+            if (tokenEl) {
+              tokenEl.className = 'font-bold text-amber-700 flex items-center gap-1';
+              tokenEl.innerHTML = `<i class="fa-solid fa-screwdriver-wrench text-amber-500"></i> <span>Tạm khóa ký số (Bảo trì VGCA)</span>`;
+            }
+            if (showToast) {
+              alert('⚠️ THÔNG BÁO BẢO TRÌ:\n\n' + (status.details || 'Hệ thống Ký số Tập trung VGCA của Ban Cơ yếu Chính phủ hiện đang trong phiên bảo trì kỹ thuật. Tính năng ký số tạm khóa để đảm bảo an toàn.'));
+            }
+            return;
+          }
+
           if (status.appRunning) {
             if (appEl) {
               appEl.className = 'font-bold text-emerald-700 flex items-center gap-1';
@@ -7019,6 +7034,7 @@
             if (detailsModal && !detailsModal.classList.contains('hidden')) {
               openDocDetails(docId);
             }
+            alert('🎉 Hồ sơ đã được lưu thành công vào OneDrive (5TB)!\n\nHồ sơ đã được tự động lưu trữ và ẩn khỏi danh sách để làm nhẹ ứng dụng.\nThầy/Cô có thể tick chọn mục "Lưu trữ Drive" trên thanh công cụ để xem lại bất cứ lúc nào.');
             return;
           }
         }
@@ -7035,6 +7051,7 @@
           if (detailsModal && !detailsModal.classList.contains('hidden')) {
             openDocDetails(docId);
           }
+          alert('🎉 Hồ sơ đã được lưu thành công vào OneDrive (5TB)!\n\nHồ sơ đã được tự động lưu trữ và ẩn khỏi danh sách để làm nhẹ ứng dụng.\nThầy/Cô có thể tick chọn mục "Lưu trữ Drive" trên thanh công cụ để xem lại bất cứ lúc nào.');
           return;
         }
 
@@ -7054,6 +7071,7 @@
         if (detailsModal && !detailsModal.classList.contains('hidden')) {
           openDocDetails(docId);
         }
+        alert('🎉 Hồ sơ đã được lưu thành công vào OneDrive (5TB)!\n\nHồ sơ đã được tự động lưu trữ và ẩn khỏi danh sách để làm nhẹ ứng dụng.\nThầy/Cô có thể tick chọn mục "Lưu trữ Drive" trên thanh công cụ để xem lại bất cứ lúc nào.');
       } catch (err) {
         if (typeof showAppNotice === 'function') {
           showAppNotice('Không thể lưu vào OneDrive: ' + err.message, 'Thông Báo', 'error');
