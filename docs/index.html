@@ -1749,18 +1749,22 @@
             </div>
           </div>
 
-          <!-- Khối hướng dẫn tinh tế thay thế nút bấm cũ: Thầy/cô mở ứng dụng VGCA trên điện thoại và nhấn đồng ý để ký -->
-          <div class="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-50/60 to-blue-50 border border-emerald-200 text-center shadow-xs space-y-1.5 transition">
+          <!-- Khối hướng dẫn & Nút xác nhận hoàn tất ký sau khi thao tác trên điện thoại -->
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-50/60 to-blue-50 border border-emerald-200 text-center shadow-xs space-y-2 transition">
             <div class="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-emerald-600 text-white shadow-xs mx-auto mb-0.5">
               <i class="fa-solid fa-mobile-screen-button text-base animate-pulse"></i>
             </div>
             <h4 class="text-sm font-bold text-emerald-950 tracking-tight leading-snug">
-              Thầy/cô mở ứng dụng VGCA trên điện thoại và nhấn đồng ý để ký
+              Thầy/cô mở ứng dụng SmartCA / VGCA trên điện thoại và nhấn [ĐỒNG Ý]
             </h4>
             <p class="text-[11px] text-emerald-800/80 font-medium">
-              Hệ thống sẽ tự động hoàn tất và niêm phong văn bản ngay khi nhận được xác nhận từ điện thoại.
+              Sau khi đã bấm [Đồng ý] trên màn hình điện thoại, Thầy/Cô vui lòng nhấn nút bên dưới để hoàn tất niêm phong chữ ký số:
             </p>
-            <button type="button" id="btnVgcaConfirmFromPhone" onclick="handleUserConfirmedOnPhone()" class="hidden"></button>
+            <button type="button" id="btnVgcaConfirmFromPhone" onclick="handleUserConfirmedOnPhone()" 
+              class="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer mt-1">
+              <i class="fa-solid fa-circle-check text-base"></i>
+              <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>
+            </button>
           </div>
 
           <!-- Nút thao tác phụ -->
@@ -6058,8 +6062,38 @@
           }
         }, 1000);
 
-        // Kích hoạt ngay lệnh ký gửi push notification tới điện thoại
-        startAgentSigningWorkflow(ping.host);
+        // Đảm bảo nút xác nhận sẵn sàng để người dùng nhấn sau khi bấm [Đồng ý] trên điện thoại
+        const btnConfirm = document.getElementById('btnVgcaConfirmFromPhone');
+        if (btnConfirm) {
+          btnConfirm.disabled = false;
+          btnConfirm.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i> <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>';
+        }
+
+        // Bắt đầu Polling tự động kiểm tra xem thiết bị di động đã xác nhận chưa
+        if (vgcaPollTimer) clearInterval(vgcaPollTimer);
+        vgcaPollTimer = setInterval(async () => {
+          if (!activeVgcaTxId || isConfirmingSession || isAgentSigningActive) return;
+          try {
+            const pollRes = await fetch(`/api/vgca/session-status/${activeVgcaTxId}`, {
+              headers: { 'Authorization': `Bearer ${authToken}` },
+              cache: 'no-store'
+            });
+            if (pollRes.ok) {
+              const pollData = await pollRes.json();
+              if (pollData && pollData.data && pollData.data.status === 'CONFIRMED') {
+                console.log('[EduSign] Phát hiện phiên ký đã được xác nhận từ điện thoại:', activeVgcaTxId);
+                clearInterval(vgcaPollTimer);
+                vgcaPollTimer = null;
+                handleUserConfirmedOnPhone();
+              } else if (pollData && pollData.data && pollData.data.status === 'CANCELLED') {
+                clearInterval(vgcaPollTimer);
+                vgcaPollTimer = null;
+                closeVgcaMobileAuthModal();
+                showAppNotice('Yêu cầu ký số đã bị từ chối trên thiết bị điện thoại.', 'Đã Từ Chối Ký Số', 'warning');
+              }
+            }
+          } catch (ePoll) {}
+        }, 2500);
 
       } catch (err) {
         showAppNotice('Lỗi khởi tạo phiên xác thực VGCA: ' + err.message, 'Lỗi Khởi Tạo', 'error');
@@ -6152,112 +6186,17 @@
       const ping = await pingLocalSigner(800);
       updateAgentStatusBox(ping);
       if (ping.available) {
-        startAgentSigningWorkflow(ping.host);
+        window._lastLocalSignerPing = ping;
+        if (typeof showToast === 'function') {
+          showToast('Đã kết nối thành công với EduSign Agent!', 'success');
+        }
       } else {
         alert('Vẫn chưa phát hiện EduSign Agent!\n\nVui lòng chắc chắn đã chạy tệp EduSign_Agent.exe trên máy tính để biểu tượng khiên xanh hiển thị ở góc khay hệ thống (cạnh đồng hồ).');
       }
     }
 
     async function startAgentSigningWorkflow(localHost) {
-      if (isAgentSigningActive || isConfirmingSession) return;
-      isAgentSigningActive = true;
-
-      if (vgcaPollTimer) {
-        clearInterval(vgcaPollTimer);
-        vgcaPollTimer = null;
-      }
-
-      const desc = document.getElementById('vgcaModalStatusDesc');
-      if (desc) {
-        desc.innerHTML = '📲 <strong>ĐÃ GỬI TÍN HIỆU TỚI THIẾT BỊ DI ĐỘNG!</strong><br>Xin mời bạn mở thông báo trên điện thoại và nhấn <strong>[ĐỒNG Ý]</strong> để hoàn tất niêm phong chữ ký số.';
-      }
-
-      const btn = document.getElementById('btnVgcaConfirmFromPhone');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang kết nối EduSign Agent & chờ xác nhận...</span>';
-      }
-
-      try {
-        if (currentVgcaSigningOptions && typeof currentVgcaSigningOptions.action === 'function') {
-          const signResult = await currentVgcaSigningOptions.action({
-            txId: activeVgcaTxId,
-            mode: 'smartca',
-            localHost: localHost
-          });
-
-          // Đã nhận chữ ký và hoàn tất!
-          if (vgcaCountdownTimer) {
-            clearInterval(vgcaCountdownTimer);
-            vgcaCountdownTimer = null;
-          }
-          if (vgcaPollTimer) {
-            clearInterval(vgcaPollTimer);
-            vgcaPollTimer = null;
-          }
-
-          if (activeVgcaTxId) {
-            try {
-              await fetch('/api/vgca/confirm-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                body: JSON.stringify({ txId: activeVgcaTxId })
-              });
-            } catch (e) {}
-          }
-
-          // Chuyển sang màn hình thành công xanh lá
-          const step2 = document.getElementById('vgcaStep2Container');
-          const successAlert = document.getElementById('vgcaAuthSuccessAlert');
-          if (step2) step2.classList.add('hidden');
-          if (successAlert) successAlert.classList.remove('hidden');
-
-          setTimeout(() => {
-            const savedOptions = currentVgcaSigningOptions;
-            closeVgcaMobileAuthModal();
-            if (savedOptions && typeof savedOptions.onSuccess === 'function') {
-              savedOptions.onSuccess(signResult);
-            }
-          }, 1200);
-        }
-      } catch (err) {
-        console.error('[EduSign] Lỗi trong tiến trình ký qua Agent:', err);
-        isAgentSigningActive = false;
-
-        // DỪNG ĐẾM NGƯỢC VÀ ĐÓNG MODAL h3 NGAY LẬP TỨC!
-        if (vgcaCountdownTimer) { clearInterval(vgcaCountdownTimer); vgcaCountdownTimer = null; }
-        if (vgcaPollTimer) { clearInterval(vgcaPollTimer); vgcaPollTimer = null; }
-        closeVgcaMobileAuthModal();
-
-        if (err && err.cancelled) {
-          showAppNotice(
-            `<p class="font-bold text-slate-800 text-sm">🛑 ĐÃ HỦY PHIÊN KÝ SỐ</p>` +
-            `<p class="text-slate-600 text-xs mt-1.5">Yêu cầu xác nhận ký số đã bị từ chối hoặc hủy bỏ trên thiết bị điện thoại. Hồ sơ chưa được niêm phong.</p>`,
-            'Hủy Bỏ Phiên Ký',
-            'warning'
-          );
-          return;
-        }
-
-        // BÁO LỖI CHI TIẾT CHO NGƯỜI DÙNG, TUYỆT ĐỐI KHÔNG FALLBACK SANG CLOUD SMARTCA!
-        showAppNotice(
-          `<p class="font-bold text-rose-800 text-sm">🛑 QUÁ TRÌNH KÝ SỐ BỊ GIÁN ĐOẠN!</p>` +
-          `<div class="p-2.5 bg-rose-50 rounded-xl border border-rose-200 text-rose-900 font-mono text-xs mt-2 leading-relaxed">` +
-          `  ${err.message || 'Lỗi không xác định từ dịch vụ ký số Ban Cơ yếu'}` +
-          `</div>` +
-          `<p class="text-slate-600 text-xs mt-2 font-medium">Khuyến nghị:</p>` +
-          `<ul class="list-disc list-inside text-slate-600 text-xs mt-1 space-y-1">` +
-          `  <li>Vui lòng kiểm tra lại phần mềm <strong>Virtual CSP</strong> trên máy tính và đăng nhập lại.</li>` +
-          `  <li>Nếu dùng USB Token, vui lòng rút ra và cắm lại.</li>` +
-          `  <li>Khởi động lại <strong>EduSign Agent</strong> và thử lại.</li>` +
-          `</ul>`,
-          'Sự Cố Ký Số Ban Cơ Yếu',
-          'error'
-        );
-        return;
-      } finally {
-        isAgentSigningActive = false;
-      }
+      return await handleUserConfirmedOnPhone();
     }
 
     /**
@@ -6285,7 +6224,7 @@
       const origHtml = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang liên hệ Ban Cơ yếu để niêm phong mật mã...</span>';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-base"></i> <span>Đang kết nối EduSign Agent & niêm phong chữ ký số...</span>';
       }
 
       let timeoutFired = false;
@@ -6319,9 +6258,11 @@
 
         // 2. Thực thi action ký số thật với mã phiên đã được CONFIRMED
         if (currentVgcaSigningOptions && typeof currentVgcaSigningOptions.action === 'function') {
+          const localHost = (window._lastLocalSignerPing && window._lastLocalSignerPing.host) || 'http://127.0.0.1:18888';
           const signResult = await currentVgcaSigningOptions.action({
             txId: activeVgcaTxId,
-            mode: 'smartca'
+            mode: 'smartca',
+            localHost: localHost
           });
 
           clearTimeout(safetyTimeout);
@@ -6355,11 +6296,28 @@
       } catch (err) {
         clearTimeout(safetyTimeout);
         console.error('Lỗi hoàn tất ký số:', err);
-        alert('⚠️ Chưa thể hoàn tất ký số: ' + (err.message || err));
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = origHtml;
         }
+        if (err && err.cancelled) {
+          closeVgcaMobileAuthModal();
+          showAppNotice(
+            `<p class="font-bold text-slate-800 text-sm">🛑 ĐÃ HỦY PHIÊN KÝ SỐ</p>` +
+            `<p class="text-slate-600 text-xs mt-1.5">Yêu cầu xác nhận ký số đã bị từ chối hoặc hủy bỏ trên thiết bị điện thoại. Hồ sơ chưa được niêm phong.</p>`,
+            'Hủy Bỏ Phiên Ký',
+            'warning'
+          );
+          return;
+        }
+        showAppNotice(
+          `<p class="font-bold text-rose-800 text-sm">🛑 QUÁ TRÌNH KÝ SỐ BỊ GIÁN ĐOẠN!</p>` +
+          `<div class="p-2.5 bg-rose-50 rounded-xl border border-rose-200 text-rose-900 font-mono text-xs mt-2 leading-relaxed">` +
+          `  ${err.message || 'Lỗi không xác định khi hoàn tất ký số'}` +
+          `</div>`,
+          'Lỗi Ký Số',
+          'error'
+        );
       } finally {
         isConfirmingSession = false;
       }
