@@ -1090,8 +1090,19 @@ function checkVgcaSystemStatus(forceRefresh = false) {
     appName: null,
     tokenConnected: false,
     certInfo: null,
+    isMaintenance: false,
     details: ''
   };
+
+  const maintenanceFlag = path.join(__dirname, 'data', 'vgca_maintenance.flag');
+  if (process.env.VGCA_MAINTENANCE === 'true' || fs.existsSync(maintenanceFlag)) {
+    result.isMaintenance = true;
+    result.statusCode = 'CODE_MAINTENANCE';
+    result.details = 'Hệ thống Ký số Tập trung VGCA / SmartCA của Ban Cơ yếu Chính phủ hiện đang trong phiên bảo trì kỹ thuật. Tính năng ký số tạm khóa để đảm bảo an toàn.';
+    vgcaStatusCache = result;
+    vgcaStatusCacheTime = now;
+    return result;
+  }
 
   if (process.platform === 'win32') {
     try {
@@ -1912,17 +1923,18 @@ app.post('/api/documents/:id/forward-sign', requireAuth, async (req, res) => {
     return res.status(403).json({ success: false, message: 'Bạn không nằm trong danh sách người ký duyệt của hồ sơ này!' });
   }
 
-  const { comment, signPlacement, signatureImage, realSignedPdfBase64, nextSignerId, nextSignerName, nextSignerRole, isFinalBgh } = req.body;
+  const { comment, signPlacement, signatureImage, realSignedPdfBase64, nextSignerId, nextSignerName, nextSignerRole, isFinalBgh, isFinish } = req.body;
   const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   let activeSigImage = signatureImage || currentUser.signatureImage || null;
-  if (isFinalBgh || currentUser.role === 'BGH' || currentUser.role === 'ADMIN') {
+  if (isFinalBgh || isFinish || currentUser.role === 'BGH' || currentUser.role === 'ADMIN') {
     const sealPath = path.join(__dirname, 'uploads', 'signatures', 'school_seal.png');
     if (fs.existsSync(sealPath) && !activeSigImage) {
       activeSigImage = `data:image/png;base64,${fs.readFileSync(sealPath).toString('base64')}`;
     }
   }
 
+  const isCompletedSign = Boolean(isFinish || isFinalBgh || !nextSignerId);
   const newStep = (doc.signatures && doc.signatures.length ? doc.signatures.length : 1) + 1;
   const sig = {
     step: newStep,
@@ -1943,8 +1955,8 @@ app.post('/api/documents/:id/forward-sign', requireAuth, async (req, res) => {
     {
       time: now,
       actor: `${currentUser.name} (${currentUser.roleTitle || currentUser.role})`,
-      action: isFinalBgh || !nextSignerId
-        ? `Đã ký duyệt cấp ${newStep}. Hồ sơ đã hoàn tất mọi chữ ký, sẵn sàng xác nhận lưu trữ!`
+      action: isCompletedSign
+        ? `Đã ký duyệt cấp ${newStep}. Hồ sơ đã hoàn tất mọi chữ ký, sẵn sàng bấm [Xác nhận hoàn thành & Lưu trữ]!`
         : `Đã ký duyệt cấp ${newStep} và chuyển tiếp cho ${nextSignerName || 'người tiếp theo'}`
     }
   ];
@@ -1970,12 +1982,12 @@ app.post('/api/documents/:id/forward-sign', requireAuth, async (req, res) => {
     }
   }
 
-  if (isFinalBgh || !nextSignerId) {
+  if (isCompletedSign) {
     updateFields.status = 'APPROVED';
     updateFields.nextSignerId = null;
     updateFields.nextSignerName = null;
     updateFields.nextSignerRole = null;
-    updateFields.currentSignerRole = 'Đã hoàn tất các cấp ký';
+    updateFields.currentSignerRole = 'Đã hoàn tất các cấp ký - Chờ xác nhận lưu trữ';
   } else {
     updateFields.status = 'WAITING_NEXT_SIGN';
     updateFields.nextSignerId = nextSignerId;
@@ -1987,7 +1999,7 @@ app.post('/api/documents/:id/forward-sign', requireAuth, async (req, res) => {
   const updatedDoc = dataStore.updateDocument(doc.id, updateFields);
 
   // Gửi push notification cho người ký tiếp theo hoặc báo cho người lập bài
-  if (nextSignerId) {
+  if (nextSignerId && !isCompletedSign) {
     notifyUserWebPush(nextSignerId, {
       title: 'Báo cáo cần ký duyệt',
       body: `${currentUser.name} đã ký và chuyển tiếp báo cáo "${doc.title}" cho thầy/cô ký duyệt.`,
@@ -2006,8 +2018,8 @@ app.post('/api/documents/:id/forward-sign', requireAuth, async (req, res) => {
 
   res.json({
     success: true,
-    message: isFinalBgh || !nextSignerId
-      ? 'Đã ký hoàn tất các cấp! Người tạo hoặc BGH có thể nhấn [Xác nhận hoàn thành] để lưu trữ.'
+    message: isCompletedSign
+      ? 'Đã ký hoàn tất các cấp! Thầy/Cô hãy nhấn nút [Xác nhận hoàn thành & Lưu trữ] để tải lên Google Drive của trường.'
       : `Đã ký và chuyển tiếp thành công đến ${nextSignerName || 'người ký tiếp theo'}!`,
     data: updatedDoc,
     doc: updatedDoc
@@ -2020,11 +2032,13 @@ app.post('/api/documents/:id/confirm-complete', requireAuth, async (req, res) =>
   const doc = dataStore.getDocumentById(req.params.id);
   if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
 
-  // Kiểm tra quyền: Người lập hoặc BGH / Admin
-  const isAuthor = doc.authorId === currentUser.id;
+  // Kiểm tra quyền: Người lập, BGH / Admin hoặc Người ký cuối cùng (Last Signer)
+  const isAuthor = doc.authorId === currentUser.id || doc.authorUsername === currentUser.username || doc.createdBy === currentUser.id || doc.createdBy === currentUser.username;
   const isAdminOrBgh = currentUser.role === 'ADMIN' || currentUser.role === 'BGH';
-  if (!isAuthor && !isAdminOrBgh) {
-    return res.status(403).json({ success: false, message: 'Chỉ người lập báo cáo hoặc Ban Giám hiệu mới có quyền Xác nhận hoàn thành!' });
+  const lastSig = (doc.signatures && doc.signatures.length > 0) ? doc.signatures[doc.signatures.length - 1] : null;
+  const isLastSigner = lastSig && (lastSig.signerName === currentUser.name || lastSig.signerUnit === currentUser.department);
+  if (!isAuthor && !isAdminOrBgh && !isLastSigner) {
+    return res.status(403).json({ success: false, message: 'Chỉ người ký cuối cùng, người lập báo cáo hoặc Ban Giám hiệu mới có quyền Xác nhận hoàn thành!' });
   }
 
   try {
@@ -2054,7 +2068,7 @@ app.post('/api/documents/:id/confirm-complete', requireAuth, async (req, res) =>
     if (doc.authorId && doc.authorId !== currentUser.id) {
       notifyUserWebPush(doc.authorId, {
         title: 'Hồ sơ đã được xác nhận hoàn thành',
-        body: `Báo cáo "${doc.title}" đã được lưu trữ an toàn vào Google Drive của trường.`,
+        body: `Báo cáo "${doc.title}" đã được lưu trữ an toàn vào Google Drive của trường và ẩn khỏi bảng xử lý.`,
         url: `/?docId=${doc.id}`
       });
     }
@@ -2286,15 +2300,17 @@ app.post('/api/documents/:id/approve-principal', requireAuth, (req, res) => {
   });
 });
 
-// Yêu cầu chỉnh sửa / Trả về cho giáo viên
+// Yêu cầu chỉnh sửa / Từ chối ký / Trả về cho tác giả
 app.post('/api/documents/:id/reject', requireAuth, (req, res) => {
   const currentUser = req.user;
-  if (currentUser.role !== 'HEAD_DEPT' && currentUser.role !== 'ADMIN' && currentUser.role !== 'BGH') {
-    return res.status(403).json({ success: false, message: 'Bạn không có quyền từ chối hồ sơ này!' });
-  }
-
   const doc = dataStore.getDocumentById(req.params.id);
   if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
+
+  const isDesignated = doc.nextSignerId === currentUser.id || doc.nextSignerId === currentUser.username;
+  const isLeaderOrAdmin = currentUser.role === 'HEAD_DEPT' || currentUser.role === 'ADMIN' || currentUser.role === 'BGH';
+  if (!isDesignated && !isLeaderOrAdmin) {
+    return res.status(403).json({ success: false, message: 'Bạn không có quyền từ chối hồ sơ này!' });
+  }
 
   const { reason } = req.body;
   const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
@@ -2304,46 +2320,54 @@ app.post('/api/documents/:id/reject', requireAuth, (req, res) => {
     {
       time: now,
       actor: `${currentUser.name} (${currentUser.roleTitle || currentUser.role})`,
-      action: `Yêu cầu chỉnh sửa: "${reason || 'Chưa đúng chuẩn phân phối chương trình'}"`
+      action: `Từ chối ký / Yêu cầu chỉnh sửa: "${reason || 'Nội dung chưa đạt yêu cầu'}"`
     }
   ];
 
   const updatedDoc = dataStore.updateDocument(doc.id, {
     status: 'REJECTED',
-    currentSignerRole: 'Giáo viên chỉnh sửa',
+    currentSignerRole: 'Tác giả chỉnh sửa / Nộp lại',
+    rejectReason: reason || 'Nội dung chưa đạt yêu cầu',
+    rejectedBy: currentUser.name,
+    rejectedAt: now,
+    nextSignerId: null,
+    nextSignerName: null,
+    nextSignerRole: null,
     logs: updatedLogs
   });
 
   // Bắn Web Push thông báo cho tác giả
   if (doc.authorId) {
     notifyUserWebPush(doc.authorId, {
-      title: 'Hồ sơ bị trả về chỉnh sửa',
-      body: `Hồ sơ "${doc.title}" cần chỉnh sửa: ${reason || 'Vui lòng kiểm tra lại nội dung.'}`,
+      title: 'Hồ sơ bị từ chối / trả về chỉnh sửa',
+      body: `Hồ sơ "${doc.title}" bị từ chối bởi ${currentUser.name}: ${reason || 'Vui lòng kiểm tra lại nội dung.'}`,
       url: `/?docId=${doc.id}`
     });
   }
 
   res.json({
     success: true,
-    message: 'Đã trả hồ sơ về cho giáo viên chỉnh sửa theo yêu cầu!',
+    message: 'Đã từ chối và trả hồ sơ về cho tác giả chỉnh sửa!',
     data: updatedDoc
   });
 });
 
-// Thu hồi kế hoạch bài dạy khi Tổ trưởng chưa ký duyệt (Chỉ tác giả hoặc Admin)
+// Thu hồi hồ sơ khi người tiếp theo chưa ký duyệt (Chỉ tác giả hoặc Admin)
 app.post('/api/documents/:id/recall', requireAuth, (req, res) => {
   const doc = dataStore.getDocumentById(req.params.id);
   if (!doc) return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ' });
 
-  const isAuthor = doc.authorId === req.user.id || doc.authorUsername === req.user.username;
+  const isAuthor = doc.authorId === req.user.id || doc.authorUsername === req.user.username || doc.createdBy === req.user.id || doc.createdBy === req.user.username;
   if (req.user.role !== 'ADMIN' && !isAuthor) {
-    return res.status(403).json({ success: false, message: 'Bạn chỉ có quyền thu hồi hồ sơ do chính mình nộp!' });
+    return res.status(403).json({ success: false, message: 'Bạn chỉ có quyền thu hồi hồ sơ do chính mình tạo!' });
   }
 
-  if (doc.status !== 'WAITING_LEADER_APPROVAL') {
+  // Cho phép thu hồi khi người kế tiếp chưa ký (trạng thái WAITING_LEADER_APPROVAL, WAITING_NEXT_SIGN, IN_PROGRESS, PENDING)
+  const allowedStatuses = ['WAITING_LEADER_APPROVAL', 'WAITING_NEXT_SIGN', 'IN_PROGRESS', 'PENDING'];
+  if (!allowedStatuses.includes(doc.status)) {
     return res.status(400).json({ 
       success: false, 
-      message: 'Chỉ có thể thu hồi hồ sơ khi đang ở trạng thái "Chờ Tổ trưởng duyệt"!' 
+      message: 'Không thể thu hồi hồ sơ khi đã hoàn tất ký duyệt hoặc đã lưu trữ!' 
     });
   }
 
@@ -2352,21 +2376,24 @@ app.post('/api/documents/:id/recall', requireAuth, (req, res) => {
     ...(doc.logs || []),
     {
       time: now,
-      actor: `${req.user.name} (Giáo viên)`,
-      action: 'Đã thu hồi kế hoạch bài dạy trước khi Tổ trưởng phê duyệt để chỉnh sửa nội dung'
+      actor: `${req.user.name} (Tác giả)`,
+      action: 'Đã thu hồi hồ sơ trước khi cấp tiếp theo ký duyệt để chỉnh sửa nội dung'
     }
   ];
 
   const updatedDoc = dataStore.updateDocument(doc.id, {
     status: 'RECALLED',
-    currentSignerRole: 'Giáo viên chỉnh sửa / Nộp lại',
+    currentSignerRole: 'Tác giả chỉnh sửa / Nộp lại',
+    nextSignerId: null,
+    nextSignerName: null,
+    nextSignerRole: null,
     logs: updatedLogs
   });
 
   console.log(`[Document] Hồ sơ ${doc.id} đã được thu hồi bởi ${req.user.name}`);
   res.json({
     success: true,
-    message: 'Đã thu hồi kế hoạch bài dạy thành công! Bạn có thể chỉnh sửa nội dung và ký nộp lại.',
+    message: 'Đã thu hồi hồ sơ thành công! Bạn có thể chỉnh sửa nội dung hoặc nộp lại.',
     data: updatedDoc
   });
 });
@@ -2581,6 +2608,9 @@ app.post('/api/documents/:id/sync-onedrive', requireAuth, async (req, res) => {
       oneDrivePath: result.destinationPath,
       oneDriveCategory: result.category,
       oneDriveSyncedAt: now,
+      isArchived: true,
+      status: 'ARCHIVED',
+      archivedAt: now,
       logs: [
         ...(doc.logs || []),
         {
@@ -2612,6 +2642,9 @@ app.post('/api/documents/:id/mark-onedrive-synced', requireAuth, (req, res) => {
     oneDriveSynced: true,
     oneDriveCategory: category || '2. KẾ HOẠCH BÀI DẠY',
     oneDriveSyncedAt: now,
+    isArchived: true,
+    status: 'ARCHIVED',
+    archivedAt: now,
     logs: [
       ...(doc.logs || []),
       {

@@ -47,3 +47,6 @@ cloudflared.exe
 _BACKUPS/
 serviceAccountKey.json
 
+# Test outputs
+test-results/
+

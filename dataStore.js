@@ -53,6 +53,9 @@ function initDefaultUsers() {
         signType: 'USB_TOKEN',
         status: 'ACTIVE',
         email: 'bgh-dakha@quangngai.gov.vn',
+        officialEmail: 'bgh-dakha@quangngai.gov.vn',
+        cccd: '025E056A3F133DA9',
+        certSerial: '025E056A3F133DA9',
         school: 'TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN',
         phone: '0255.385.0001',
         createdAt: new Date().toISOString()
@@ -249,6 +252,9 @@ function createUser(userData) {
     signType: userData.signType || (userData.role === 'BGH' || userData.role === 'ADMIN' ? 'USB_TOKEN' : 'VGCA'), // VGCA, USB_TOKEN
     status: userData.status || 'ACTIVE', // ACTIVE, LOCKED
     email: userData.email ? userData.email.trim() : `${username}@thcschuvanan.edu.vn`,
+    officialEmail: userData.officialEmail ? userData.officialEmail.trim() : (userData.email ? userData.email.trim() : ''),
+    cccd: userData.cccd ? userData.cccd.trim() : '',
+    certSerial: userData.certSerial ? userData.certSerial.trim() : '',
     school: 'TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN',
     phone: userData.phone ? userData.phone.trim() : '',
     signatureImage: null,
@@ -297,6 +303,9 @@ function updateUser(id, updates) {
   if (updates.signType !== undefined) users[index].signType = updates.signType;
   if (updates.status !== undefined) users[index].status = updates.status;
   if (updates.email) users[index].email = updates.email.trim();
+  if (updates.officialEmail !== undefined) users[index].officialEmail = updates.officialEmail.trim();
+  if (updates.cccd !== undefined) users[index].cccd = updates.cccd.trim();
+  if (updates.certSerial !== undefined) users[index].certSerial = updates.certSerial.trim();
   if (updates.phone !== undefined) users[index].phone = updates.phone.trim();
   if (updates.signatureImage !== undefined) users[index].signatureImage = updates.signatureImage;
   if (updates.vgcaAuth !== undefined) users[index].vgcaAuth = updates.vgcaAuth;

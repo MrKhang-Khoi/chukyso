@@ -2534,6 +2534,11 @@
       authToken = null;
       currentUser = null;
       localStorage.removeItem('edusign_token');
+      localStorage.removeItem('edusign_vgca_user');
+      localStorage.removeItem('edusign_active_signer');
+      localStorage.removeItem('edusign_last_cert');
+      sessionStorage.clear();
+      window._lastDetectedVgcaCert = null;
       document.getElementById('docsTableBody').innerHTML = '';
       const usersTbody = document.getElementById('usersTableBody');
       if (usersTbody) usersTbody.innerHTML = '';
@@ -3356,6 +3361,18 @@
       }
     }
 
+    async function handleResubmitDoc(docId) {
+      const doc = (currentDocList || []).find(d => d.id === docId);
+      if (!doc) return;
+      if (confirm(`Bạn muốn chỉnh sửa và nộp lại hồ sơ: "${doc.title}"?\n\nNhấn OK để mở giao diện ký số và gửi lại cho người duyệt tiếp theo.`)) {
+        if (doc.category === 'REPORT') {
+          openForwardSignModal(docId);
+        } else {
+          viewSignedDocument(docId);
+        }
+      }
+    }
+
     async function openDocumentViewer(title, fileObject, docId, enableSigning = false) {
       const modal = document.getElementById('modalDocViewer');
       const titleEl = document.getElementById('viewerDocTitle');
@@ -3675,8 +3692,12 @@
       const floatingBar = document.getElementById('floatingSelectionBar');
       if (floatingBar) { floatingBar.classList.add('hidden'); floatingBar.classList.remove('flex'); }
 
-      // LỌC NGHIÊM NGẶT THEO TAB HIỆN TẠI (Tab 1: Cá nhân vs Tab 2: Báo cáo luân chuyển)
+      // LỌC NGHIÊM NGẶT THEO TAB HIỆN TẠI & TRẠNG THÁI LƯU TRỮ (Tab 1: Cá nhân vs Tab 2: Báo cáo luân chuyển)
       const filteredDocs = (docs || []).filter(d => {
+        const isArchived = Boolean(d.isArchived || d.status === 'ARCHIVED');
+        if (!isShowingArchived && isArchived) return false;
+        if (isShowingArchived && !isArchived) return false;
+
         if (activeDocCategory === 'REPORT') {
           return d.category === 'REPORT';
         } else {
@@ -3711,24 +3732,39 @@
         const isDocx = (d.fileName || '').endsWith('.docx') || (d.fileName || '').endsWith('.doc');
         const fileIcon = isDocx ? '<i class="fa-solid fa-file-word text-blue-600"></i>' : '<i class="fa-solid fa-file-pdf text-red-600"></i>';
 
-        const isAuthor = currentUser && (d.authorId === currentUser.id || d.authorUsername === currentUser.username);
+        const isAuthor = currentUser && (d.authorId === currentUser.id || d.authorUsername === currentUser.username || d.createdBy === currentUser.id || d.createdBy === currentUser.username);
         const isAdmin = currentUser && currentUser.role === 'ADMIN';
         const isBgh = currentUser && (currentUser.role === 'BGH' || currentUser.role === 'ADMIN');
         const isOneDriveSynced = d.oneDriveSynced || d.oneDriveInfo;
 
         // Quyền Ký tiếp (Tab 2)
-        const canForwardSign = (d.category === 'REPORT' && d.status !== 'APPROVED' && d.status !== 'COMPLETED' && !d.isArchived) && (
-          (d.nextSignerId && currentUser && d.nextSignerId === currentUser.id) ||
+        const canForwardSign = (d.category === 'REPORT' && d.status !== 'APPROVED' && d.status !== 'COMPLETED' && !d.isArchived && d.status !== 'ARCHIVED' && d.status !== 'REJECTED' && d.status !== 'RECALLED') && (
+          (d.nextSignerId && currentUser && (d.nextSignerId === currentUser.id || d.nextSignerId === currentUser.username)) ||
           isBgh ||
           (d.status === 'WAITING_LEADER_APPROVAL' && currentUser && currentUser.role === 'HEAD_DEPT' && d.department === currentUser.department)
         );
 
-        // Quyền Xác nhận hoàn thành (Tab 2)
-        const canConfirmComplete = (d.category === 'REPORT' && !d.isArchived) && (
+        // Quyền Từ chối ký / Yêu cầu chỉnh sửa (Tab 2)
+        const canReject = (d.category === 'REPORT' && !d.isArchived && d.status !== 'ARCHIVED' && (d.status === 'WAITING_NEXT_SIGN' || d.status === 'WAITING_LEADER_APPROVAL')) && (
+          (d.nextSignerId && currentUser && (d.nextSignerId === currentUser.id || d.nextSignerId === currentUser.username)) ||
+          isBgh ||
+          (d.status === 'WAITING_LEADER_APPROVAL' && currentUser && currentUser.role === 'HEAD_DEPT' && d.department === currentUser.department)
+        );
+
+        // Quyền Xác nhận hoàn thành (Tab 2): Người ký cuối cùng, Ban Giám hiệu hoặc Người lập
+        const lastSig = (d.signatures && d.signatures.length > 0) ? d.signatures[d.signatures.length - 1] : null;
+        const isLastSigner = lastSig && currentUser && (lastSig.signerName === currentUser.name || lastSig.signerUnit === currentUser.department);
+        const canConfirmComplete = (d.category === 'REPORT' && !d.isArchived && d.status !== 'ARCHIVED') && (
           d.status === 'APPROVED' || (d.signatures && d.signatures.length >= 2)
         ) && (
-          isAuthor || isBgh
+          isLastSigner || isAuthor || isBgh
         );
+
+        // Quyền Thu hồi: Tác giả hoặc Admin khi người tiếp theo chưa ký duyệt
+        const canRecall = d.category === 'REPORT' && !d.isArchived && d.status !== 'ARCHIVED' && (d.status === 'WAITING_LEADER_APPROVAL' || d.status === 'WAITING_NEXT_SIGN' || d.status === 'IN_PROGRESS' || d.status === 'PENDING') && (isAuthor || isAdmin);
+
+        // Quyền Sửa & Gửi lại: Tác giả khi hồ sơ bị từ chối hoặc thu hồi
+        const canResubmit = (d.status === 'RECALLED' || d.status === 'REJECTED') && (isAuthor || isAdmin);
 
         let actionBtns = `
           <button onclick="viewSignedDocument('${d.id}')" title="Xem văn bản đã ký số" class="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 font-bold transition text-xs flex items-center gap-1 shadow-2xs cursor-pointer">
@@ -3756,6 +3792,14 @@
           `;
         }
 
+        if (canReject) {
+          actionBtns += `
+            <button onclick="rejectDoc('${d.id}')" title="Từ chối ký / Trả về cho tác giả chỉnh sửa" class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold transition text-xs flex items-center gap-1 cursor-pointer">
+              <i class="fa-solid fa-ban text-rose-600"></i> Từ chối
+            </button>
+          `;
+        }
+
         if (canConfirmComplete) {
           actionBtns += `
             <button onclick="confirmCompleteReport('${d.id}')" title="Xác nhận hoàn thành, đẩy lên Google Drive và lưu trữ" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer">
@@ -3764,11 +3808,18 @@
           `;
         }
 
-        // Nút Thu hồi: CHỈ ÁP DỤNG CHO BÁO CÁO LUÂN CHUYỂN (TAB 2) KHI CHƯA ĐƯỢC KÝ DUYỆT TIẾP THEO
-        if (d.category === 'REPORT' && (d.status === 'WAITING_LEADER_APPROVAL' || d.status === 'WAITING_NEXT_SIGN') && (isAuthor || isAdmin)) {
+        if (canRecall) {
           actionBtns += `
-            <button onclick="handleRecallDoc('${d.id}')" title="Thu hồi báo cáo đã gửi" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold transition text-xs flex items-center gap-1 cursor-pointer">
+            <button onclick="handleRecallDoc('${d.id}')" title="Thu hồi báo cáo đã gửi để chỉnh sửa" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold transition text-xs flex items-center gap-1 cursor-pointer">
               <i class="fa-solid fa-rotate-left"></i> Thu hồi
+            </button>
+          `;
+        }
+
+        if (canResubmit) {
+          actionBtns += `
+            <button onclick="handleResubmitDoc('${d.id}')" title="Chỉnh sửa nội dung và gửi lại báo cáo" class="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer">
+              <i class="fa-solid fa-pen-to-square"></i> Sửa & Gửi lại
             </button>
           `;
         }
@@ -3887,7 +3938,10 @@
 
               <div class="flex items-center gap-1.5 flex-wrap">
                 ${canForwardSign ? `<button onclick="openForwardSignModal('${d.id}')" class="min-h-[38px] px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer"><i class="fa-solid fa-file-pen text-xs"></i> Ký tiếp</button>` : ''}
+                ${canReject ? `<button onclick="rejectDoc('${d.id}')" class="min-h-[38px] px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold transition text-xs border border-rose-200 cursor-pointer"><i class="fa-solid fa-ban text-rose-600"></i> Từ chối</button>` : ''}
                 ${canConfirmComplete ? `<button onclick="confirmCompleteReport('${d.id}')" class="min-h-[38px] px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition text-xs flex items-center gap-1 shadow-xs cursor-pointer"><i class="fa-solid fa-cloud-arrow-up text-xs"></i> Hoàn thành</button>` : ''}
+                ${canRecall ? `<button onclick="handleRecallDoc('${d.id}')" class="min-h-[38px] px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold transition text-xs border border-amber-200 cursor-pointer"><i class="fa-solid fa-rotate-left"></i> Thu hồi</button>` : ''}
+                ${canResubmit ? `<button onclick="handleResubmitDoc('${d.id}')" class="min-h-[38px] px-2.5 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-bold transition text-xs shadow-xs cursor-pointer"><i class="fa-solid fa-pen-to-square"></i> Sửa lại</button>` : ''}
                 ${d.category === 'PERSONAL' && !isOneDriveSynced ? `<button onclick="handleSyncDocToOneDrive('${d.id}')" class="min-h-[38px] px-2.5 py-1.5 rounded-xl bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold transition text-xs border border-sky-200 cursor-pointer"><i class="fa-brands fa-microsoft"></i> Lưu Drive</button>` : ''}
               </div>
             </div>
@@ -5538,6 +5592,10 @@
         const curVer = (ping.data && (ping.data.agentVersion || ping.data.version)) || '2.0.0';
         const latVer = (ping.data && ping.data.latestVersion) || '2.0.1';
 
+        const dismissedVer = localStorage.getItem('edusign_dismissed_update');
+        const isAlreadyNewest = curVer === latVer || curVer >= latVer;
+        const showUpdate = hasUp && !isAlreadyNewest && (dismissedVer !== latVer);
+
         box.className = 'py-2 px-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800 transition shadow-2xs gap-2';
         box.innerHTML = `
           <div class="flex items-center gap-2">
@@ -5547,13 +5605,18 @@
             </span>
             <span class="font-bold text-emerald-800 text-xs">Đã kết nối EduSign Agent (v${curVer})</span>
           </div>
-          ${hasUp ? `
-            <button type="button" onclick="triggerAgentUpdate('${ping.host}')" 
-              class="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-[11px] rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer transition transform hover:scale-105"
-              title="Có bản nâng cấp mới v${latVer}. Nhấn để mở giao diện tự động cập nhật!">
-              <i class="fa-solid fa-sparkles"></i>
-              <span>Cập nhật v${latVer}</span>
-            </button>
+          ${showUpdate ? `
+            <div class="flex items-center gap-1">
+              <button type="button" onclick="triggerAgentUpdate('${ping.host}')" 
+                class="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-[11px] rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer transition transform hover:scale-105"
+                title="Có bản nâng cấp mới v${latVer}. Nhấn để mở giao diện tự động cập nhật!">
+                <i class="fa-solid fa-sparkles"></i>
+                <span>Cập nhật v${latVer}</span>
+              </button>
+              <button type="button" onclick="dismissAgentUpdate('${latVer}')" class="text-slate-400 hover:text-slate-600 p-1 text-[11px] cursor-pointer" title="Ẩn thông báo này">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
           ` : ''}
         `;
       } else {
@@ -5582,6 +5645,12 @@
       } catch (e) {
         console.error('Trigger agent update failed:', e);
       }
+    }
+
+    function dismissAgentUpdate(ver) {
+      if (ver) localStorage.setItem('edusign_dismissed_update', ver);
+      const ping = window._lastLocalSignerPing;
+      if (ping) updateAgentStatusBox(ping);
     }
 
     async function retryConnectAgent() {
@@ -7901,12 +7970,15 @@
     function onForwardTargetChange(val) {
       const selectArea = document.getElementById('forwardSelectSignerArea');
       const selectEl = document.getElementById('forwardNextSignerSelect');
+      const btn = document.getElementById('btnSubmitForwardSign');
       if (val === 'FINAL_FINISH') {
         if (selectArea) selectArea.classList.add('hidden');
         if (selectEl) selectEl.removeAttribute('required');
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-check-double text-xs"></i> <span>Ký số & Chốt Hoàn Tất</span>';
       } else {
         if (selectArea) selectArea.classList.remove('hidden');
         if (selectEl) selectEl.setAttribute('required', 'required');
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-paper-plane text-xs"></i> <span>Ký & Chuyển Tiếp Ngay</span>';
       }
     }
 
