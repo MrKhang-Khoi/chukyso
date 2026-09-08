@@ -1074,16 +1074,17 @@ namespace RealPdfSigner
                         // === Fix E: Match chính xác expectedSigner ===
                         string emailInCert   = ExtractEmail(cert.Subject).ToLowerInvariant();
                         string cnInCert      = ExtractCn(cert.Subject).ToLowerInvariant();
-                        bool matchEmail  = !string.IsNullOrEmpty(emailInCert) && emailInCert.Contains(cleanExpected);
-                        bool matchCn     = cnInCert.Contains(cleanExpected);
-                        bool matchSerial = cert.SerialNumber.Equals(cleanExpected, StringComparison.OrdinalIgnoreCase);
-                        bool matchSubj   = subjectLower.Contains(cleanExpected);
+                        bool matchEmail      = !string.IsNullOrEmpty(emailInCert) && emailInCert.Contains(cleanExpected);
+                        bool matchCn         = cnInCert.Contains(cleanExpected);
+                        bool matchSerial     = cert.SerialNumber.Equals(cleanExpected, StringComparison.OrdinalIgnoreCase);
+                        bool matchThumbprint = cert.Thumbprint.Equals(cleanExpected, StringComparison.OrdinalIgnoreCase);
+                        bool matchSubj       = subjectLower.Contains(cleanExpected);
 
                         string cleanNorm = RemoveDiacritics(cleanExpected).Trim().ToLowerInvariant();
                         bool matchCnNorm = !string.IsNullOrEmpty(cleanNorm) && RemoveDiacritics(cnInCert).ToLowerInvariant().Contains(cleanNorm);
                         bool matchSubjNorm = !string.IsNullOrEmpty(cleanNorm) && RemoveDiacritics(subjectLower).ToLowerInvariant().Contains(cleanNorm);
 
-                        if (matchEmail || matchCn || matchSerial || matchSubj || matchCnNorm || matchSubjNorm)
+                        if (matchThumbprint || matchSerial || matchEmail || matchCn || matchSubj || matchCnNorm || matchSubjNorm)
                         {
                             // Cache và trả về ngay khi match chính xác
                             lock (_certCacheLock) { _certCachePersonal = cert; _certCachePersonalTime = nowMs; }
