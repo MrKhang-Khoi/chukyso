@@ -1021,6 +1021,9 @@ app.post('/api/documents/:id/upload-drive', requireAuth, async (req, res) => {
         folderPath: driveRes.folderPath,
         uploadedAt: driveRes.uploadedAt
       },
+      isArchived: true,
+      status: 'ARCHIVED',
+      archivedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
       fileBase64: null,
       filePath: null,
       realSignedPath: null,

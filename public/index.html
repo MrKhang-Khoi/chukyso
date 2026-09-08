@@ -1356,6 +1356,17 @@
             <div class="text-[11px] text-slate-500">Giáo án đã được niêm phong an toàn trên Google Drive</div>
           </div>
         </div>
+
+        <!-- Bước 4: Tự động ẩn khỏi bảng xử lý -->
+        <div class="flex items-start gap-3 opacity-40 transition-all" id="stepArchiveHide">
+          <div class="w-5 h-5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-[10px] mt-0.5" id="stepArchiveHideIcon">
+            <i class="fa-solid fa-circle"></i>
+          </div>
+          <div class="flex-1">
+            <div class="font-bold text-slate-700" id="stepArchiveHideText">Tự động ẩn khỏi danh sách đang xử lý</div>
+            <div class="text-[11px] text-slate-500">Hồ sơ đã chuyển vào mục "Lưu trữ Drive" để làm nhẹ ứng dụng</div>
+          </div>
+        </div>
       </div>
 
       <!-- Nút đóng / xác nhận sau khi hoàn tất -->
@@ -5093,7 +5104,9 @@
 
       (async () => {
         try {
-          const res = await fetch('http://127.0.0.1:18888/api/check-vgca-status', { signal: AbortSignal.timeout(1200) });
+          const ping = await pingLocalSigner(600);
+          if (!ping || !ping.available) return;
+          const res = await fetch(`${ping.host}/api/check-vgca-status`, { signal: AbortSignal.timeout(1200) });
           const data = await res.json();
           if (data && data.success && data.certInfo && data.certInfo.hasPrivateKey) {
             window._lastDetectedVgcaCert = data.certInfo;
@@ -6076,12 +6089,11 @@
         }
       }
 
-      const candidates = [
-        'http://127.0.0.1:18888',
-        'http://localhost:18888',
-        'http://127.0.0.1:3000',
-        'http://localhost:3000'
-      ];
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const candidates = ['http://127.0.0.1:18888'];
+      if (isLocalHost && window.location.port !== '3000') {
+        candidates.push('http://127.0.0.1:3000');
+      }
       for (const host of candidates) {
         try {
           const controller = new AbortController();
@@ -6681,11 +6693,22 @@
         }
         if (step3Text) step3Text.innerHTML = '<span class="text-emerald-700 font-bold">✔ Hoàn tất quy trình: File đã niêm phong trên Drive, Render 0 data</span>';
 
+        // Bước 4: Tự động lưu trữ và ẩn khỏi danh sách
+        const step4 = document.getElementById('stepArchiveHide');
+        const step4Icon = document.getElementById('stepArchiveHideIcon');
+        const step4Text = document.getElementById('stepArchiveHideText');
+        if (step4) step4.className = 'flex items-start gap-3 opacity-100 transition-all';
+        if (step4Icon) {
+          step4Icon.className = 'w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] mt-0.5';
+          step4Icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+        }
+        if (step4Text) step4Text.innerHTML = '<span class="text-emerald-700 font-bold">✔ Đã lưu trữ & tự động ẩn khỏi danh sách (Ứng dụng đã nhẹ hơn)</span>';
+
         if (modalIcon) {
           modalIcon.className = 'w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl mx-auto shadow-inner';
           modalIcon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
         }
-        if (modalTitle) modalTitle.innerText = '🎉 Đã Lưu Google Drive & Xóa Sạch Render!';
+        if (modalTitle) modalTitle.innerText = '🎉 Đã Lưu Google Drive & Tự Động Ẩn Khỏi Bảng!';
 
         if (actions) actions.classList.remove('hidden');
         await loadDocuments();
