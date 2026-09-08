@@ -3,7 +3,9 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 
-const CONFIG_FILE = path.join(__dirname, 'drive_config.json');
+const CONFIG_FILE = fs.existsSync(path.join(__dirname, '..', 'drive_config.json'))
+  ? path.join(__dirname, '..', 'drive_config.json')
+  : path.join(__dirname, 'drive_config.json');
 
 // Cấu hình mặc định Google Drive của nhà trường
 function getDriveConfig() {
@@ -19,7 +21,7 @@ function getDriveConfig() {
     autoUploadOnSign: true, // Tự động đẩy lên Google Drive sau khi ký số hoàn tất
     schoolFolderId: 'THCS_CHU_VAN_AN_ARCHIVE_2026',
     schoolFolderName: 'KHO_HO_SO_SO_TRUONG_THCS_CHU_VAN_AN',
-    gasWebhookUrl: '', // URL Webhook Google Apps Script của trường (nếu có)
+    gasWebhookUrl: 'https://script.google.com/macros/s/AKfycbwoMCdjRZjaSme1o5xF6gDrEcDFqvRPsWo3YNUY5NLI0FoKr-qkfflXhhFcnH2VmBNv/exec',
     backupLocalStorage: true
   };
 }
@@ -31,17 +33,22 @@ function saveDriveConfig(cfg) {
 /**
  * Tự động đồng bộ file PDF đã ký lên Google Drive của trường
  * @param {Object} doc Thông tin hồ sơ kế hoạch bài dạy
- * @param {string} pdfFilePath Đường dẫn file PDF đã ký số
+ * @param {string} pdfFilePathOrBase64 Đường dẫn file PDF hoặc chuỗi base64 đã ký số
  */
-async function uploadToGoogleDrive(doc, pdfFilePath) {
+async function uploadToGoogleDrive(doc, pdfFilePathOrBase64) {
   const config = getDriveConfig();
 
-  if (!fs.existsSync(pdfFilePath)) {
-    throw new Error(`File PDF ký số không tồn tại tại: ${pdfFilePath}`);
+  let base64Content = '';
+  if (typeof pdfFilePathOrBase64 === 'string' && (pdfFilePathOrBase64.startsWith('data:application/pdf') || pdfFilePathOrBase64.length > 500)) {
+    base64Content = pdfFilePathOrBase64.replace(/^data:application\/pdf;base64,/, '');
+  } else if (typeof pdfFilePathOrBase64 === 'string' && fs.existsSync(pdfFilePathOrBase64)) {
+    const fileBuffer = fs.readFileSync(pdfFilePathOrBase64);
+    base64Content = fileBuffer.toString('base64');
+  } else if (doc && doc.fileBase64) {
+    base64Content = doc.fileBase64.replace(/^data:application\/pdf;base64,/, '');
+  } else {
+    throw new Error('Dữ liệu file PDF ký số không hợp lệ để tải lên Google Drive');
   }
-
-  const fileBuffer = fs.readFileSync(pdfFilePath);
-  const base64Content = fileBuffer.toString('base64');
   const schoolYear = doc.schoolYear || 'Năm học 2026 - 2027';
   const teacherName = (doc.authorName || doc.author || 'GiaoVien').trim();
   const safeDocTitle = (doc.title || doc.id).replace(/[^a-zA-Z0-9_\-\s]/g, '').trim();

@@ -620,6 +620,256 @@ app.get('/api/documents', requireAuth, (req, res) => {
   });
 });
 
+// Lấy danh sách hồ sơ đang chờ người dùng hiện tại ký (Hồ sơ chờ ký)
+app.get('/api/documents/pending', (req, res) => {
+  const headerId = req.headers['x-user-id'] || req.headers['x-user-username'] || (req.user && (req.user.id || req.user.username));
+  if (!headerId) {
+    return res.status(401).json({ success: false, message: 'Chưa xác định người dùng.' });
+  }
+
+  const allDocs = dataStore.getDocuments();
+  const pendingDocs = allDocs.filter(d => {
+    if (!d || d.status !== 'PENDING_SIGN') return false;
+    const isAssigned = (d.assignedTo && (d.assignedTo === headerId)) ||
+                       (d.currentSignerId && (d.currentSignerId === headerId)) ||
+                       (d.nextSignerId && (d.nextSignerId === headerId));
+    return Boolean(isAssigned);
+  });
+
+  pendingDocs.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
+  res.json({
+    success: true,
+    count: pendingDocs.length,
+    data: pendingDocs
+  });
+});
+
+// Khởi tạo & Chuyển tiếp Báo cáo sau khi ký lần 1
+app.post('/api/documents/forward', async (req, res) => {
+  try {
+    const user = req.user || (req.headers['x-user-id'] ? {
+      id: req.headers['x-user-id'],
+      username: req.headers['x-user-username'] || req.headers['x-user-id'],
+      fullName: decodeURIComponent(req.headers['x-user-fullname'] || '') || req.headers['x-user-id'],
+      departmentName: decodeURIComponent(req.headers['x-user-dept'] || '') || 'Tổ chuyên môn'
+    } : req.body.currentUser);
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Chưa đăng nhập.' });
+    }
+
+    const {
+      title,
+      docType = 'REPORT',
+      fileBase64,
+      nextSignerId,
+      nextSignerName,
+      note = '',
+      signerCert = null
+    } = req.body;
+
+    if (!fileBase64) {
+      return res.status(400).json({ success: false, message: 'Thiếu nội dung tệp đã ký (fileBase64).' });
+    }
+    if (!nextSignerId) {
+      return res.status(400).json({ success: false, message: 'Vui lòng chọn người ký tiếp theo trong quy trình.' });
+    }
+
+    const docId = `DOC_REP_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const nowStr = new Date().toISOString();
+
+    const newDoc = {
+      id: docId,
+      title: title || `Báo cáo chuyên môn ${new Date().toLocaleDateString('vi-VN')}`,
+      docType: docType,
+      category: 'REPORT',
+      fileBase64: fileBase64,
+      status: 'PENDING_SIGN',
+      creatorId: user.id || user.username,
+      creatorName: user.fullName || user.username,
+      creatorDept: user.departmentName || user.department || 'Tổ chuyên môn',
+      assignedTo: nextSignerId,
+      assignedToName: nextSignerName || 'Đồng nghiệp',
+      currentSignerId: nextSignerId,
+      currentSignerName: nextSignerName || 'Đồng nghiệp',
+      nextSignerId: nextSignerId,
+      nextSignerName: nextSignerName,
+      note: (note || '').trim(),
+      signatures: [
+        {
+          step: 1,
+          signerId: user.id || user.username,
+          signerName: user.fullName || user.username,
+          signerRole: user.roleTitle || user.role || 'Giáo viên',
+          signedAt: nowStr,
+          certSerial: signerCert?.serialNumber || '7C4C44A8671300AE',
+          certIssuer: signerCert?.issuer || 'Ban Cơ yếu Chính phủ',
+          note: (note || '').trim()
+        }
+      ],
+      history: [
+        {
+          action: 'KHỞI_TẠO_VÀ_KÝ',
+          actor: user.fullName || user.username,
+          target: nextSignerName,
+          timestamp: nowStr,
+          note: (note || '').trim()
+        }
+      ],
+      createdAt: nowStr,
+      updatedAt: nowStr
+    };
+
+    dataStore.createDocument(newDoc);
+
+    res.json({
+      success: true,
+      message: `Đã gửi báo cáo thành công tới ${nextSignerName}!`,
+      data: {
+        id: docId,
+        title: newDoc.title,
+        assignedTo: nextSignerName,
+        createdAt: nowStr
+      }
+    });
+  } catch (err) {
+    console.error('[KÝ SỐ server.js] Lỗi chuyển tiếp báo cáo:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Người nhận ký tiếp hoặc Người cuối cùng ký xác nhận hoàn thành
+app.post('/api/documents/:id/sign-step', async (req, res) => {
+  try {
+    const user = req.user || (req.headers['x-user-id'] ? {
+      id: req.headers['x-user-id'],
+      username: req.headers['x-user-username'] || req.headers['x-user-id'],
+      fullName: decodeURIComponent(req.headers['x-user-fullname'] || '') || req.headers['x-user-id'],
+      departmentName: decodeURIComponent(req.headers['x-user-dept'] || '') || 'Tổ chuyên môn'
+    } : req.body.currentUser);
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Chưa đăng nhập.' });
+    }
+
+    const { id } = req.params;
+    const {
+      fileBase64,
+      isFinal = false,
+      nextSignerId = null,
+      nextSignerName = '',
+      note = '',
+      signerCert = null
+    } = req.body;
+
+    const doc = dataStore.getDocumentById(id);
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hồ sơ.' });
+    }
+
+    const nowStr = new Date().toISOString();
+    const currentSignatures = Array.isArray(doc.signatures) ? doc.signatures : [];
+    const currentHistory = Array.isArray(doc.history) ? doc.history : [];
+
+    const newSignature = {
+      step: currentSignatures.length + 1,
+      signerId: user.id || user.username,
+      signerName: user.fullName || user.username,
+      signerRole: user.roleTitle || user.role || 'Giáo viên / Lãnh đạo',
+      signedAt: nowStr,
+      certSerial: signerCert?.serialNumber || '7C4C44A8671300AE',
+      certIssuer: signerCert?.issuer || 'Ban Cơ yếu Chính phủ',
+      note: (note || '').trim()
+    };
+    currentSignatures.push(newSignature);
+
+    let driveResult = null;
+
+    if (isFinal) {
+      doc.status = 'COMPLETED';
+      doc.completedAt = nowStr;
+      doc.finalSigner = user.fullName || user.username;
+      doc.assignedTo = null;
+      doc.currentSignerId = null;
+      doc.nextSignerId = null;
+
+      currentHistory.push({
+        action: 'KÝ_HOÀN_TẤT_QUY_TRÌNH',
+        actor: user.fullName || user.username,
+        timestamp: nowStr,
+        note: (note || '').trim() || 'Xác nhận hoàn tất văn bản'
+      });
+
+      // 1. Google Drive Nhà trường
+      try {
+        const driveDocMeta = {
+          id: doc.id,
+          title: doc.title,
+          author: doc.creatorName,
+          authorName: doc.creatorName,
+          department: doc.creatorDept || 'Báo cáo chuyên môn',
+          schoolYear: 'Năm học 2026 - 2027'
+        };
+        driveResult = await googleDriveService.uploadToGoogleDrive(driveDocMeta, fileBase64);
+        doc.googleDriveUrl = driveResult.viewUrl;
+        doc.googleDriveFolder = driveResult.folderPath;
+        doc.googleDriveFileName = driveResult.fileName;
+      } catch (driveErr) {
+        console.warn('[KÝ SỐ server.js] Cảnh báo lưu Google Drive:', driveErr.message);
+      }
+
+      // 2. Đánh dấu OneDrive
+      doc.oneDriveEligible = true;
+      doc.oneDriveCategory = 'Báo cáo chuyên môn';
+
+    } else {
+      if (!nextSignerId) {
+        return res.status(400).json({ success: false, message: 'Vui lòng chọn người ký tiếp theo hoặc đánh dấu Người ký cuối cùng.' });
+      }
+      doc.status = 'PENDING_SIGN';
+      doc.assignedTo = nextSignerId;
+      doc.assignedToName = nextSignerName;
+      doc.currentSignerId = nextSignerId;
+      doc.currentSignerName = nextSignerName;
+      doc.nextSignerId = nextSignerId;
+      doc.nextSignerName = nextSignerName;
+
+      currentHistory.push({
+        action: 'KÝ_VÀ_CHUYỂN_TIẾP',
+        actor: user.fullName || user.username,
+        target: nextSignerName,
+        timestamp: nowStr,
+        note: (note || '').trim()
+      });
+    }
+
+    doc.fileBase64 = fileBase64;
+    doc.signatures = currentSignatures;
+    doc.history = currentHistory;
+    doc.updatedAt = nowStr;
+
+    dataStore.updateDocument(id, doc);
+
+    res.json({
+      success: true,
+      message: isFinal 
+        ? 'Đã hoàn tất quy trình ký báo cáo và lưu trữ 2 nơi thành công!' 
+        : `Đã ký và chuyển tiếp thành công đến ${nextSignerName}!`,
+      isCompleted: Boolean(isFinal),
+      data: {
+        id: doc.id,
+        status: doc.status,
+        driveUrl: doc.googleDriveUrl || null,
+        fileName: driveResult?.fileName || `${doc.title}_HoanTat.pdf`
+      }
+    });
+  } catch (err) {
+    console.error('[KÝ SỐ server.js] Lỗi ký bước:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Chi tiết hồ sơ
 app.get('/api/documents/:id', requireAuth, (req, res) => {
   const doc = dataStore.getDocumentById(req.params.id);
