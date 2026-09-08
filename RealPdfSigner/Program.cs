@@ -25,6 +25,9 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using System.Windows.Forms;
 using System.Drawing;
+using System.Net.WebSockets;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace RealPdfSigner
 {
@@ -1324,7 +1327,7 @@ namespace RealPdfSigner
             return SignBytesWithBouncyCastle(inputPdfBytes, cert, reason, location, visualSignImageBytes, signRect, targetPage);
         }
 
-        public const string CurrentVersion = "2.0.1";
+        public const string CurrentVersion = "2.1.0";
         private static bool _lastUpdateCheckResult = false;
         private static string _lastLatestVersion = CurrentVersion;
         private static AgentVersionInfo? _lastVersionInfo = null;
@@ -2362,10 +2365,175 @@ namespace RealPdfSigner
             }
         }
 
+        public static async Task HandleWebSocketSessionAsync(HttpListenerContext context)
+        {
+            HttpListenerWebSocketContext wsContext;
+            try
+            {
+                wsContext = await context.AcceptWebSocketAsync(subProtocol: null);
+            }
+            catch
+            {
+                try
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.Close();
+                }
+                catch { }
+                return;
+            }
+
+            var ws = wsContext.WebSocket;
+            var buffer = new byte[64 * 1024];
+
+            try
+            {
+                while (ws.State == WebSocketState.Open)
+                {
+                    using var ms = new MemoryStream();
+                    WebSocketReceiveResult result;
+                    do
+                    {
+                        result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+                            return;
+                        }
+                        ms.Write(buffer, 0, result.Count);
+                    } while (!result.EndOfMessage);
+
+                    ms.Seek(0, SeekOrigin.Begin);
+                    string jsonText = Encoding.UTF8.GetString(ms.ToArray());
+                    if (string.IsNullOrWhiteSpace(jsonText)) continue;
+
+                    string responseJson = ProcessWebSocketCommand(jsonText);
+                    byte[] respBytes = Encoding.UTF8.GetBytes(responseJson);
+                    await ws.SendAsync(new ArraySegment<byte>(respBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+            }
+            catch { }
+            finally
+            {
+                try { ws.Dispose(); } catch { }
+            }
+        }
+
+        public static string ProcessWebSocketCommand(string jsonText)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(jsonText);
+                var root = doc.RootElement;
+                string action = "";
+                if (root.TryGetProperty("action", out var actProp)) action = actProp.GetString() ?? "";
+                else if (root.TryGetProperty("functionName", out var fnProp)) action = fnProp.GetString() ?? "";
+
+                action = action.ToLowerInvariant().Trim();
+
+                if (action == "ping" || action == "get_version")
+                {
+                    return JsonSerializer.Serialize(new
+                    {
+                        status = 1,
+                        success = true,
+                        action = "ping",
+                        version = CurrentVersion,
+                        agentVersion = CurrentVersion,
+                        appName = "EduSign Desktop Agent (Ban Cơ yếu Chính phủ)",
+                        appRunning = true,
+                        protocol = "WebSocket",
+                        message = $"EduSign Agent v{CurrentVersion} kết nối thành công qua kênh WebSocket thời gian thực."
+                    });
+                }
+
+                if (action == "get_all_certs" || action == "get_certs" || action == "list_certificates")
+                {
+                    var certList = new List<object>();
+                    try
+                    {
+                        using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                        store.Open(OpenFlags.ReadOnly);
+                        foreach (var c in store.Certificates)
+                        {
+                            certList.Add(new
+                            {
+                                serial = c.SerialNumber,
+                                serialNumber = c.SerialNumber,
+                                subject = c.Subject,
+                                issuer = c.Issuer,
+                                notAfter = c.NotAfter.ToString("yyyy-MM-dd HH:mm:ss"),
+                                hasPrivateKey = c.HasPrivateKey,
+                                signerName = ExtractCn(c.Subject),
+                                email = ExtractEmail(c.Subject),
+                                certBase64 = Convert.ToBase64String(c.RawData)
+                            });
+                        }
+                    }
+                    catch { }
+
+                    return JsonSerializer.Serialize(new
+                    {
+                        status = 1,
+                        success = true,
+                        message = "Lấy danh sách chứng thư số thành công",
+                        data = certList
+                    });
+                }
+
+                if (action == "check_status" || action == "check-vgca-status")
+                {
+                    string signMode = "AUTO";
+                    if (root.TryGetProperty("signMode", out var smProp)) signMode = smProp.GetString() ?? "AUTO";
+                    else if (root.TryGetProperty("mode", out var mProp)) signMode = mProp.GetString() ?? "AUTO";
+
+                    string? expectedSigner = null;
+                    if (root.TryGetProperty("signer", out var snProp)) expectedSigner = snProp.GetString();
+                    else if (root.TryGetProperty("signerName", out var snProp2)) expectedSigner = snProp2.GetString();
+
+                    var cert = FindVgcaCertificate(expectedSigner, signMode);
+                    return JsonSerializer.Serialize(new
+                    {
+                        status = 1,
+                        success = true,
+                        service = "EduSign-Desktop-Agent",
+                        version = CurrentVersion,
+                        appRunning = true,
+                        appName = "EduSign Desktop Agent (Ban Cơ yếu Chính phủ)",
+                        tokenConnected = cert != null && cert.HasPrivateKey,
+                        isVirtualCsp = cert != null,
+                        certInfo = cert != null ? new
+                        {
+                            subject = cert.Subject,
+                            issuer = cert.Issuer,
+                            notAfter = cert.NotAfter.ToString("yyyy-MM-dd HH:mm:ss"),
+                            thumbprint = cert.Thumbprint,
+                            serialNumber = cert.SerialNumber,
+                            hasPrivateKey = cert.HasPrivateKey,
+                            signerName = ExtractCn(cert.Subject)
+                        } : null
+                    });
+                }
+
+                return JsonSerializer.Serialize(new { status = 0, success = false, message = $"Lệnh không hỗ trợ: {action}" });
+            }
+            catch (Exception ex)
+            {
+                return JsonSerializer.Serialize(new { status = 0, success = false, message = "Lỗi xử lý WebSocket: " + ex.Message });
+            }
+        }
+
         public static void HandleAgentRequest(HttpListenerContext context)
         {
             var req = context.Request;
             var res = context.Response;
+
+            // XỬ LÝ KẾT NỐI WEBSOCKET THỜI GIAN THỰC (BẢO VỆ RENDER CLOUD HTTPS)
+            if (req.IsWebSocketRequest)
+            {
+                _ = HandleWebSocketSessionAsync(context);
+                return;
+            }
 
             // Thiết lập tiêu đề CORS & Private Network Access (Chuẩn Chrome/Edge PNA)
             string origin = req.Headers["Origin"];
