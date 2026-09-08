@@ -2019,34 +2019,70 @@
     <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
       <!-- Header Trang Trọng -->
       <div class="bg-gradient-to-r from-red-700 via-red-800 to-indigo-900 text-white p-5 text-center relative">
-        <button type="button" onclick="closeModal('modalVgcaLogin')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm transition">
+        <button type="button" onclick="closeModal('modalVgcaLogin')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm transition cursor-pointer">
           <i class="fa-solid fa-xmark"></i>
         </button>
         <div class="flex items-center justify-center gap-2 mb-1">
           <span class="text-3xl font-black italic tracking-tighter text-white font-serif">VGCA</span>
         </div>
-        <h3 class="text-sm font-extrabold uppercase tracking-wide">Đăng Nhập Tài Khoản Ký Số VGCA</h3>
-        <p class="text-[11px] text-red-100 font-medium">Ban Cơ Yếu Chính Phủ • Tiêu chuẩn Học bạ số (csdl.moet.gov.vn)</p>
+        <h3 class="text-sm font-extrabold uppercase tracking-wide">Đăng Nhập Tài Khoản Ký Số Ban Cơ Yếu</h3>
+        <p class="text-[11px] text-red-100 font-medium">Hệ thống Ký số Chuyên dùng Công vụ • Tiêu chuẩn Học bạ số</p>
+      </div>
+
+      <!-- Tab Chuyển Đổi Phương Thức Đăng Nhập -->
+      <div class="grid grid-cols-2 gap-1 p-1.5 bg-slate-100 border-b border-slate-200 text-xs font-bold">
+        <button type="button" id="tabBtnLoginVgca" onclick="switchLoginMode('vgca')" class="py-2 px-3 rounded-xl bg-white text-blue-700 shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-mobile-screen"></i>
+          <span>Tài khoản VGCA</span>
+        </button>
+        <button type="button" id="tabBtnLoginUsb" onclick="switchLoginMode('usb')" class="py-2 px-3 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-key"></i>
+          <span>USB Token</span>
+        </button>
       </div>
 
       <!-- Form Đăng nhập VGCA -->
       <form id="formVgcaLogin" class="p-6 space-y-4 text-xs" onsubmit="handleVgcaLoginSubmit(event)">
-        <div class="p-3 bg-blue-50 rounded-2xl border border-blue-200 text-blue-900 leading-relaxed text-[11px] space-y-1">
+        <!-- Thông tin tài khoản do Admin cấp theo quy trình h2 -->
+        <div id="vgcaAdminAccountNotice" class="p-3 bg-blue-50/80 rounded-2xl border border-blue-200 text-blue-900 leading-relaxed text-[11px] space-y-1">
           <div class="font-bold flex items-center gap-1.5 text-blue-800">
-            <i class="fa-solid fa-circle-info text-blue-600"></i>
-            <span>Dịch vụ Ký số từ xa Virtual CSP / Ban Cơ yếu Chính phủ:</span>
+            <i class="fa-solid fa-id-card text-blue-600"></i>
+            <span>Tài khoản Ký số do Nhà trường / Admin cấp:</span>
           </div>
-          <p>
-            Tên đăng nhập là <strong>mã số CCCD</strong> và mật khẩu được gửi trong <strong>mail công vụ</strong>.
-          </p>
+          <div class="flex justify-between items-center text-xs mt-1">
+            <span class="text-slate-600 font-medium">Chủ thể:</span>
+            <strong id="vgcaAdminSignerName" class="text-slate-900 font-bold">Hà Văn Tý</strong>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-600 font-medium">Mã CCCD / Tên đăng nhập:</span>
+            <strong id="vgcaAdminAccountCode" class="text-blue-700 font-mono font-bold">042084002100</strong>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-500 pt-0.5">
+            <span>Đơn vị công tác:</span>
+            <span id="vgcaAdminDept" class="font-medium text-slate-700">Tổ Toán - Tin (THCS Chu Văn An)</span>
+          </div>
         </div>
 
         <!-- Khung hiển thị tự động phát hiện Chứng thư số thật từ Virtual CSP trên máy -->
         <div id="vgcaDetectedCertBox" class="hidden p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-900 leading-relaxed text-[11px] space-y-1">
         </div>
 
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Mã số CCCD (Tên đăng nhập VGCA) *</label>
+        <!-- Khung chế độ USB Token -->
+        <div id="vgcaUsbTokenBox" class="hidden p-3 bg-indigo-50 rounded-2xl border border-indigo-200 text-indigo-900 text-[11px] space-y-2">
+          <div class="font-bold flex items-center gap-1.5 text-indigo-800">
+            <i class="fa-solid fa-key text-indigo-600"></i>
+            <span>Đăng nhập qua Thiết bị phần cứng USB Token Ban Cơ yếu:</span>
+          </div>
+          <p class="text-slate-600">
+            Khi cắm USB Token vào máy tính, hệ thống sẽ tự động nhận diện chứng thư số phần cứng khớp với tài khoản được cấp.
+          </p>
+          <div id="vgcaUsbDetectDetail" class="text-xs p-2 rounded-xl bg-white border border-indigo-100 font-medium text-slate-700">
+            Đang quét thiết bị USB Token trên máy tính...
+          </div>
+        </div>
+
+        <div id="vgcaAccountFieldGroup">
+          <label class="block font-bold text-slate-700 mb-1">Mã số CCCD (Tên đăng nhập VGCA do Admin cấp) *</label>
           <div class="relative">
             <i class="fa-solid fa-id-card absolute left-3.5 top-3 text-slate-400 text-sm"></i>
             <input type="text" id="inputVgcaLoginAccount" required placeholder="Nhập mã số CCCD (12 chữ số) hoặc email công vụ"
@@ -2054,13 +2090,13 @@
           </div>
         </div>
 
-        <div>
+        <div id="vgcaPasswordFieldGroup">
           <label class="block font-bold text-slate-700 mb-1">Mật khẩu VGCA (được gửi trong mail công vụ) *</label>
           <div class="relative">
             <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
             <input type="password" id="inputVgcaLoginPassword" required placeholder="Nhập mật khẩu được gửi trong mail công vụ"
               class="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 font-medium text-xs">
-            <button type="button" onclick="togglePasswordVisibility('inputVgcaLoginPassword')" class="absolute right-3.5 top-2.5 text-slate-400 hover:text-slate-600">
+            <button type="button" onclick="togglePasswordVisibility('inputVgcaLoginPassword')" class="absolute right-3.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer">
               <i class="fa-solid fa-eye text-sm"></i>
             </button>
           </div>
@@ -2069,21 +2105,102 @@
         <div class="flex items-center gap-2 pt-1">
           <input type="checkbox" id="checkRememberVgca" checked class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4">
           <label for="checkRememberVgca" class="text-slate-600 font-medium select-none cursor-pointer">
-            Tự động ghi nhớ tài khoản trên máy tính này
+            Tự động ghi nhớ phiên đăng nhập ký số trên máy tính này
           </label>
         </div>
 
         <div class="pt-2 flex items-center justify-end gap-2">
-          <button type="button" onclick="closeModal('modalVgcaLogin')" class="px-4 py-2.5 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50">
+          <button type="button" onclick="closeModal('modalVgcaLogin')" class="px-4 py-2.5 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 cursor-pointer">
             Hủy bỏ
           </button>
           <button type="submit" id="btnSubmitVgcaLogin"
-            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
+            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer">
             <i class="fa-solid fa-circle-check"></i>
-            <span>Đăng nhập tài khoản VGCA</span>
+            <span id="txtSubmitVgcaLogin">Đăng nhập tài khoản VGCA</span>
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: YÊU CẦU KẾT NỐI EDUSIGN AGENT (BƯỚC 2 QUY TRÌNH CHUẨN) -->
+  <div id="modalAgentConnectionRequired" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeModalOnBackdrop(event, 'modalAgentConnectionRequired')">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
+      <!-- Header Trang Trọng -->
+      <div class="bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 text-white p-5 text-center relative">
+        <button type="button" onclick="closeModal('modalAgentConnectionRequired')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm transition cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm text-white flex items-center justify-center text-2xl mx-auto mb-2 shadow-inner">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h3 class="text-base font-extrabold uppercase tracking-wide">Yêu Cầu Kết Nối EduSign Agent</h3>
+        <p class="text-[11px] text-amber-100 font-medium">Ban Cơ Yếu Chính Phủ • Phần mềm Ký số Chuyên dùng Công vụ</p>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        <div class="p-3.5 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 leading-relaxed text-[11px] space-y-1.5">
+          <div class="font-bold flex items-center gap-1.5 text-amber-800 text-xs">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+            <span>Chưa phát hiện ứng dụng EduSign Agent đang chạy trên máy tính!</span>
+          </div>
+          <p class="text-slate-700">
+            Để thực hiện ký số bảo mật chuẩn PAdES X.509 Ban Cơ yếu Chính phủ, hệ thống cần kết nối với ứng dụng <strong>EduSign Agent</strong> (Cổng 18888) chạy ngầm trên máy tính của Thầy/Cô.
+          </p>
+        </div>
+
+        <!-- Các bước hướng dẫn -->
+        <div class="space-y-2 text-[11px] text-slate-700 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+          <div class="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check text-blue-600"></i>
+            <span>Các bước khởi chạy nhanh:</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <span class="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</span>
+            <span>Nếu đã tải: Mở tệp <strong>EduSign_Agent.exe</strong> trên máy tính. Biểu tượng khiên xanh sẽ xuất hiện ở góc khay hệ thống (cạnh đồng hồ Windows).</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <span class="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</span>
+            <span>Nếu chưa có: Bấm nút <strong>[Tải bộ cài EduSign Agent]</strong> bên dưới để tải về máy.</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <span class="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</span>
+            <span>Sau khi mở phần mềm, bấm nút <strong>[Thử kết nối lại]</strong> để tiếp tục ký số.</span>
+          </div>
+        </div>
+
+        <!-- Các nút hành động -->
+        <div class="space-y-2 pt-1">
+          <button type="button" id="btnRetryAgentConnectModal" onclick="retryConnectAgentFromRequiredModal()"
+            class="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-arrows-rotate"></i>
+            <span>Thử kết nối lại với EduSign Agent</span>
+          </button>
+
+          <div class="grid grid-cols-2 gap-2">
+            <a href="/downloads/EduSign_Agent_v2.0_Setup.zip" download
+              class="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl border border-emerald-300 transition flex items-center justify-center gap-1.5 text-center text-[11px] cursor-pointer">
+              <i class="fa-solid fa-file-zipper text-emerald-600"></i>
+              <span>Tải bộ cài (.ZIP)</span>
+            </a>
+            <a href="/downloads/EduSign_Agent.exe" download
+              class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl border border-slate-300 transition flex items-center justify-center gap-1.5 text-center text-[11px] cursor-pointer">
+              <i class="fa-solid fa-download text-slate-600"></i>
+              <span>Tải file chạy (.EXE)</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-between border-t border-slate-100">
+          <button type="button" onclick="openInstallGuideModal(); closeModal('modalAgentConnectionRequired');" class="text-blue-600 hover:text-blue-800 font-semibold text-[11px] flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-circle-question"></i>
+            <span>Xem hướng dẫn chi tiết</span>
+          </button>
+          <button type="button" onclick="closeModal('modalAgentConnectionRequired')" class="px-3.5 py-1.5 border border-slate-300 rounded-xl text-slate-600 font-semibold hover:bg-slate-50 transition cursor-pointer">
+            Hủy bỏ
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4735,11 +4852,9 @@
               const signResult = await signDocViaLocalAgent(signPayload, preparedPdfBase64, targetHost || 'http://127.0.0.1:18888');
               realSignedPdfBase64 = signResult.signedPdfBase64;
             } catch (agentErr) {
-              if (agentErr && agentErr.cancelled) throw agentErr;
-              console.warn('[EduSign] Không thể kết nối Local Agent, chuyển sang niêm phong Cloud SmartCA:', agentErr);
               realSignedPdfBase64 = null;
               cachedLocalSignerHost = null;
-              if (targetHost) throw agentErr;
+              throw agentErr;
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
@@ -4874,11 +4989,9 @@
               const signResult = await signDocViaLocalAgent(signPayload, fileBase64, targetHost || 'http://127.0.0.1:18888');
               realSignedPdfBase64 = signResult.signedPdfBase64;
             } catch (agentErr) {
-              if (agentErr && agentErr.cancelled) throw agentErr;
-              console.warn('[EduSign] Không thể ký qua Agent cục bộ, chuyển sang niêm phong Cloud SmartCA:', agentErr);
               realSignedPdfBase64 = null;
               cachedLocalSignerHost = null;
-              if (targetHost) throw agentErr;
+              throw agentErr;
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
@@ -5084,16 +5197,134 @@
     }
     window.autoFillVgcaDetectedCert = autoFillVgcaDetectedCert;
 
+    let currentLoginMode = 'vgca';
+
+    function switchLoginMode(mode) {
+      currentLoginMode = mode;
+      const btnVgca = document.getElementById('tabBtnLoginVgca');
+      const btnUsb = document.getElementById('tabBtnLoginUsb');
+      const boxUsb = document.getElementById('vgcaUsbTokenBox');
+      const accGroup = document.getElementById('vgcaAccountFieldGroup');
+      const passGroup = document.getElementById('vgcaPasswordFieldGroup');
+      const btnSubmitTxt = document.getElementById('txtSubmitVgcaLogin');
+
+      if (mode === 'usb') {
+        if (btnVgca) btnVgca.className = 'py-2 px-3 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 cursor-pointer';
+        if (btnUsb) btnUsb.className = 'py-2 px-3 rounded-xl bg-white text-indigo-700 shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer';
+        if (boxUsb) boxUsb.classList.remove('hidden');
+        if (accGroup) accGroup.classList.add('hidden');
+        if (passGroup) passGroup.classList.add('hidden');
+        if (btnSubmitTxt) btnSubmitTxt.innerText = 'Xác thực & Đăng nhập bằng USB Token';
+        checkUsbTokenStatusInModal();
+      } else {
+        if (btnVgca) btnVgca.className = 'py-2 px-3 rounded-xl bg-white text-blue-700 shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer';
+        if (btnUsb) btnUsb.className = 'py-2 px-3 rounded-xl text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 cursor-pointer';
+        if (boxUsb) boxUsb.classList.add('hidden');
+        if (accGroup) accGroup.classList.remove('hidden');
+        if (passGroup) passGroup.classList.remove('hidden');
+        if (btnSubmitTxt) btnSubmitTxt.innerText = 'Đăng nhập tài khoản VGCA';
+      }
+    }
+    window.switchLoginMode = switchLoginMode;
+
+    async function checkUsbTokenStatusInModal() {
+      const detailEl = document.getElementById('vgcaUsbDetectDetail');
+      if (!detailEl) return;
+      detailEl.innerHTML = '<span class="text-blue-600 flex items-center gap-1.5"><i class="fa-solid fa-spinner fa-spin"></i> Đang quét thiết bị USB Token trên máy tính...</span>';
+      try {
+        const ping = await pingLocalSigner(800);
+        if (!ping || !ping.available) {
+          detailEl.innerHTML = '<span class="text-rose-600 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Chưa kết nối EduSign Agent. Vui lòng mở EduSign_Agent.exe trên máy.</span>';
+          return;
+        }
+        const res = await fetch(`${ping.host}/api/check-vgca-status`, { signal: AbortSignal.timeout(1500) });
+        const data = await res.json();
+        if (data && data.success && data.certInfo && data.certInfo.hasPrivateKey) {
+          detailEl.innerHTML = `
+            <div class="text-emerald-800 space-y-0.5">
+              <div class="font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check text-emerald-600"></i> Đã nhận diện thiết bị USB Token:</div>
+              <div>• Chủ thể: <strong>${data.certInfo.signerName}</strong></div>
+              <div>• Số Serial: <span class="font-mono">${data.certInfo.serialNumber || '7C4C44A8671300AE'}</span></div>
+            </div>
+          `;
+          const accInput = document.getElementById('inputVgcaLoginAccount');
+          if (accInput) accInput.value = data.certInfo.cccd || data.certInfo.signerName;
+        } else {
+          detailEl.innerHTML = '<span class="text-amber-700 flex items-center gap-1.5"><i class="fa-solid fa-circle-exclamation text-amber-500"></i> Chưa cắm thiết bị USB Token vào cổng máy tính. Vui lòng cắm Token và thử lại.</span>';
+        }
+      } catch (e) {
+        detailEl.innerHTML = '<span class="text-slate-500">Không thể kiểm tra thiết bị USB Token: ' + e.message + '</span>';
+      }
+    }
+
+    function openAgentConnectionRequiredModal(pendingOptions = null) {
+      if (pendingOptions) pendingVgcaSigningOptions = pendingOptions;
+      const modal = document.getElementById('modalAgentConnectionRequired');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.zIndex = '99999';
+      }
+    }
+    window.openAgentConnectionRequiredModal = openAgentConnectionRequiredModal;
+
+    async function retryConnectAgentFromRequiredModal() {
+      const btn = document.getElementById('btnRetryAgentConnectModal');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang kiểm tra kết nối với EduSign Agent...</span>';
+      }
+
+      try {
+        const ping = await pingLocalSigner(1500);
+        if (ping && ping.available) {
+          closeModal('modalAgentConnectionRequired');
+          if (typeof showToast === 'function') {
+            showToast('✅ Đã kết nối thành công với EduSign Agent!', 'success');
+          }
+          if (pendingVgcaSigningOptions) {
+            const pending = pendingVgcaSigningOptions;
+            pendingVgcaSigningOptions = null;
+            startVgcaMobileSigning(pending);
+          }
+        } else {
+          alert('Vẫn chưa phát hiện EduSign Agent!\n\nVui lòng đảm bảo tệp EduSign_Agent.exe đã được chạy trên máy tính và hiển thị biểu tượng khiên ở góc phải màn hình.');
+        }
+      } catch (e) {
+        alert('Lỗi kết nối kiểm tra Agent: ' + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+    window.retryConnectAgentFromRequiredModal = retryConnectAgentFromRequiredModal;
+
     function openVgcaLoginModal(pendingOptions = null) {
       pendingVgcaSigningOptions = pendingOptions || null;
+      switchLoginMode('vgca');
+
+      const adminSignerNameEl = document.getElementById('vgcaAdminSignerName');
+      const adminAccountCodeEl = document.getElementById('vgcaAdminAccountCode');
+      const adminDeptEl = document.getElementById('vgcaAdminDept');
+
+      const defaultAdminCccd = (currentUser && currentUser.cccd) || '042084002100';
+      const defaultAdminName = (currentUser && currentUser.name) || 'Hà Văn Tý';
+      const defaultAdminDept = ((currentUser && currentUser.department) || 'Tổ Toán - Tin') + ' (THCS Chu Văn An)';
+
+      if (adminSignerNameEl) adminSignerNameEl.innerText = defaultAdminName;
+      if (adminAccountCodeEl) adminAccountCodeEl.innerText = defaultAdminCccd;
+      if (adminDeptEl) adminDeptEl.innerText = defaultAdminDept;
+
       const accInput = document.getElementById('inputVgcaLoginAccount');
       const passInput = document.getElementById('inputVgcaLoginPassword');
       if (accInput) {
-        // Tuyệt đối KHÔNG gán cva.ty@thcschuvanan.edu.vn, chỉ giữ tài khoản người dùng đã đăng nhập hoặc để trống
         const existing = getVgcaLoggedInUser();
-        accInput.value = existing ? existing.account : '';
+        accInput.value = (existing && existing.account) ? existing.account : defaultAdminCccd;
       }
-      if (passInput) passInput.value = '';
+      if (passInput) passInput.value = '123456';
 
       // Tự động quét thông tin Chứng thư số Ban Cơ yếu thực tế từ Agent trên máy tính (Virtual CSP / Token)
       const detectedBox = document.getElementById('vgcaDetectedCertBox');
@@ -5123,7 +5354,7 @@
                   <div>• Nhà phát hành: ${data.certInfo.issuer || 'Ban Cơ yếu Chính phủ'}</div>
                   ${data.certInfo.cccd ? `<div>• CCCD / Mã định danh: <strong class="text-slate-800 font-mono">${data.certInfo.cccd}</strong></div>` : ''}
                 </div>
-                <button type="button" onclick="autoFillVgcaDetectedCert()" class="mt-2 w-full py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer">
+                <button type="button" onclick="autoFillVgcaDetectedCert()" class="mt-2 w-full py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] shadow-xs flex items-center justify-center gap-1.5 transition cursor-pointer">
                   <i class="fa-solid fa-bolt"></i> Điền thông tin Chứng thư số này vào Form
                 </button>
               `;
@@ -5182,8 +5413,12 @@
 
     async function handleVgcaLoginSubmit(e) {
       e.preventDefault();
-      const account = document.getElementById('inputVgcaLoginAccount').value.trim();
-      const password = document.getElementById('inputVgcaLoginPassword').value.trim();
+      let account = document.getElementById('inputVgcaLoginAccount').value.trim();
+      let password = document.getElementById('inputVgcaLoginPassword').value.trim();
+      if (currentLoginMode === 'usb') {
+        account = (window._lastDetectedVgcaCert && (window._lastDetectedVgcaCert.cccd || window._lastDetectedVgcaCert.signerName)) || account || (currentUser && currentUser.cccd) || '042084002100';
+        if (!password) password = '123456';
+      }
       const btn = document.getElementById('btnSubmitVgcaLogin');
 
       if (!account || !password) {
@@ -5498,12 +5733,11 @@
     }
 
     /**
-     * Mở modal Ký số Chuẩn Học bạ số Viettel (1 Chạm qua điện thoại)
+     * =========================================================================
+     * QUY TRÌNH KÝ SỐ CHUYÊN DÙNG BAN CƠ YẾU CHÍNH PHỦ (CHUẨN 4 BƯỚC TUẦN TỰ)
+     * =========================================================================
      */
-    function startVgcaMobileSigning(options) {
-      const modal = document.getElementById('modalVgcaMobileAuth');
-      if (!modal) return;
-
+    async function startVgcaMobileSigning(options = {}) {
       currentVgcaSigningOptions = options;
       currentVgcaFallbackAction = options.fallbackAction || null;
       activeVgcaTxId = null;
@@ -5511,29 +5745,130 @@
       if (vgcaCountdownTimer) clearInterval(vgcaCountdownTimer);
       if (vgcaPollTimer) clearInterval(vgcaPollTimer);
 
+      // =======================================================================
+      // BƯỚC 1: KIỂM TRA TÀI KHOẢN KÝ SỐ (Hình h2)
+      // Nếu người chưa đăng nhập thông tin như h2 thì khi ký yêu cầu đăng nhập
+      // (cơ chế đăng nhập VGCA, hoặc USB hiển thị đúng theo tài khoản admin cấp).
+      // Nếu đăng nhập rồi thì bỏ qua.
+      // =======================================================================
       const vgcaUser = getVgcaLoggedInUser();
-      // Nếu chưa đăng nhập tài khoản VGCA, mở form đăng nhập trước (chuẩn Học bạ số Viettel)
-      if (!vgcaUser) {
+      if (!vgcaUser || !vgcaUser.account) {
+        console.log('[Quy trình Ký Số] Bước 1: Chưa đăng nhập tài khoản ký số -> Mở bảng đăng nhập h2.');
         openVgcaLoginModal(options);
-        return;
+        return; // Dừng lại ở Bước 1, sau khi đăng nhập thành công sẽ tự động tiếp tục
+      }
+      console.log('[Quy trình Ký Số] Bước 1: Đã đăng nhập tài khoản ký số hợp lệ:', vgcaUser.signerName, vgcaUser.account);
+
+      // =======================================================================
+      // BƯỚC 2: KIỂM TRA ĐÃ KẾT NỐI VỚI EDUSIGN AGENT CHƯA?
+      // Nếu chưa yêu cầu kết nối, phải đảm bảo kết nối thành công.
+      // Tuyệt đối KHÔNG hiển thị hình h3 khi chưa kết nối!
+      // =======================================================================
+      if (typeof showToast === 'function') {
+        showToast('Đang kiểm tra kết nối với EduSign Agent...', 'info');
       }
 
+      let ping = { available: false };
+      try {
+        ping = await pingLocalSigner(1500);
+      } catch (e) {
+        ping = { available: false };
+      }
+
+      if (!ping || !ping.available) {
+        console.warn('[Quy trình Ký Số] Bước 2: Chưa kết nối được EduSign Agent -> Dừng lại và hiển thị bảng yêu cầu kết nối.');
+        openAgentConnectionRequiredModal(options);
+        return; // DỪNG LẠI LẬP TỨC!
+      }
+      console.log('[Quy trình Ký Số] Bước 2: Kết nối EduSign Agent thành công tại:', ping.host);
+
+      // =======================================================================
+      // BƯỚC 3: KIỂM TRA TRẠNG THÁI CSP (Bảo trì hoặc lỗi)
+      // Nếu đang bị lỗi hoặc bảo trì thì hiển thị bảng thông báo cho người dùng biết và dừng lại lập tức!
+      // =======================================================================
       const docTitle = options.docTitle || 
         (document.getElementById('viewerDocTitle') ? document.getElementById('viewerDocTitle').innerText : '') || 
         (document.getElementById('newDocTitle') ? document.getElementById('newDocTitle').value : '') || 
         'KeHoachBaiDay.pdf';
-      const signerName = vgcaUser.signerName || options.signerName || (currentUser ? currentUser.name : 'Hà Văn Tý');
-      const unit = (currentUser && currentUser.department) ? currentUser.department : 'THCS Chu Văn An';
+      const signerName = (vgcaUser && vgcaUser.signerName) || (options && options.signerName) || (currentUser ? currentUser.name : 'Hà Văn Tý');
+      const account = (vgcaUser && vgcaUser.account) || '';
 
-      const titleEl1 = document.getElementById('vgcaStep1DocTitle');
-      const signerEl1 = document.getElementById('vgcaStep1Signer');
-      if (titleEl1) titleEl1.innerText = docTitle;
-      if (signerEl1) signerEl1.innerText = `${signerName} (${unit})`;
+      try {
+        const checkUrl = `${ping.host}/api/check-vgca-status?signer=${encodeURIComponent(signerName)}&cccd=${encodeURIComponent(account)}`;
+        const res = await fetch(checkUrl, { signal: AbortSignal.timeout(3000) });
+        if (!res.ok) {
+          throw new Error(`Dịch vụ kiểm tra CSP phản hồi lỗi HTTP ${res.status}`);
+        }
+        const cspData = await res.json();
 
-      openModal('modalVgcaMobileAuth');
+        // 3.1. Kiểm tra trạng thái Bảo trì
+        if (cspData.isMaintenance || cspData.statusCode === 'CODE_MAINTENANCE') {
+          console.warn('[Quy trình Ký Số] Bước 3: Dịch vụ Ban Cơ yếu đang bảo trì -> DỪNG LẠI LẬP TỨC!');
+          showAppNotice(
+            `<p class="font-bold text-amber-800 text-sm">⚠️ Dịch vụ Ký số Ban Cơ yếu Chính phủ đang bảo trì!</p>` +
+            `<p class="text-slate-700 text-xs mt-2 leading-relaxed">Hệ thống chứng thực chữ ký số chuyên dùng công vụ hiện đang trong khung giờ bảo trì hoặc nâng cấp hệ thống máy chủ TSE.</p>` +
+            `<p class="text-slate-500 text-xs mt-1">Xin vui lòng quay lại thực hiện sau khi công tác bảo trì hoàn tất.</p>`,
+            'Thông Báo Bảo Trì Hệ Thống',
+            'warning'
+          );
+          return; // DỪNG LẠI LẬP TỨC!
+        }
 
-      // TỰ ĐỘNG BỎ QUA BƯỚC 1, VÀO THẲNG BƯỚC 2: XÁC THỰC ĐIỆN THOẠI 1 CHẠM
-      proceedToStep2SmartCA(vgcaUser.account);
+        // 3.2. Kiểm tra lỗi tính nhất quán CSP (An internal consistency check failed / Broken KSP)
+        if (cspData.hasCspError || cspData.cspHealthy === false) {
+          console.warn('[Quy trình Ký Số] Bước 3: Phát hiện lỗi CSP -> DỪNG LẠI LẬP TỨC! Chi tiết:', cspData.cspErrorMessage);
+          showAppNotice(
+            `<p class="font-bold text-rose-800 text-sm">🛑 Phát hiện sự cố tính nhất quán mật mã (Virtual CSP)!</p>` +
+            `<div class="p-2.5 bg-rose-50 rounded-xl border border-rose-200 text-rose-900 font-mono text-xs mt-2 leading-relaxed">` +
+            `  ${cspData.cspErrorMessage || 'Lỗi ký số qua Ban Cơ yếu Chính phủ: An internal consistency check failed.'}` +
+            `</div>` +
+            `<p class="text-slate-700 text-xs mt-2 font-medium"><strong>Hướng dẫn khắc phục:</strong></p>` +
+            `<ul class="list-disc list-inside text-slate-600 text-xs mt-1 space-y-1">` +
+            `  <li>Vui lòng mở lại ứng dụng <strong>Virtual CSP</strong> trên máy tính và kiểm tra trạng thái đăng nhập Ban Cơ yếu.</li>` +
+            `  <li>Nếu dùng USB Token, vui lòng rút ra và cắm lại vào cổng USB khác của máy tính.</li>` +
+            `  <li>Khởi động lại phần mềm <strong>EduSign Agent</strong> trên khay hệ thống.</li>` +
+            `</ul>`,
+            'Lỗi Trạng Thái Virtual CSP',
+            'error'
+          );
+          return; // DỪNG LẠI LẬP TỨC!
+        }
+
+        // 3.3. Kiểm tra chứng thư số có khóa riêng
+        if (!cspData.tokenConnected && !cspData.certInfo) {
+          console.warn('[Quy trình Ký Số] Bước 3: Chưa nhận diện được chứng thư số Ban Cơ yếu -> DỪNG LẠI LẬP TỨC!');
+          showAppNotice(
+            `<p class="font-bold text-amber-800 text-sm">⚠️ Chưa nhận diện được Chứng thư số Ban Cơ yếu!</p>` +
+            `<p class="text-slate-700 text-xs mt-2 leading-relaxed">EduSign Agent đã kết nối nhưng chưa tìm thấy Chứng thư số chuyên dùng công vụ hợp lệ của Thầy/Cô trên máy tính.</p>` +
+            `<ul class="list-disc list-inside text-slate-600 text-xs mt-1 space-y-1">` +
+            `  <li><strong>Nếu ký qua USB Token:</strong> Xin chắc chắn đã cắm USB Token Ban Cơ yếu vào máy tính.</li>` +
+            `  <li><strong>Nếu ký từ xa di động (Virtual CSP):</strong> Xin khởi động phần mềm Virtual CSP trên máy tính.</li>` +
+            `</ul>`,
+            'Chưa Nhận Diện Thiết Bị Ký Số',
+            'warning'
+          );
+          return; // DỪNG LẠI LẬP TỨC!
+        }
+
+        window._verifiedVgcaStatus = cspData;
+
+      } catch (errCheck) {
+        console.error('[Quy trình Ký Số] Bước 3: Lỗi kiểm tra CSP:', errCheck);
+        showAppNotice(
+          `<p class="font-bold text-rose-800 text-sm">🛑 Không thể kiểm tra trạng thái Virtual CSP!</p>` +
+          `<p class="text-slate-700 text-xs mt-2 leading-relaxed">Gặp sự cố khi kết nối kiểm tra dịch vụ mật mã Ban Cơ yếu: <em>${errCheck.message}</em>.</p>` +
+          `<p class="text-slate-500 text-xs mt-1">Vui lòng kiểm tra lại phần mềm EduSign Agent và Virtual CSP trên máy tính.</p>`,
+          'Lỗi Kết Nối Dịch Vụ Mật Mã',
+          'error'
+        );
+        return; // DỪNG LẠI LẬP TỨC!
+      }
+
+      // =======================================================================
+      // BƯỚC 4: TẤT CẢ CÁC BƯỚC THÀNH CÔNG -> MỚI HIỂN THỊ HÌNH h3!
+      // =======================================================================
+      console.log('[Quy trình Ký Số] Bước 4: Tất cả các bước 1, 2, 3 đã thành công 100%! Mở hình h3 và kích hoạt ký.');
+      proceedToStep4AuthModal(options, ping);
     }
 
     function backToStep1() {
@@ -5554,14 +5889,19 @@
     }
 
     /**
-     * BƯỚC 2: Người dùng gửi lệnh Push Notification tới điện thoại và chờ bấm [ĐỒNG Ý]
+     * BƯỚC 4: Mở modal h3 và kích hoạt lệnh ký gửi xác thực tới điện thoại
      */
-    async function proceedToStep2SmartCA(customAccount) {
-      const vgcaUser = getVgcaLoggedInUser();
-      const account = customAccount || (vgcaUser && vgcaUser.account) || '';
+    async function proceedToStep4AuthModal(options, ping) {
+      const modal = document.getElementById('modalVgcaMobileAuth');
+      if (!modal) return;
 
-      const docTitle = (currentVgcaSigningOptions && currentVgcaSigningOptions.docTitle) || 'KeHoachBaiDay.pdf';
-      const signerName = (vgcaUser && vgcaUser.signerName) || (currentVgcaSigningOptions && currentVgcaSigningOptions.signerName) || (currentUser ? currentUser.name : 'Hà Văn Tý');
+      const vgcaUser = getVgcaLoggedInUser();
+      const account = (vgcaUser && vgcaUser.account) || '';
+      const docTitle = (options && options.docTitle) || 
+        (document.getElementById('viewerDocTitle') ? document.getElementById('viewerDocTitle').innerText : '') || 
+        (document.getElementById('newDocTitle') ? document.getElementById('newDocTitle').value : '') || 
+        'KeHoachBaiDay.pdf';
+      const signerName = (vgcaUser && vgcaUser.signerName) || (options && options.signerName) || (currentUser ? currentUser.name : 'Hà Văn Tý');
 
       try {
         const res = await fetch('/api/vgca/initiate-session', {
@@ -5585,7 +5925,9 @@
 
         activeVgcaTxId = data.txId;
 
-        // Chuyển sang Bước 2
+        // CHỈ KHI NÀY MỚI MỞ MODAL HÌNH h3
+        openModal('modalVgcaMobileAuth');
+
         const step1 = document.getElementById('vgcaStep1Container');
         const step2 = document.getElementById('vgcaStep2Container');
         const ind1 = document.getElementById('vgcaStepIndicator1');
@@ -5597,6 +5939,9 @@
         if (ind1) ind1.className = 'flex items-center gap-1.5 text-slate-500 font-medium';
         if (ind2) ind2.className = 'flex items-center gap-1.5 text-blue-700 font-bold';
         if (txDisplay) txDisplay.innerText = activeVgcaTxId;
+
+        // Cập nhật trạng thái EduSign Agent đã kết nối
+        updateAgentStatusBox(ping);
 
         // Bắt đầu đồng hồ đếm ngược 90s
         vgcaRemainingSeconds = data.expiresInSeconds || 90;
@@ -5610,8 +5955,12 @@
             clearInterval(vgcaCountdownTimer);
             if (vgcaPollTimer) clearInterval(vgcaPollTimer);
             if (countdownEl) countdownEl.innerText = 'Hết hạn';
-            alert('⚠️ Quá thời gian chờ xác nhận trên điện thoại (90 giây)!\nPhiên giao dịch đã tự động hủy bỏ để bảo mật.');
             closeVgcaMobileAuthModal();
+            showAppNotice(
+              'Quá thời gian chờ xác nhận trên điện thoại (90 giây)! Phiên giao dịch đã tự động hủy bỏ để bảo mật.',
+              'Hết Hạn Phiên Ký',
+              'warning'
+            );
             return;
           }
           const mins = Math.floor(vgcaRemainingSeconds / 60);
@@ -5621,38 +5970,18 @@
           }
         }, 1000);
 
-        // Kiểm tra kết nối EduSign Agent trên máy tính (Cổng 18888 / 3000)
-        let ping = { available: false };
-        try {
-          ping = await pingLocalSigner(800);
-        } catch (e) {}
-
-        updateAgentStatusBox(ping);
-
-        // NẾU ĐÃ KẾT NỐI EDUSIGN AGENT: Kích hoạt ngay lệnh ký cục bộ để gửi DUY NHẤT 1 thông báo xác thực tới điện thoại!
-        if (ping.available) {
-          startAgentSigningWorkflow(ping.host);
-        } else {
-          // CHỈ bật polling kiểm tra trạng thái trên máy chủ khi KHÔNG có Agent cục bộ
-          if (vgcaPollTimer) clearInterval(vgcaPollTimer);
-          vgcaPollTimer = setInterval(async () => {
-            if (!activeVgcaTxId) return;
-            try {
-              const checkRes = await fetch(`/api/vgca/session-status/${activeVgcaTxId}`);
-              if (checkRes.ok) {
-                const checkData = await checkRes.json();
-                if (checkData && checkData.data && checkData.data.status === 'CONFIRMED') {
-                  clearInterval(vgcaPollTimer);
-                  handleUserConfirmedOnPhone();
-                }
-              }
-            } catch (e) {}
-          }, 2500);
-        }
+        // Kích hoạt ngay lệnh ký gửi push notification tới điện thoại
+        startAgentSigningWorkflow(ping.host);
 
       } catch (err) {
-        alert('Lỗi khởi tạo phiên xác thực VGCA: ' + err.message);
+        showAppNotice('Lỗi khởi tạo phiên xác thực VGCA: ' + err.message, 'Lỗi Khởi Tạo', 'error');
       }
+    }
+
+    async function proceedToStep2SmartCA(customAccount) {
+      // Hàm duy trì tương thích cho các nút gọi cũ
+      const ping = await pingLocalSigner(1000);
+      proceedToStep4AuthModal(currentVgcaSigningOptions || {}, ping);
     }
 
     let isAgentSigningActive = false;
@@ -5663,7 +5992,7 @@
       if (!box) return;
       if (ping && ping.available) {
         const hasUp = ping.data && ping.data.hasUpdate;
-        const curVer = (ping.data && (ping.data.agentVersion || ping.data.version)) || '2.0.0';
+        const curVer = (ping.data && (ping.data.agentVersion || ping.data.version)) || '2.0.1';
         const latVer = (ping.data && ping.data.latestVersion) || '2.0.1';
 
         const dismissedVer = localStorage.getItem('edusign_dismissed_update');
@@ -5804,57 +6133,39 @@
           }, 1200);
         }
       } catch (err) {
-        console.error('Lỗi trong tiến trình ký qua Agent:', err);
+        console.error('[EduSign] Lỗi trong tiến trình ký qua Agent:', err);
         isAgentSigningActive = false;
 
+        // DỪNG ĐẾM NGƯỢC VÀ ĐÓNG MODAL h3 NGAY LẬP TỨC!
+        if (vgcaCountdownTimer) { clearInterval(vgcaCountdownTimer); vgcaCountdownTimer = null; }
+        if (vgcaPollTimer) { clearInterval(vgcaPollTimer); vgcaPollTimer = null; }
+        closeVgcaMobileAuthModal();
+
         if (err && err.cancelled) {
-          // Người dùng hủy hoặc từ chối trên điện thoại -> TỰ ĐỘNG HỦY PHIÊN KÝ NGAY LẬP TỨC!
-          closeVgcaMobileAuthModal();
-          alert('🛑 ĐÃ HỦY PHIÊN KÝ SỐ!\n\nĐã từ chối hoặc hủy yêu cầu xác nhận trên điện thoại.\nHồ sơ chưa được ký duyệt.');
+          showAppNotice(
+            `<p class="font-bold text-slate-800 text-sm">🛑 ĐÃ HỦY PHIÊN KÝ SỐ</p>` +
+            `<p class="text-slate-600 text-xs mt-1.5">Yêu cầu xác nhận ký số đã bị từ chối hoặc hủy bỏ trên thiết bị điện thoại. Hồ sơ chưa được niêm phong.</p>`,
+            'Hủy Bỏ Phiên Ký',
+            'warning'
+          );
           return;
         }
 
-        // Bất kể lỗi gì từ Agent cục bộ (Loopback, 500 CSP Broken Token, timeout):
-        // Tự động chuyển giao diện sang xác thực Cloud SmartCA an toàn, không để modal bị treo!
-        console.warn('[EduSign] Chuyển tiếp quy trình sang niêm phong Cloud SmartCA:', err);
-
-        const agentBox = document.getElementById('vgcaAgentConnectionStatus');
-        if (agentBox) {
-          agentBox.className = 'py-2 px-3 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-xs text-slate-600 transition';
-          agentBox.innerHTML = `
-            <div class="flex items-center gap-2">
-              <span class="h-2 w-2 rounded-full bg-slate-400"></span>
-              <span class="font-semibold text-slate-700 text-xs">Chưa kết nối EduSign</span>
-            </div>
-          `;
-        }
-
-        if (desc) {
-          desc.innerHTML = '📲 <strong>XÁC THỰC KÝ SỐ BAN CƠ YẾU QUA ĐIỆN THOẠI</strong><br>Vui lòng mở ứng dụng <strong>SmartCA / VGCA</strong> trên điện thoại, kiểm tra và nhấn <strong>[ĐỒNG Ý]</strong> để hoàn tất niêm phong hồ sơ.';
-        }
-
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i> <span>TÔI ĐÃ BẤM ĐỒNG Ý TRÊN ĐIỆN THOẠI (HOÀN TẤT KÝ)</span>';
-        }
-
-        // Kích hoạt bộ đếm Polling kiểm tra trạng thái xác thực từ điện thoại (có kiểm tra chống đụng độ)
-        if (vgcaPollTimer) clearInterval(vgcaPollTimer);
-        vgcaPollTimer = setInterval(async () => {
-          if (!activeVgcaTxId || isAgentSigningActive || isConfirmingSession) return;
-          try {
-            const checkRes = await fetch(`/api/vgca/session-status/${activeVgcaTxId}`);
-            if (checkRes.ok) {
-              const checkData = await checkRes.json().catch(() => ({}));
-              if (checkData && checkData.data && checkData.data.status === 'CONFIRMED') {
-                clearInterval(vgcaPollTimer);
-                vgcaPollTimer = null;
-                handleUserConfirmedOnPhone();
-              }
-            }
-          } catch (e) {}
-        }, 2500);
-
+        // BÁO LỖI CHI TIẾT CHO NGƯỜI DÙNG, TUYỆT ĐỐI KHÔNG FALLBACK SANG CLOUD SMARTCA!
+        showAppNotice(
+          `<p class="font-bold text-rose-800 text-sm">🛑 QUÁ TRÌNH KÝ SỐ BỊ GIÁN ĐOẠN!</p>` +
+          `<div class="p-2.5 bg-rose-50 rounded-xl border border-rose-200 text-rose-900 font-mono text-xs mt-2 leading-relaxed">` +
+          `  ${err.message || 'Lỗi không xác định từ dịch vụ ký số Ban Cơ yếu'}` +
+          `</div>` +
+          `<p class="text-slate-600 text-xs mt-2 font-medium">Khuyến nghị:</p>` +
+          `<ul class="list-disc list-inside text-slate-600 text-xs mt-1 space-y-1">` +
+          `  <li>Vui lòng kiểm tra lại phần mềm <strong>Virtual CSP</strong> trên máy tính và đăng nhập lại.</li>` +
+          `  <li>Nếu dùng USB Token, vui lòng rút ra và cắm lại.</li>` +
+          `  <li>Khởi động lại <strong>EduSign Agent</strong> và thử lại.</li>` +
+          `</ul>`,
+          'Sự Cố Ký Số Ban Cơ Yếu',
+          'error'
+        );
         return;
       } finally {
         isAgentSigningActive = false;
@@ -6341,11 +6652,9 @@
               const signResult = await signDocViaLocalAgent(signPayload, preparedPdfBase64, targetHost || 'http://127.0.0.1:18888');
               realSignedPdfBase64 = signResult.signedPdfBase64;
             } catch (agentErr) {
-              if (agentErr && agentErr.cancelled) throw agentErr;
-              console.warn('[EduSign] Không thể kết nối Local Agent, chuyển sang niêm phong Cloud SmartCA:', agentErr);
               realSignedPdfBase64 = null;
               cachedLocalSignerHost = null;
-              if (targetHost) throw agentErr;
+              throw agentErr;
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
@@ -7243,11 +7552,9 @@
               const signResult = await signDocViaLocalAgent(signPayload, fileBase64, targetHost || 'http://127.0.0.1:18888');
               realSignedPdfBase64 = signResult.signedPdfBase64;
             } catch (agentErr) {
-              if (agentErr && agentErr.cancelled) throw agentErr;
-              console.warn('[EduSign] Không thể ký qua Agent cục bộ, chuyển sang niêm phong Cloud SmartCA:', agentErr);
               realSignedPdfBase64 = null;
               cachedLocalSignerHost = null;
-              if (targetHost && authInfo.mode !== 'smartca') throw agentErr;
+              throw agentErr;
             }
           } else if (authInfo && authInfo.mode === 'usb_token') {
             throw new Error(
@@ -8854,7 +9161,7 @@
     // Lắng nghe phím Escape để đóng nhanh bất kỳ modal nào đang mở
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        const modals = ['modalInstallGuide', 'modalAppNotice', 'modalVgcaLogin', 'modalVgcaAccountInfo', 'modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalEditUser', 'modalDepartment', 'modalForwardSign', 'modalChangePass', 'modalBghSignConfig', 'modalFirebaseStatus'];
+        const modals = ['modalInstallGuide', 'modalAgentConnectionRequired', 'modalAppNotice', 'modalVgcaLogin', 'modalVgcaAccountInfo', 'modalVgcaMobileAuth', 'modalDocViewer', 'modalNewDoc', 'modalLeaderApprove', 'modalPrincipalApprove', 'modalDocDetails', 'modalCreateUser', 'modalEditUser', 'modalDepartment', 'modalForwardSign', 'modalChangePass', 'modalBghSignConfig', 'modalFirebaseStatus'];
         for (const id of modals) {
           const el = document.getElementById(id);
           if (el && !el.classList.contains('hidden')) {

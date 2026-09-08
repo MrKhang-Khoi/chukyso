@@ -2413,6 +2413,42 @@ namespace RealPdfSigner
                     }
                     catch { }
 
+                    bool cspHealthy = true;
+                    bool hasCspError = false;
+                    string cspErrorMessage = "";
+
+                    if (cert != null && cert.HasPrivateKey)
+                    {
+                        try
+                        {
+                            using var rsa = cert.GetRSAPrivateKey();
+                            if (rsa == null)
+                            {
+                                cspHealthy = false;
+                                hasCspError = true;
+                                cspErrorMessage = "Không thể liên kết khóa riêng của chứng thư số (Private key handle is null).";
+                            }
+                            else
+                            {
+                                // Mở thử tham chiếu để phát hiện lỗi tính nhất quán CryptographicException: An internal consistency check failed
+                                var keyExchange = rsa.KeyExchangeAlgorithm;
+                                var sigAlg = rsa.SignatureAlgorithm;
+                            }
+                        }
+                        catch (CryptographicException cEx)
+                        {
+                            cspHealthy = false;
+                            hasCspError = true;
+                            cspErrorMessage = $"Lỗi tính nhất quán Virtual CSP: {cEx.Message}. Vui lòng kiểm tra lại dịch vụ Virtual CSP trên máy tính.";
+                        }
+                        catch (Exception ex)
+                        {
+                            cspHealthy = false;
+                            hasCspError = true;
+                            cspErrorMessage = $"Lỗi kết nối thiết bị ký số: {ex.Message}";
+                        }
+                    }
+
                     var statusData = new
                     {
                         success = true,
@@ -2424,7 +2460,11 @@ namespace RealPdfSigner
                         platform = "win32",
                         appRunning = true,
                         appName = "EduSign Desktop Agent (Ban Cơ yếu Chính phủ)",
-                        tokenConnected = cert != null && cert.HasPrivateKey,
+                        tokenConnected = cert != null && cert.HasPrivateKey && cspHealthy,
+                        cspHealthy = cspHealthy,
+                        hasCspError = hasCspError,
+                        cspErrorMessage = cspErrorMessage,
+                        isMaintenance = false,
                         certInfo = cert != null ? new
                         {
                             subject = cert.Subject,
@@ -2439,9 +2479,11 @@ namespace RealPdfSigner
                             cccd = detectedCccd
                         } : null,
                         availableCerts = availableCerts,
-                        details = (cert != null && cert.HasPrivateKey)
+                        details = (cert != null && cert.HasPrivateKey && cspHealthy)
                             ? $"EduSign Agent đang hoạt động và đã nhận diện chứng thư: {certSigner} (Serial: {cert.SerialNumber})."
-                            : "EduSign Agent đang hoạt động nhưng chưa cắm đúng USB Token."
+                            : (hasCspError
+                                ? cspErrorMessage
+                                : "EduSign Agent đang hoạt động nhưng chưa cắm đúng USB Token hoặc chưa mở Virtual CSP.")
                     };
 
                     byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(statusData));
